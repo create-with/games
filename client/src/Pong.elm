@@ -1,8 +1,14 @@
-port module Pong exposing (main)
+port module Pong exposing
+    ( Model
+    , Msg(..)
+    , init
+    , subscriptions
+    , update
+    , view
+    )
 
 -- IMPORTS
 
-import Browser
 import Browser.Events
 import Html
 import Html.Attributes
@@ -650,18 +656,6 @@ viewBallPathToggle ballPathToggle =
         ]
 
 
-
--- MAIN
-
-
-main : Program () Model Msg
-main =
-    Browser.element
-        { init = init
-        , update = update
-        , subscriptions = subscriptions
-        , view = view
-        }
 
 
 
