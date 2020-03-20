@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# scripts/build: Compile the `Main.elm` file and output an `elm.js` file
+# for `index.html`.
+
+set -e
+
+cd ./client
+elm make src/Main.elm --debug --output=elm.js
