@@ -40,17 +40,17 @@ initialBall =
     { color = "white"
     , x = 400
     , y = 300
-    , vx = 0.33
-    , vy = 0.33
+    , vx = 0.4
+    , vy = 0.4
     , width = 10
     , height = 10
     }
 
 
 type GameState
-    = Start
-    | Playing
-    | End
+    = StartingScreen
+    | PlayingScreen
+    | EndingScreen
 
 
 type alias Paddle =
@@ -112,13 +112,13 @@ initialWindow =
 type alias Model =
     { ball : Ball
     , ballPath : List Ball
-    , ballPathToggle : Bool
     , gameState : GameState
     , leftPaddle : Paddle
     , leftPaddleScore : Int
     , playerKeyPress : Set.Set String
     , rightPaddle : Paddle
     , rightPaddleScore : Int
+    , viewBallPath : Bool
     , winner : Maybe PaddleId
     }
 
@@ -127,13 +127,13 @@ initialModel : Model
 initialModel =
     { ball = initialBall
     , ballPath = []
-    , ballPathToggle = False
-    , gameState = Start
+    , gameState = StartingScreen
     , leftPaddle = initialLeftPaddle
     , leftPaddleScore = 0
     , playerKeyPress = Set.empty
     , rightPaddle = initialRightPaddle
     , rightPaddleScore = 0
+    , viewBallPath = False
     , winner = Nothing
     }
 
@@ -154,7 +154,7 @@ init _ =
 
 type Msg
     = GameLoop Float
-    | PlayerCheckedBallPathToggle Bool
+    | PlayerClickedBallPathCheckbox Bool
     | PlayerPressedKeyDown String
     | PlayerPressedKeyUp String
 
@@ -164,17 +164,17 @@ update msg model =
     case msg of
         GameLoop frame ->
             case model.gameState of
-                Start ->
-                    if Set.member " " model.playerKeyPress then
-                        ( { model | gameState = Playing }, Cmd.none )
+                StartingScreen ->
+                    if playerPressedSpacebarKey model.playerKeyPress then
+                        ( { model | gameState = PlayingScreen }, Cmd.none )
 
                     else
                         ( model, Cmd.none )
 
-                Playing ->
+                PlayingScreen ->
                     if model.leftPaddleScore == 11 then
                         ( { model
-                            | gameState = End
+                            | gameState = EndingScreen
                             , winner = Just model.leftPaddle.id
                           }
                         , Cmd.none
@@ -182,7 +182,7 @@ update msg model =
 
                     else if model.rightPaddleScore == 11 then
                         ( { model
-                            | gameState = End
+                            | gameState = EndingScreen
                             , winner = Just model.rightPaddle.id
                           }
                         , Cmd.none
@@ -257,7 +257,7 @@ update msg model =
                                 | ball = updateBallPosition frame model.ball
                                 , ballPath = List.take 99 <| model.ball :: model.ballPath
                                 , leftPaddle = movePaddleUp model.leftPaddle
-                                , rightPaddle = updateAIPaddlePosition frame model.ball model.rightPaddle
+                                , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
                               }
                             , Cmd.none
                             )
@@ -267,7 +267,7 @@ update msg model =
                                 | ball = updateBallPosition frame model.ball
                                 , ballPath = List.take 99 <| model.ball :: model.ballPath
                                 , leftPaddle = movePaddleDown model.leftPaddle
-                                , rightPaddle = updateAIPaddlePosition frame model.ball model.rightPaddle
+                                , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
                               }
                             , Cmd.none
                             )
@@ -276,7 +276,7 @@ update msg model =
                             ( { model
                                 | ball = updateBallPosition frame model.ball
                                 , ballPath = List.take 99 <| model.ball :: model.ballPath
-                                , rightPaddle = updateAIPaddlePosition frame model.ball model.rightPaddle
+                                , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
                               }
                             , Cmd.none
                             )
@@ -288,16 +288,16 @@ update msg model =
                         ( { model
                             | ball = updateBallPosition frame model.ball
                             , ballPath = List.take 99 <| model.ball :: model.ballPath
-                            , rightPaddle = updateAIPaddlePosition frame model.ball model.rightPaddle
+                            , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
                           }
                         , Cmd.none
                         )
 
-                End ->
+                EndingScreen ->
                     ( model, Cmd.none )
 
-        PlayerCheckedBallPathToggle ballPathToggleValue ->
-            ( { model | ballPathToggle = ballPathToggleValue }, Cmd.none )
+        PlayerClickedBallPathCheckbox viewBallPathCheckboxValue ->
+            ( { model | viewBallPath = viewBallPathCheckboxValue }, Cmd.none )
 
         PlayerPressedKeyDown key ->
             ( updateKeyPress key model, Cmd.none )
@@ -363,8 +363,8 @@ updateBallPosition frame ball =
     }
 
 
-updateAIPaddlePosition : Float -> Ball -> Paddle -> Paddle
-updateAIPaddlePosition frame ball paddle =
+updateAIPaddlePosition : Ball -> Paddle -> Paddle
+updateAIPaddlePosition ball paddle =
     if ball.y > paddle.y then
         { paddle | y = keepPaddleInWindow paddle <| paddle.y + 5 }
 
@@ -428,6 +428,9 @@ playerPressedKey : Set.Set String -> Bool
 playerPressedKey playerKeyPress =
     (Set.isEmpty >> not) playerKeyPress
 
+playerPressedSpacebarKey : Set.Set String -> Bool
+playerPressedSpacebarKey playerKeyPress =
+    Set.member " " playerKeyPress
 
 updateKeyPress : String -> Model -> Model
 updateKeyPress key model =
@@ -458,26 +461,26 @@ view model =
             ]
         , Html.section []
             [ case model.gameState of
-                Start ->
+                StartingScreen ->
                     Html.div []
                         [ viewSvg model
                         , viewInstructions
-                        , viewOptions model.ballPathToggle
+                        , viewOptions model.viewBallPath
                         ]
 
-                Playing ->
+                PlayingScreen ->
                     Html.div []
                         [ viewSvg model
                         , viewInstructions
-                        , viewOptions model.ballPathToggle
+                        , viewOptions model.viewBallPath
                         ]
 
-                End ->
+                EndingScreen ->
                     Html.div []
                         [ viewSvg model
                         , viewWinner model.winner
                         , viewInstructions
-                        , viewOptions model.ballPathToggle
+                        , viewOptions model.viewBallPath
                         ]
             ]
         ]
@@ -508,7 +511,7 @@ viewSvg model =
          , viewRightPaddle model.rightPaddle
          , viewBall model.ball
          ]
-            ++ (if model.ballPathToggle then
+            ++ (if model.viewBallPath then
                     viewBallPath model.ballPath
 
                 else
@@ -660,23 +663,23 @@ viewInstructions =
 
 
 viewOptions : Bool -> Html.Html Msg
-viewOptions ballPathToggle =
+viewOptions viewBallPath_ =
     Html.div [ Html.Attributes.class "pt-2" ]
         [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
             [ Html.text "Options" ]
-        , viewBallPathToggle ballPathToggle
+        , viewviewBallPathOption viewBallPath_
         ]
 
 
-viewBallPathToggle : Bool -> Html.Html Msg
-viewBallPathToggle ballPathToggle =
+viewviewBallPathOption : Bool -> Html.Html Msg
+viewviewBallPathOption viewBallPath_ =
     Html.div []
         [ Html.input
-            [ Html.Attributes.checked ballPathToggle
+            [ Html.Attributes.checked viewBallPath_
             , Html.Attributes.class "mx-2"
             , Html.Attributes.id "ball-path-toggle"
             , Html.Attributes.type_ "checkbox"
-            , Html.Events.onCheck <| PlayerCheckedBallPathToggle
+            , Html.Events.onCheck <| PlayerClickedBallPathCheckbox
             ]
             []
         , Html.label
