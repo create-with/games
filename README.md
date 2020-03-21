@@ -7,6 +7,7 @@
 ## Client
 
 - Elm
+- Parcel
 
 ## Server
 
@@ -19,5 +20,5 @@ Build example:
 
 ```sh
 $ chmod +x ./scripts/*
-$ ./scripts/build
+$ ./scripts/dev-server
 ```

@@ -187,7 +187,7 @@ update msg model =
                                     , vx = negate <| (ball.vx - 0.033)
                                 }
                         in
-                        ( { model | ball = updatedBall model.ball }, playSound (Json.Encode.string "beep.wav") )
+                        ( { model | ball = updatedBall model.ball }, playSound <| Json.Encode.string "beep.wav" )
 
                     else if ballHitRightPaddle model.ball model.rightPaddle then
                         let
@@ -205,7 +205,7 @@ update msg model =
                                     -- , vx = negate <| ball.vx * Basics.cos (Basics.degrees (75.0 * (toFloat model.rightPaddle.y + (toFloat model.rightPaddle.height / 2) - toFloat ballHitSpot) / (toFloat model.rightPaddle.height / 2)))
                                 }
                         in
-                        ( { model | ball = updatedBall model.ball }, playSound (Json.Encode.string "beep.wav") )
+                        ( { model | ball = updatedBall model.ball }, playSound <| Json.Encode.string "beep.wav" )
 
                     else if ballHitRightEdge model.ball window then
                         ( { model
@@ -659,26 +659,7 @@ viewBallPathToggle ballPathToggle =
 
 
 
-{-
-   PORTS
-
-   import { Howl, Howler } from "howler";
-
-   let app = Elm.Main.init({
-     node: document.getElementById("elm-container");,
-     flags: {}
-   });
-
-   app.ports.playSound.subscribe((data) => {
-     console.log("Playing sound: " + data);
-
-     let sound = new Howl({
-       src: ["/sounds/" + data]
-     });
-
-     sound.play();
-   });
--}
+-- PORTS
 
 
 port playSound : Json.Encode.Value -> Cmd msg

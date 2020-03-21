@@ -1,9 +1,0 @@
-#!/bin/sh
-
-# scripts/build-optimized: Compile the `Main.elm` file with the `--optimize`
-# flag and output an `elm.js` file for `index.html`.
-
-set -e
-
-cd ./client
-elm make src/Main.elm --optimize --output=elm.js
