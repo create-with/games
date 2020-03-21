@@ -446,40 +446,35 @@ validKeys =
 
 view : Model -> Html.Html Msg
 view model =
-    case model.gameState of
-        Start ->
-            Html.div []
-                [ viewSvg model
-                , Html.ul []
-                    [ Html.li [] [ Html.text "Press SPACEBAR to start." ]
-                    , Html.li [] [ Html.text "Ball will be served automatically." ]
-                    , Html.li [] [ Html.text "Avoid missing ball for high score." ]
-                    ]
-                , viewBallPathToggle model.ballPathToggle
-                ]
+    Html.main_ [ Html.Attributes.class "px-6" ]
+        [ Html.header []
+            [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ] [ Html.text "🏓 Pong" ]
+            ]
+        , Html.section []
+            [ case model.gameState of
+                Start ->
+                    Html.div []
+                        [ viewSvg model
+                        , viewInstructions
+                        , viewOptions model.ballPathToggle
+                        ]
 
-        Playing ->
-            Html.div []
-                [ viewSvg model
-                , Html.ul []
-                    [ Html.li [] [ Html.text "Press SPACEBAR to start." ]
-                    , Html.li [] [ Html.text "Ball will be served automatically." ]
-                    , Html.li [] [ Html.text "Avoid missing ball for high score." ]
-                    ]
-                , viewBallPathToggle model.ballPathToggle
-                ]
+                Playing ->
+                    Html.div []
+                        [ viewSvg model
+                        , viewInstructions
+                        , viewOptions model.ballPathToggle
+                        ]
 
-        End ->
-            Html.div []
-                [ viewWinner model.winner
-                , viewSvg model
-                , Html.ul []
-                    [ Html.li [] [ Html.text "Press SPACEBAR to start." ]
-                    , Html.li [] [ Html.text "Ball will be served automatically." ]
-                    , Html.li [] [ Html.text "Avoid missing ball for high score." ]
-                    ]
-                , viewBallPathToggle model.ballPathToggle
-                ]
+                End ->
+                    Html.div []
+                        [ viewSvg model
+                        , viewWinner model.winner
+                        , viewInstructions
+                        , viewOptions model.ballPathToggle
+                        ]
+            ]
+        ]
 
 
 viewSvg : Model -> Svg.Svg msg
@@ -623,12 +618,16 @@ viewBallPath ballPath =
 
 viewWinner : Maybe PaddleId -> Html.Html msg
 viewWinner maybePaddleId =
-    case maybePaddleId of
-        Just paddleId ->
-            Html.p [] [ Html.text <| paddleIdToString paddleId ++ " paddle wins!" ]
+    Html.div [ Html.Attributes.class "pt-2" ]
+        [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
+            [ Html.text "Winner!"]
+        , case maybePaddleId of
+            Just paddleId ->
+                Html.p [] [ Html.text <| "🥇 " ++ paddleIdToString paddleId ++ " paddle wins!" ]
 
-        Nothing ->
-            Html.span [] []
+            Nothing ->
+                Html.span [] []
+        ]
 
 
 paddleIdToString : PaddleId -> String
@@ -641,22 +640,43 @@ paddleIdToString paddleId =
             "Right"
 
 
+viewInstructions : Html.Html msg
+viewInstructions =
+    Html.div [ Html.Attributes.class "pt-2" ]
+        [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
+            [ Html.text "Instructions"]
+        , Html.ul [ Html.Attributes.class "list-disc list-inside mx-3" ]
+            [ Html.li [] [ Html.text "🏓 Press the SPACEBAR key to serve the ball." ]
+            , Html.li [] [ Html.text "⌨️ Use the arrow keys to move the left paddle." ]
+            , Html.li [] [ Html.text "🏆 Avoid missing ball for high score." ]
+            ]
+        ]
+
+viewOptions : Bool -> Html.Html Msg
+viewOptions ballPathToggle =
+    Html.div [ Html.Attributes.class "pt-2" ]
+        [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
+            [ Html.text "Options"]
+        , viewBallPathToggle ballPathToggle
+        ]
+
 viewBallPathToggle : Bool -> Html.Html Msg
 viewBallPathToggle ballPathToggle =
     Html.div []
-        [ Html.label [ Html.Attributes.for "ball-path-toggle" ]
-            [ Html.text "View ball path history?" ]
-        , Html.input
+        [ Html.input
             [ Html.Attributes.checked ballPathToggle
+            , Html.Attributes.class "mx-2"
             , Html.Attributes.id "ball-path-toggle"
             , Html.Attributes.type_ "checkbox"
             , Html.Events.onCheck <| PlayerCheckedBallPathToggle
             ]
             []
+        , Html.label
+            [ Html.Attributes.class "font-medium italic"
+            , Html.Attributes.for "ball-path-toggle"
+            ]
+            [ Html.text "View ball path history?" ]
         ]
-
-
-
 
 
 -- PORTS
