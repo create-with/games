@@ -35,6 +35,18 @@ type alias Ball =
     }
 
 
+initialBall : Ball
+initialBall =
+    { color = "white"
+    , x = 400
+    , y = 300
+    , vx = 0.33
+    , vy = 0.33
+    , width = 10
+    , height = 10
+    }
+
+
 type GameState
     = Start
     | Playing
@@ -48,6 +60,28 @@ type alias Paddle =
     , y : Int
     , width : Int
     , height : Int
+    }
+
+
+initialLeftPaddle : Paddle
+initialLeftPaddle =
+    { color = "lightblue"
+    , id = Left
+    , x = 48
+    , y = 200
+    , width = 12
+    , height = 64
+    }
+
+
+initialRightPaddle : Paddle
+initialRightPaddle =
+    { color = "lightpink"
+    , id = Right
+    , x = 740
+    , y = 300
+    , width = 12
+    , height = 64
     }
 
 
@@ -65,8 +99,8 @@ type alias Window =
     }
 
 
-window : Window
-window =
+initialWindow : Window
+initialWindow =
     { backgroundColor = "black"
     , x = 0
     , y = 0
@@ -91,36 +125,14 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { ball =
-        { color = "white"
-        , x = 400
-        , y = 300
-        , vx = 0.33
-        , vy = 0.33
-        , width = 10
-        , height = 10
-        }
+    { ball = initialBall
     , ballPath = []
     , ballPathToggle = False
     , gameState = Start
-    , leftPaddle =
-        { color = "lightblue"
-        , id = Left
-        , x = 48
-        , y = 200
-        , width = 12
-        , height = 64
-        }
+    , leftPaddle = initialLeftPaddle
     , leftPaddleScore = 0
     , playerKeyPress = Set.empty
-    , rightPaddle =
-        { color = "lightpink"
-        , id = Right
-        , x = 740
-        , y = 300
-        , width = 12
-        , height = 64
-        }
+    , rightPaddle = initialRightPaddle
     , rightPaddleScore = 0
     , winner = Nothing
     }
@@ -178,9 +190,6 @@ update msg model =
 
                     else if ballHitLeftPaddle model.ball model.leftPaddle then
                         let
-                            _ =
-                                Debug.log "hit left paddle" model.ball
-
                             updatedBall ball =
                                 { ball
                                     | x = ball.x + ball.width
@@ -191,9 +200,6 @@ update msg model =
 
                     else if ballHitRightPaddle model.ball model.rightPaddle then
                         let
-                            _ =
-                                Debug.log "hit right paddle" model.ball
-
                             ( ballHitSpot, paddleHitSpot ) =
                                 ballHitRightPaddleLocations model.ball model.rightPaddle
 
@@ -207,7 +213,7 @@ update msg model =
                         in
                         ( { model | ball = updatedBall model.ball }, playSound <| Json.Encode.string "beep.wav" )
 
-                    else if ballHitRightEdge model.ball window then
+                    else if ballHitRightEdge model.ball initialWindow then
                         ( { model
                             | ball = initialModel.ball
                             , ballPath = []
@@ -235,7 +241,7 @@ update msg model =
                         in
                         ( { model | ball = updatedBall model.ball }, playSound (Json.Encode.string "boop.wav") )
 
-                    else if ballHitBottomEdge model.ball window then
+                    else if ballHitBottomEdge model.ball initialWindow then
                         let
                             updatedBall ball =
                                 { ball
@@ -376,7 +382,7 @@ keepPaddleInWindow paddle paddleYPosition =
             0
 
         bottomEdge =
-            window.height - paddle.height
+            initialWindow.height - paddle.height
     in
     Basics.clamp topEdge bottomEdge paddleYPosition
 
@@ -448,7 +454,7 @@ view : Model -> Html.Html Msg
 view model =
     Html.main_ [ Html.Attributes.class "px-6" ]
         [ Html.header []
-            [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ] [ Html.text "🏓 Pong" ]
+            [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ] [ Html.text "\u{1F3D3} Pong" ]
             ]
         , Html.section []
             [ case model.gameState of
@@ -481,23 +487,23 @@ viewSvg : Model -> Svg.Svg msg
 viewSvg model =
     let
         viewBoxString =
-            [ window.x
-            , window.y
-            , window.width
-            , window.height
+            [ initialWindow.x
+            , initialWindow.y
+            , initialWindow.width
+            , initialWindow.height
             ]
                 |> List.map String.fromInt
                 |> String.join " "
     in
     Svg.svg
         [ Svg.Attributes.viewBox viewBoxString
-        , Svg.Attributes.width <| String.fromInt window.width
-        , Svg.Attributes.height <| String.fromInt window.height
+        , Svg.Attributes.width <| String.fromInt initialWindow.width
+        , Svg.Attributes.height <| String.fromInt initialWindow.height
         ]
-        ([ viewGameWindow window
-         , viewNet window
-         , viewLeftPaddleScore model.leftPaddleScore window
-         , viewRightPaddleScore model.rightPaddleScore window
+        ([ viewGameWindow initialWindow
+         , viewNet initialWindow
+         , viewLeftPaddleScore model.leftPaddleScore initialWindow
+         , viewRightPaddleScore model.rightPaddleScore initialWindow
          , viewLeftPaddle model.leftPaddle
          , viewRightPaddle model.rightPaddle
          , viewBall model.ball
@@ -620,10 +626,10 @@ viewWinner : Maybe PaddleId -> Html.Html msg
 viewWinner maybePaddleId =
     Html.div [ Html.Attributes.class "pt-2" ]
         [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
-            [ Html.text "Winner!"]
+            [ Html.text "Winner!" ]
         , case maybePaddleId of
             Just paddleId ->
-                Html.p [] [ Html.text <| "🥇 " ++ paddleIdToString paddleId ++ " paddle wins!" ]
+                Html.p [] [ Html.text <| "\u{1F947} " ++ paddleIdToString paddleId ++ " paddle wins!" ]
 
             Nothing ->
                 Html.span [] []
@@ -644,21 +650,23 @@ viewInstructions : Html.Html msg
 viewInstructions =
     Html.div [ Html.Attributes.class "pt-2" ]
         [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
-            [ Html.text "Instructions"]
+            [ Html.text "Instructions" ]
         , Html.ul [ Html.Attributes.class "list-disc list-inside mx-3" ]
-            [ Html.li [] [ Html.text "🏓 Press the SPACEBAR key to serve the ball." ]
+            [ Html.li [] [ Html.text "\u{1F3D3} Press the SPACEBAR key to serve the ball." ]
             , Html.li [] [ Html.text "⌨️ Use the arrow keys to move the left paddle." ]
             , Html.li [] [ Html.text "🏆 Avoid missing ball for high score." ]
             ]
         ]
 
+
 viewOptions : Bool -> Html.Html Msg
 viewOptions ballPathToggle =
     Html.div [ Html.Attributes.class "pt-2" ]
         [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
-            [ Html.text "Options"]
+            [ Html.text "Options" ]
         , viewBallPathToggle ballPathToggle
         ]
+
 
 viewBallPathToggle : Bool -> Html.Html Msg
 viewBallPathToggle ballPathToggle =
@@ -677,6 +685,7 @@ viewBallPathToggle ballPathToggle =
             ]
             [ Html.text "View ball path history?" ]
         ]
+
 
 
 -- PORTS
