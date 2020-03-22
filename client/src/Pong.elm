@@ -99,14 +99,19 @@ type alias Window =
     }
 
 
-initialWindow : Window
-initialWindow =
+globalWindow : Window
+globalWindow =
     { backgroundColor = "black"
     , x = 0
     , y = 0
     , width = 800
     , height = 600
     }
+
+
+type WinningScore
+    = Eleven
+    | Fifteen
 
 
 type alias Model =
@@ -120,6 +125,7 @@ type alias Model =
     , rightPaddleScore : Int
     , viewBallPath : Bool
     , winner : Maybe PaddleId
+    , winningScore : WinningScore
     }
 
 
@@ -135,6 +141,7 @@ initialModel =
     , rightPaddleScore = 0
     , viewBallPath = False
     , winner = Nothing
+    , winningScore = Eleven
     }
 
 
@@ -166,72 +173,51 @@ update msg model =
             case model.gameState of
                 StartingScreen ->
                     if playerPressedSpacebarKey model.playerKeyPress then
-                        ( { model | gameState = PlayingScreen }, Cmd.none )
+                        model
+                            |> updateGameState PlayingScreen
+                            |> noCommand
 
                     else
-                        ( model, Cmd.none )
+                        model |> noCommand
 
                 PlayingScreen ->
-                    if model.leftPaddleScore == 11 then
-                        ( { model
-                            | gameState = EndingScreen
-                            , winner = Just model.leftPaddle.id
-                          }
-                        , Cmd.none
-                        )
+                    if leftPaddleHasWinningScore model.leftPaddleScore model.winningScore then
+                        model
+                            |> updateGameState EndingScreen
+                            |> updateWinner (Just model.leftPaddle.id)
+                            |> noCommand
 
-                    else if model.rightPaddleScore == 11 then
-                        ( { model
-                            | gameState = EndingScreen
-                            , winner = Just model.rightPaddle.id
-                          }
-                        , Cmd.none
-                        )
+                    else if rightPaddleHasWinningScore model.rightPaddleScore model.winningScore then
+                        model
+                            |> updateGameState EndingScreen
+                            |> updateWinner (Just model.rightPaddle.id)
+                            |> noCommand
 
                     else if ballHitLeftPaddle model.ball model.leftPaddle then
-                        let
-                            updatedBall ball =
-                                { ball
-                                    | x = ball.x + ball.width
-                                    , vx = negate <| (ball.vx - 0.033)
-                                }
-                        in
-                        ( { model | ball = updatedBall model.ball }, playSound <| Json.Encode.string "beep.wav" )
+                        model
+                            |> updateBall model.ball model.leftPaddle
+                            |> playSoundCommand "beep.wav"
 
                     else if ballHitRightPaddle model.ball model.rightPaddle then
-                        let
-                            ( ballHitSpot, paddleHitSpot ) =
-                                ballHitRightPaddleLocations model.ball model.rightPaddle
+                        model
+                            |> updateBall model.ball model.rightPaddle
+                            |> playSoundCommand "beep.wav"
 
-                            updatedBall ball =
-                                { ball
-                                    | x = ball.x - ball.width
-                                    , vx = negate <| (ball.vx + 0.033)
+                    else if ballHitRightEdge model.ball globalWindow then
+                        model
+                            |> updateBall initialBall model.leftPaddle
+                            |> updateBallPath []
+                            |> updateLeftPaddleScore (model.leftPaddleScore + 1)
+                            |> noCommand
 
-                                    -- , vx = negate <| ball.vx * Basics.cos (Basics.degrees (75.0 * (toFloat model.rightPaddle.y + (toFloat model.rightPaddle.height / 2) - toFloat ballHitSpot) / (toFloat model.rightPaddle.height / 2)))
-                                }
-                        in
-                        ( { model | ball = updatedBall model.ball }, playSound <| Json.Encode.string "beep.wav" )
+                    else if ballHitLeftEdge model.ball globalWindow then
+                        model
+                            |> updateBall initialBall model.rightPaddle
+                            |> updateBallPath []
+                            |> updateRightPaddleScore (model.rightPaddleScore + 1)
+                            |> noCommand
 
-                    else if ballHitRightEdge model.ball initialWindow then
-                        ( { model
-                            | ball = initialModel.ball
-                            , ballPath = []
-                            , leftPaddleScore = model.leftPaddleScore + 1
-                          }
-                        , Cmd.none
-                        )
-
-                    else if ballHitLeftEdge model.ball then
-                        ( { model
-                            | ball = initialModel.ball
-                            , ballPath = []
-                            , rightPaddleScore = model.rightPaddleScore + 1
-                          }
-                        , Cmd.none
-                        )
-
-                    else if ballHitTopEdge model.ball then
+                    else if ballHitTopEdge model.ball globalWindow then
                         let
                             updatedBall ball =
                                 { ball
@@ -241,7 +227,7 @@ update msg model =
                         in
                         ( { model | ball = updatedBall model.ball }, playSound (Json.Encode.string "boop.wav") )
 
-                    else if ballHitBottomEdge model.ball initialWindow then
+                    else if ballHitBottomEdge model.ball globalWindow then
                         let
                             updatedBall ball =
                                 { ball
@@ -252,7 +238,13 @@ update msg model =
                         ( { model | ball = updatedBall model.ball }, playSound (Json.Encode.string "boop.wav") )
 
                     else if playerPressedKey model.playerKeyPress then
-                        if Set.member "ArrowUp" model.playerKeyPress then
+                        if playerPressedArrowUpKey model.playerKeyPress then
+                            -- model
+                            --     |> updateBall model.ball model.rightPaddle
+                            --     |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                            --     |> updateLeftPaddle (movePaddleUp model.leftPaddle)
+                            --     |> updateRightPaddle (updateAIPaddlePosition model.ball model.rightPaddle)
+                            --     |> noCommand
                             ( { model
                                 | ball = updateBallPosition frame model.ball
                                 , ballPath = List.take 99 <| model.ball :: model.ballPath
@@ -262,7 +254,7 @@ update msg model =
                             , Cmd.none
                             )
 
-                        else if Set.member "ArrowDown" model.playerKeyPress then
+                        else if playerPressedArrowDownKey model.playerKeyPress then
                             ( { model
                                 | ball = updateBallPosition frame model.ball
                                 , ballPath = List.take 99 <| model.ball :: model.ballPath
@@ -272,7 +264,7 @@ update msg model =
                             , Cmd.none
                             )
 
-                        else if Set.member " " model.playerKeyPress then
+                        else if playerPressedSpacebarKey model.playerKeyPress then
                             ( { model
                                 | ball = updateBallPosition frame model.ball
                                 , ballPath = List.take 99 <| model.ball :: model.ballPath
@@ -300,34 +292,34 @@ update msg model =
             ( { model | viewBallPath = viewBallPathCheckboxValue }, Cmd.none )
 
         PlayerPressedKeyDown key ->
-            ( updateKeyPress key model, Cmd.none )
+            updateKeyPress key model
 
         PlayerPressedKeyUp _ ->
-            ( clearKeyPresses model, Cmd.none )
+            clearKeyPresses model
 
 
 
 -- PREDICATES
 
 
-ballHitTopEdge : Ball -> Bool
-ballHitTopEdge ball =
-    (ball.y - ball.height) <= 0
+ballHitTopEdge : Ball -> Window -> Bool
+ballHitTopEdge ball window =
+    (ball.y - ball.height) <= window.x
 
 
 ballHitBottomEdge : Ball -> Window -> Bool
-ballHitBottomEdge ball window_ =
-    (ball.y + ball.height) >= window_.height
+ballHitBottomEdge ball window =
+    (ball.y + ball.height) >= window.height
 
 
-ballHitLeftEdge : Ball -> Bool
-ballHitLeftEdge ball =
-    (ball.x - ball.width) <= 0
+ballHitLeftEdge : Ball -> Window -> Bool
+ballHitLeftEdge ball window =
+    (ball.x - ball.width) <= window.x
 
 
 ballHitRightEdge : Ball -> Window -> Bool
-ballHitRightEdge ball window_ =
-    (ball.x + ball.width) >= window_.width
+ballHitRightEdge ball window =
+    (ball.x + ball.width) >= window.width
 
 
 ballHitLeftPaddle : Ball -> Paddle -> Bool
@@ -349,6 +341,87 @@ ballHitRightPaddleLocations ball paddle =
 
     else
         ( 0, 0 )
+
+
+leftPaddleHasWinningScore : Int -> WinningScore -> Bool
+leftPaddleHasWinningScore leftPaddleScore winningScore =
+    leftPaddleScore == winningScoreToInt winningScore
+
+
+rightPaddleHasWinningScore : Int -> WinningScore -> Bool
+rightPaddleHasWinningScore rightPaddleScore winningScore =
+    rightPaddleScore == winningScoreToInt winningScore
+
+
+
+-- UPDATES
+
+
+updateBall : Ball -> Paddle -> Model -> Model
+updateBall newBall paddle model =
+    let
+        applyUpdates b =
+            case paddle.id of
+                Left ->
+                    { b
+                        | x = b.x + b.width
+                        , vx = negate <| (b.vx - 0.033)
+                    }
+
+                Right ->
+                    { b
+                        | x = b.x - b.width
+                        , vx = negate <| (b.vx + 0.033)
+                    }
+    in
+    { model | ball = applyUpdates newBall }
+
+
+updateBallPath : List Ball -> Model -> Model
+updateBallPath newBallPath model =
+    { model | ballPath = newBallPath }
+
+
+updateGameState : GameState -> Model -> Model
+updateGameState newGameState model =
+    { model | gameState = newGameState }
+
+
+updateLeftPaddleScore : Int -> Model -> Model
+updateLeftPaddleScore newLeftPaddleScore model =
+    { model | leftPaddleScore = newLeftPaddleScore }
+
+
+
+updateLeftPaddle : Paddle -> Model -> Model
+updateLeftPaddle newLeftPaddle model =
+    { model | leftPaddle = newLeftPaddle }
+
+updateRightPaddle : Paddle -> Model -> Model
+updateRightPaddle newRightPaddle model =
+    { model | rightPaddle = newRightPaddle }
+
+updateRightPaddleScore : Int -> Model -> Model
+updateRightPaddleScore newRightPaddleScore model =
+    { model | rightPaddleScore = newRightPaddleScore }
+
+updateWinner : Maybe PaddleId -> Model -> Model
+updateWinner maybePaddleId model =
+    { model | winner = maybePaddleId }
+
+
+
+-- COMMANDS
+
+
+noCommand : Model -> ( Model, Cmd Msg )
+noCommand model =
+    ( model, Cmd.none )
+
+
+playSoundCommand : String -> Model -> ( Model, Cmd Msg )
+playSoundCommand soundFile model =
+    ( model, playSound <| Json.Encode.string soundFile )
 
 
 
@@ -382,7 +455,7 @@ keepPaddleInWindow paddle paddleYPosition =
             0
 
         bottomEdge =
-            initialWindow.height - paddle.height
+            globalWindow.height - paddle.height
     in
     Basics.clamp topEdge bottomEdge paddleYPosition
 
@@ -419,26 +492,38 @@ keyDecoder =
     Json.Decode.field "key" Json.Decode.string
 
 
-clearKeyPresses : Model -> Model
+clearKeyPresses : Model -> ( Model, Cmd Msg )
 clearKeyPresses model =
-    { model | playerKeyPress = Set.empty }
+    ( { model | playerKeyPress = Set.empty }, Cmd.none )
 
 
 playerPressedKey : Set.Set String -> Bool
 playerPressedKey playerKeyPress =
     (Set.isEmpty >> not) playerKeyPress
 
+
 playerPressedSpacebarKey : Set.Set String -> Bool
 playerPressedSpacebarKey playerKeyPress =
     Set.member " " playerKeyPress
 
-updateKeyPress : String -> Model -> Model
+
+playerPressedArrowUpKey : Set.Set String -> Bool
+playerPressedArrowUpKey playerKeyPress =
+    Set.member "ArrowUp" playerKeyPress
+
+
+playerPressedArrowDownKey : Set.Set String -> Bool
+playerPressedArrowDownKey playerKeyPress =
+    Set.member "ArrowDown" playerKeyPress
+
+
+updateKeyPress : String -> Model -> ( Model, Cmd Msg )
 updateKeyPress key model =
     if Set.member key validKeys then
-        { model | playerKeyPress = Set.insert key model.playerKeyPress }
+        ( { model | playerKeyPress = Set.insert key model.playerKeyPress }, Cmd.none )
 
     else
-        model
+        ( model, Cmd.none )
 
 
 validKeys : Set.Set String
@@ -490,23 +575,23 @@ viewSvg : Model -> Svg.Svg msg
 viewSvg model =
     let
         viewBoxString =
-            [ initialWindow.x
-            , initialWindow.y
-            , initialWindow.width
-            , initialWindow.height
+            [ globalWindow.x
+            , globalWindow.y
+            , globalWindow.width
+            , globalWindow.height
             ]
                 |> List.map String.fromInt
                 |> String.join " "
     in
     Svg.svg
         [ Svg.Attributes.viewBox viewBoxString
-        , Svg.Attributes.width <| String.fromInt initialWindow.width
-        , Svg.Attributes.height <| String.fromInt initialWindow.height
+        , Svg.Attributes.width <| String.fromInt globalWindow.width
+        , Svg.Attributes.height <| String.fromInt globalWindow.height
         ]
-        ([ viewGameWindow initialWindow
-         , viewNet initialWindow
-         , viewLeftPaddleScore model.leftPaddleScore initialWindow
-         , viewRightPaddleScore model.rightPaddleScore initialWindow
+        ([ viewGameWindow globalWindow
+         , viewNet globalWindow
+         , viewLeftPaddleScore model.leftPaddleScore globalWindow
+         , viewRightPaddleScore model.rightPaddleScore globalWindow
          , viewLeftPaddle model.leftPaddle
          , viewRightPaddle model.rightPaddle
          , viewBall model.ball
@@ -521,52 +606,52 @@ viewSvg model =
 
 
 viewGameWindow : Window -> Svg.Svg msg
-viewGameWindow window_ =
+viewGameWindow window =
     Svg.rect
-        [ Svg.Attributes.fill window_.backgroundColor
-        , Svg.Attributes.x <| String.fromInt window_.x
-        , Svg.Attributes.y <| String.fromInt window_.y
-        , Svg.Attributes.width <| String.fromInt window_.width
-        , Svg.Attributes.height <| String.fromInt window_.height
+        [ Svg.Attributes.fill window.backgroundColor
+        , Svg.Attributes.x <| String.fromInt window.x
+        , Svg.Attributes.y <| String.fromInt window.y
+        , Svg.Attributes.width <| String.fromInt window.width
+        , Svg.Attributes.height <| String.fromInt window.height
         ]
         []
 
 
 viewNet : Window -> Svg.Svg msg
-viewNet window_ =
+viewNet window =
     Svg.line
         [ Svg.Attributes.stroke "white"
         , Svg.Attributes.strokeDasharray "30, 15"
         , Svg.Attributes.strokeWidth "8"
-        , Svg.Attributes.x1 <| String.fromInt <| (window_.width // 2 + 10)
-        , Svg.Attributes.x2 <| String.fromInt <| (window_.width // 2 + 10)
+        , Svg.Attributes.x1 <| String.fromInt <| (window.width // 2 + 10)
+        , Svg.Attributes.x2 <| String.fromInt <| (window.width // 2 + 10)
         , Svg.Attributes.y1 "0"
-        , Svg.Attributes.y2 <| String.fromInt window_.height
+        , Svg.Attributes.y2 <| String.fromInt window.height
         ]
         []
 
 
 viewLeftPaddleScore : Int -> Window -> Svg.Svg msg
-viewLeftPaddleScore score window_ =
+viewLeftPaddleScore score window =
     Svg.text_
         [ Svg.Attributes.fill "white"
         , Svg.Attributes.fontFamily "Courier New"
         , Svg.Attributes.fontSize "80"
         , Svg.Attributes.fontWeight "bold"
-        , Svg.Attributes.x <| String.fromInt <| (window_.width // 2) - 200
+        , Svg.Attributes.x <| String.fromInt <| (window.width // 2) - 200
         , Svg.Attributes.y "100"
         ]
         [ Svg.text <| String.fromInt score ]
 
 
 viewRightPaddleScore : Int -> Window -> Svg.Svg msg
-viewRightPaddleScore score window_ =
+viewRightPaddleScore score window =
     Svg.text_
         [ Svg.Attributes.fill "white"
         , Svg.Attributes.fontFamily "Courier New"
         , Svg.Attributes.fontSize "80"
         , Svg.Attributes.fontWeight "bold"
-        , Svg.Attributes.x <| String.fromInt <| (window_.width // 2) + 200
+        , Svg.Attributes.x <| String.fromInt <| (window.width // 2) + 200
         , Svg.Attributes.y "100"
         ]
         [ Svg.text <| String.fromInt score ]
@@ -688,6 +773,20 @@ viewviewBallPathOption viewBallPath_ =
             ]
             [ Html.text "View ball path history?" ]
         ]
+
+
+
+-- HELPERS
+
+
+winningScoreToInt : WinningScore -> Int
+winningScoreToInt winningScore =
+    case winningScore of
+        Eleven ->
+            11
+
+        Fifteen ->
+            15
 
 
 
