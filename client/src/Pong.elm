@@ -167,6 +167,7 @@ init _ =
 type Msg
     = BrowserAdvancedAnimationFrame Float
     | PlayerClickedBallPathCheckbox Bool
+    | PlayerClickedWinningScoreRadioButton WinningScore
     | PlayerPressedKeyDown String
     | PlayerReleasedKey String
 
@@ -258,9 +259,14 @@ update msg model =
                 EndingScreen ->
                     model |> noCommand
 
-        PlayerClickedBallPathCheckbox viewBallPathCheckboxValue ->
+        PlayerClickedBallPathCheckbox viewBallPathValue ->
             model
-                |> updateViewBallPath viewBallPathCheckboxValue
+                |> updateViewBallPath viewBallPathValue
+                |> noCommand
+
+        PlayerClickedWinningScoreRadioButton winningScoreValue ->
+            model
+                |> updateWinningScore winningScoreValue
                 |> noCommand
 
         PlayerPressedKeyDown key ->
@@ -436,6 +442,11 @@ updateWinner newWinner model =
     { model | winner = newWinner }
 
 
+updateWinningScore : WinningScore -> Model -> Model
+updateWinningScore newWinningScore model =
+    { model | winningScore = newWinningScore }
+
+
 
 -- COMMANDS
 
@@ -556,14 +567,14 @@ view model =
                     Html.div []
                         [ viewSvg globalWindow model
                         , viewInstructions
-                        , viewOptions model.viewBallPath
+                        , viewOptions model.viewBallPath model.winningScore
                         ]
 
                 PlayingScreen ->
                     Html.div []
                         [ viewSvg globalWindow model
                         , viewInstructions
-                        , viewOptions model.viewBallPath
+                        , viewOptions model.viewBallPath model.winningScore
                         ]
 
                 EndingScreen ->
@@ -571,7 +582,7 @@ view model =
                         [ viewSvg globalWindow model
                         , viewWinner model.winner
                         , viewInstructions
-                        , viewOptions model.viewBallPath
+                        , viewOptions model.viewBallPath model.winningScore
                         ]
             ]
         ]
@@ -627,11 +638,11 @@ viewNet : Window -> Svg.Svg msg
 viewNet window =
     Svg.line
         [ Svg.Attributes.stroke "white"
-        , Svg.Attributes.strokeDasharray "30, 15"
-        , Svg.Attributes.strokeWidth "8"
-        , Svg.Attributes.x1 <| String.fromInt <| (window.width // 2 + 10)
-        , Svg.Attributes.x2 <| String.fromInt <| (window.width // 2 + 10)
-        , Svg.Attributes.y1 "0"
+        , Svg.Attributes.strokeDasharray "14, 14"
+        , Svg.Attributes.strokeWidth "4"
+        , Svg.Attributes.x1 <| String.fromInt <| (window.width // 2)
+        , Svg.Attributes.x2 <| String.fromInt <| (window.width // 2)
+        , Svg.Attributes.y1 <| String.fromInt window.y
         , Svg.Attributes.y2 <| String.fromInt window.height
         ]
         []
@@ -657,7 +668,7 @@ viewRightPaddleScore score window =
         , Svg.Attributes.fontFamily "Courier New"
         , Svg.Attributes.fontSize "80"
         , Svg.Attributes.fontWeight "bold"
-        , Svg.Attributes.x <| String.fromInt <| (window.width // 2) + 200
+        , Svg.Attributes.x <| String.fromInt <| (window.width // 2) + 150
         , Svg.Attributes.y "100"
         ]
         [ Svg.text <| String.fromInt score ]
@@ -743,33 +754,63 @@ viewInstructions =
         ]
 
 
-viewOptions : Bool -> Html.Html Msg
-viewOptions viewBallPath_ =
+viewOptions : Bool -> WinningScore -> Html.Html Msg
+viewOptions viewBallPath_ winningScore =
     Html.div [ Html.Attributes.class "pt-2" ]
         [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
             [ Html.text "Options" ]
-        , viewviewBallPathOption viewBallPath_
+        , Html.form []
+            [ viewBallPathOption viewBallPath_
+            , viewWinningScoreOptions winningScore
+            ]
         ]
 
 
-viewviewBallPathOption : Bool -> Html.Html Msg
-viewviewBallPathOption viewBallPath_ =
-    Html.div []
-        [ Html.input
-            [ Html.Attributes.checked viewBallPath_
-            , Html.Attributes.class "mx-2"
-            , Html.Attributes.id "ball-path-toggle"
-            , Html.Attributes.type_ "checkbox"
-            , Html.Events.onCheck <| PlayerClickedBallPathCheckbox
+viewBallPathOption : Bool -> Html.Html Msg
+viewBallPathOption viewBallPath_ =
+    Html.fieldset []
+        [ Html.label []
+            [ Html.span [ Html.Attributes.class "font-medium italic mr-3" ]
+                [ Html.text "View ball path history?" ]
+            , Html.input
+                [ Html.Attributes.checked viewBallPath_
+                , Html.Attributes.name "ball-path-history"
+                , Html.Attributes.type_ "checkbox"
+                , Html.Events.onCheck PlayerClickedBallPathCheckbox
+                ]
+                []
             ]
-            []
-        , Html.label
-            [ Html.Attributes.class "font-medium italic"
-            , Html.Attributes.for "ball-path-toggle"
-            ]
-            [ Html.text "View ball path history?" ]
         ]
 
+
+viewWinningScoreOptions : WinningScore -> Html.Html Msg
+viewWinningScoreOptions winningScore =
+    Html.fieldset []
+        [ Html.span [ Html.Attributes.class "font-medium italic mr-3" ]
+            [ Html.text "Set winning score:" ]
+        , Html.label []
+            [ Html.input
+                [ Html.Attributes.checked <| winningScore == Eleven
+                , Html.Attributes.name <| winningScoreToString Eleven
+                , Html.Attributes.type_ "radio"
+                , Html.Events.onClick <| PlayerClickedWinningScoreRadioButton Eleven
+                ]
+                []
+            , Html.span [ Html.Attributes.class "px-1 text-xs" ]
+                [ Html.text <| winningScoreToString Eleven ]
+            ]
+        , Html.label []
+            [ Html.input
+                [ Html.Attributes.checked <| winningScore == Fifteen
+                , Html.Attributes.name <| winningScoreToString Fifteen
+                , Html.Attributes.type_ "radio"
+                , Html.Events.onClick <| PlayerClickedWinningScoreRadioButton Fifteen
+                ]
+                []
+            , Html.span [ Html.Attributes.class "px-1 text-xs" ]
+                [ Html.text <| winningScoreToString Fifteen ]
+            ]
+        ]
 
 
 -- HELPERS
@@ -793,6 +834,16 @@ winningScoreToInt winningScore =
 
         Fifteen ->
             15
+
+
+winningScoreToString : WinningScore -> String
+winningScoreToString winningScore =
+    case winningScore of
+        Eleven ->
+            "11"
+
+        Fifteen ->
+            "15"
 
 
 
