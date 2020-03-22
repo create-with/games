@@ -69,8 +69,8 @@ initialLeftPaddle =
     , id = Left
     , x = 48
     , y = 200
-    , width = 12
-    , height = 64
+    , width = 10
+    , height = 60
     }
 
 
@@ -80,8 +80,8 @@ initialRightPaddle =
     , id = Right
     , x = 740
     , y = 300
-    , width = 12
-    , height = 64
+    , width = 10
+    , height = 60
     }
 
 
@@ -107,6 +107,11 @@ globalWindow =
     , width = 800
     , height = 600
     }
+
+
+type WindowEdge
+    = Top
+    | Bottom
 
 
 type WinningScore
@@ -195,82 +200,57 @@ update msg model =
 
                     else if ballHitLeftPaddle model.ball model.leftPaddle then
                         model
-                            |> updateBall model.ball (Just model.leftPaddle) time
+                            |> updateBall model.ball (Just model.leftPaddle) Nothing time
                             |> playSoundCommand "beep.wav"
 
                     else if ballHitRightPaddle model.ball model.rightPaddle then
                         model
-                            |> updateBall model.ball (Just model.rightPaddle) time
+                            |> updateBall model.ball (Just model.rightPaddle) Nothing time
                             |> playSoundCommand "beep.wav"
 
                     else if ballHitRightEdge model.ball globalWindow then
                         model
-                            |> updateBall initialBall Nothing time
+                            |> updateBall initialBall Nothing Nothing time
                             |> updateBallPath []
                             |> updateLeftPaddleScore (model.leftPaddleScore + 1)
                             |> noCommand
 
                     else if ballHitLeftEdge model.ball globalWindow then
                         model
-                            |> updateBall initialBall Nothing time
+                            |> updateBall initialBall Nothing Nothing time
                             |> updateBallPath []
                             |> updateRightPaddleScore (model.rightPaddleScore + 1)
                             |> noCommand
 
                     else if ballHitTopEdge model.ball globalWindow then
-                        let
-                            updatedBall ball =
-                                { ball
-                                    | y = ball.y + ball.height
-                                    , vy = negate ball.vy
-                                }
-                        in
-                        ( { model | ball = updatedBall model.ball }, playSound (Json.Encode.string "boop.wav") )
+                        model
+                            |> updateBall model.ball Nothing (Just Top) time
+                            |> playSoundCommand "boop"
 
                     else if ballHitBottomEdge model.ball globalWindow then
-                        let
-                            updatedBall ball =
-                                { ball
-                                    | y = ball.y - ball.height
-                                    , vy = negate ball.vy
-                                }
-                        in
-                        ( { model | ball = updatedBall model.ball }, playSound (Json.Encode.string "boop.wav") )
+                        model
+                            |> updateBall model.ball Nothing (Just Bottom) time
+                            |> playSoundCommand "boop"
 
-                    else if playerPressedKey model.playerKeyPress then
-                        if playerPressedArrowUpKey model.playerKeyPress then
-                            model
-                                |> updateBall model.ball Nothing time
-                                |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
-                                |> updateLeftPaddle (movePaddleUp model.leftPaddle)
-                                |> updateRightPaddle model.rightPaddle model.ball
-                                |> noCommand
+                    else if playerPressedArrowUpKey model.playerKeyPress then
+                        model
+                            |> updateBall model.ball Nothing Nothing time
+                            |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                            |> updateLeftPaddle (movePaddleUp model.leftPaddle)
+                            |> updateRightPaddle model.rightPaddle model.ball
+                            |> noCommand
 
-                        else if playerPressedArrowDownKey model.playerKeyPress then
-                            ( { model
-                                | ball = updateBallPosition time model.ball
-                                , ballPath = List.take 99 <| model.ball :: model.ballPath
-                                , leftPaddle = movePaddleDown model.leftPaddle
-                                , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
-                              }
-                            , Cmd.none
-                            )
-
-                        else if playerPressedSpacebarKey model.playerKeyPress then
-                            ( { model
-                                | ball = updateBallPosition time model.ball
-                                , ballPath = List.take 99 <| model.ball :: model.ballPath
-                                , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
-                              }
-                            , Cmd.none
-                            )
-
-                        else
-                            model |> noCommand
+                    else if playerPressedArrowDownKey model.playerKeyPress then
+                        model
+                            |> updateBall model.ball Nothing Nothing time
+                            |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                            |> updateLeftPaddle (movePaddleDown model.leftPaddle)
+                            |> updateRightPaddle model.rightPaddle model.ball
+                            |> noCommand
 
                     else
                         model
-                            |> updateBall model.ball Nothing time
+                            |> updateBall model.ball Nothing Nothing time
                             |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
                             |> updateRightPaddle model.rightPaddle model.ball
                             |> noCommand
@@ -353,29 +333,53 @@ rightPaddleHasWinningScore rightPaddleScore winningScore =
 -- UPDATES
 
 
-updateBall : Ball -> Maybe Paddle -> Float -> Model -> Model
-updateBall newBall maybePaddle time model =
+updateBall : Ball -> Maybe Paddle -> Maybe WindowEdge -> Float -> Model -> Model
+updateBall newBall maybePaddle maybeEdge time model =
     let
-        applyUpdates b =
-            case maybePaddle of
-                Just paddle ->
+        applyUpdates ball =
+            case ( maybePaddle, maybeEdge ) of
+                -- ball hit paddle, ball did not hit edge
+                ( Just paddle, Nothing ) ->
                     case paddle.id of
                         Left ->
-                            { b
-                                | x = b.x + b.width
-                                , vx = negate <| (b.vx - 0.033)
+                            { ball
+                                | x = ball.x + ball.width
+                                , vx = negate <| (ball.vx - 0.033)
                             }
 
                         Right ->
-                            { b
-                                | x = b.x - b.width
-                                , vx = negate <| (b.vx + 0.033)
+                            { ball
+                                | x = ball.x - ball.width
+                                , vx = negate <| (ball.vx + 0.033)
                             }
 
-                Nothing ->
-                    { b
-                        | x = round <| toFloat b.x + b.vx * time
-                        , y = round <| toFloat b.y + b.vy * time
+                -- ball did not hit paddle, ball hit edge
+                ( Nothing, Just edge ) ->
+                    case edge of
+                        Top ->
+                            { ball
+                                | y = ball.y + ball.height
+                                , vy = negate ball.vy
+                            }
+
+                        Bottom ->
+                            { ball
+                                | y = ball.y - ball.height
+                                , vy = negate ball.vy
+                            }
+
+                -- ball hit paddle, ball hit edge (hadn't thought about this case)
+                ( Just _, Just _ ) ->
+                    { ball
+                        | x = round <| toFloat ball.x + ball.vx * time
+                        , y = round <| toFloat ball.y + ball.vy * time
+                    }
+
+                -- ball did not hit paddle, ball did not hit edge
+                ( Nothing, Nothing ) ->
+                    { ball
+                        | x = round <| toFloat ball.x + ball.vx * time
+                        , y = round <| toFloat ball.y + ball.vy * time
                     }
     in
     { model | ball = applyUpdates newBall }
@@ -406,10 +410,10 @@ updateRightPaddle newRightPaddle ball model =
     let
         updatePaddle paddle =
             if ball.y > paddle.y then
-                { paddle | y = keepPaddleInWindow paddle <| paddle.y + 5 }
+                { paddle | y = keepPaddleInWindow paddle (paddle.y + 5) globalWindow }
 
             else if ball.y < paddle.y then
-                { paddle | y = keepPaddleInWindow paddle <| paddle.y - 5 }
+                { paddle | y = keepPaddleInWindow paddle (paddle.y - 5) globalWindow }
 
             else
                 paddle
@@ -447,53 +451,29 @@ playSoundCommand soundFile model =
 
 
 
--- OTHER
-
-
-updateBallPosition : Float -> Ball -> Ball
-updateBallPosition time ball =
-    { ball
-        | x = round <| toFloat ball.x + ball.vx * time
-        , y = round <| toFloat ball.y + ball.vy * time
-    }
-
-
-updateAIPaddlePosition : Ball -> Paddle -> Paddle
-updateAIPaddlePosition ball paddle =
-    if ball.y > paddle.y then
-        { paddle | y = keepPaddleInWindow paddle <| paddle.y + 5 }
-
-    else if ball.y < paddle.y then
-        { paddle | y = keepPaddleInWindow paddle <| paddle.y - 5 }
-
-    else
-        paddle
-
-
-
 -- UPDATE HELPERS
 
 
-keepPaddleInWindow : Paddle -> Int -> Int
-keepPaddleInWindow paddle paddleYPosition =
+keepPaddleInWindow : Paddle -> Int -> Window -> Int
+keepPaddleInWindow paddle paddleYPosition window =
     let
         topEdge =
-            0
+            window.y
 
         bottomEdge =
-            globalWindow.height - paddle.height
+            window.height - paddle.height
     in
     Basics.clamp topEdge bottomEdge paddleYPosition
 
 
 movePaddleDown : Paddle -> Paddle
 movePaddleDown paddle =
-    { paddle | y = keepPaddleInWindow paddle <| paddle.y + 10 }
+    { paddle | y = keepPaddleInWindow paddle (paddle.y + 10) globalWindow }
 
 
 movePaddleUp : Paddle -> Paddle
 movePaddleUp paddle =
-    { paddle | y = keepPaddleInWindow paddle <| paddle.y - 10 }
+    { paddle | y = keepPaddleInWindow paddle (paddle.y - 10) globalWindow }
 
 
 
@@ -501,7 +481,7 @@ movePaddleUp paddle =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ Browser.Events.onAnimationFrameDelta BrowserAdvancedAnimationFrame
         , Browser.Events.onKeyDown <| Json.Decode.map PlayerPressedKeyDown <| keyDecoder
@@ -574,21 +554,21 @@ view model =
             [ case model.gameState of
                 StartingScreen ->
                     Html.div []
-                        [ viewSvg model
+                        [ viewSvg globalWindow model
                         , viewInstructions
                         , viewOptions model.viewBallPath
                         ]
 
                 PlayingScreen ->
                     Html.div []
-                        [ viewSvg model
+                        [ viewSvg globalWindow model
                         , viewInstructions
                         , viewOptions model.viewBallPath
                         ]
 
                 EndingScreen ->
                     Html.div []
-                        [ viewSvg model
+                        [ viewSvg globalWindow model
                         , viewWinner model.winner
                         , viewInstructions
                         , viewOptions model.viewBallPath
@@ -597,27 +577,27 @@ view model =
         ]
 
 
-viewSvg : Model -> Svg.Svg msg
-viewSvg model =
+viewSvg : Window -> Model -> Svg.Svg msg
+viewSvg window model =
     let
         viewBoxString =
-            [ globalWindow.x
-            , globalWindow.y
-            , globalWindow.width
-            , globalWindow.height
+            [ window.x
+            , window.y
+            , window.width
+            , window.height
             ]
                 |> List.map String.fromInt
                 |> String.join " "
     in
     Svg.svg
         [ Svg.Attributes.viewBox viewBoxString
-        , Svg.Attributes.width <| String.fromInt globalWindow.width
-        , Svg.Attributes.height <| String.fromInt globalWindow.height
+        , Svg.Attributes.width <| String.fromInt window.width
+        , Svg.Attributes.height <| String.fromInt window.height
         ]
-        ([ viewGameWindow globalWindow
-         , viewNet globalWindow
-         , viewLeftPaddleScore model.leftPaddleScore globalWindow
-         , viewRightPaddleScore model.rightPaddleScore globalWindow
+        ([ viewGameWindow window
+         , viewNet window
+         , viewLeftPaddleScore model.leftPaddleScore window
+         , viewRightPaddleScore model.rightPaddleScore window
          , viewLeftPaddle model.leftPaddle
          , viewRightPaddle model.rightPaddle
          , viewBall model.ball
