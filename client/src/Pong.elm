@@ -160,16 +160,16 @@ init _ =
 
 
 type Msg
-    = GameLoop Float
+    = BrowserAdvancedAnimationFrame Float
     | PlayerClickedBallPathCheckbox Bool
     | PlayerPressedKeyDown String
-    | PlayerPressedKeyUp String
+    | PlayerReleasedKey String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GameLoop frame ->
+        BrowserAdvancedAnimationFrame time ->
             case model.gameState of
                 StartingScreen ->
                     if playerPressedSpacebarKey model.playerKeyPress then
@@ -195,24 +195,24 @@ update msg model =
 
                     else if ballHitLeftPaddle model.ball model.leftPaddle then
                         model
-                            |> updateBall model.ball model.leftPaddle
+                            |> updateBall model.ball (Just model.leftPaddle) time
                             |> playSoundCommand "beep.wav"
 
                     else if ballHitRightPaddle model.ball model.rightPaddle then
                         model
-                            |> updateBall model.ball model.rightPaddle
+                            |> updateBall model.ball (Just model.rightPaddle) time
                             |> playSoundCommand "beep.wav"
 
                     else if ballHitRightEdge model.ball globalWindow then
                         model
-                            |> updateBall initialBall model.leftPaddle
+                            |> updateBall initialBall Nothing time
                             |> updateBallPath []
                             |> updateLeftPaddleScore (model.leftPaddleScore + 1)
                             |> noCommand
 
                     else if ballHitLeftEdge model.ball globalWindow then
                         model
-                            |> updateBall initialBall model.rightPaddle
+                            |> updateBall initialBall Nothing time
                             |> updateBallPath []
                             |> updateRightPaddleScore (model.rightPaddleScore + 1)
                             |> noCommand
@@ -239,24 +239,16 @@ update msg model =
 
                     else if playerPressedKey model.playerKeyPress then
                         if playerPressedArrowUpKey model.playerKeyPress then
-                            -- model
-                            --     |> updateBall model.ball model.rightPaddle
-                            --     |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
-                            --     |> updateLeftPaddle (movePaddleUp model.leftPaddle)
-                            --     |> updateRightPaddle (updateAIPaddlePosition model.ball model.rightPaddle)
-                            --     |> noCommand
-                            ( { model
-                                | ball = updateBallPosition frame model.ball
-                                , ballPath = List.take 99 <| model.ball :: model.ballPath
-                                , leftPaddle = movePaddleUp model.leftPaddle
-                                , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
-                              }
-                            , Cmd.none
-                            )
+                            model
+                                |> updateBall model.ball Nothing time
+                                |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                                |> updateLeftPaddle (movePaddleUp model.leftPaddle)
+                                |> updateRightPaddle model.rightPaddle model.ball
+                                |> noCommand
 
                         else if playerPressedArrowDownKey model.playerKeyPress then
                             ( { model
-                                | ball = updateBallPosition frame model.ball
+                                | ball = updateBallPosition time model.ball
                                 , ballPath = List.take 99 <| model.ball :: model.ballPath
                                 , leftPaddle = movePaddleDown model.leftPaddle
                                 , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
@@ -266,7 +258,7 @@ update msg model =
 
                         else if playerPressedSpacebarKey model.playerKeyPress then
                             ( { model
-                                | ball = updateBallPosition frame model.ball
+                                | ball = updateBallPosition time model.ball
                                 , ballPath = List.take 99 <| model.ball :: model.ballPath
                                 , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
                               }
@@ -274,32 +266,36 @@ update msg model =
                             )
 
                         else
-                            ( model, Cmd.none )
+                            model |> noCommand
 
                     else
-                        ( { model
-                            | ball = updateBallPosition frame model.ball
-                            , ballPath = List.take 99 <| model.ball :: model.ballPath
-                            , rightPaddle = updateAIPaddlePosition model.ball model.rightPaddle
-                          }
-                        , Cmd.none
-                        )
+                        model
+                            |> updateBall model.ball Nothing time
+                            |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                            |> updateRightPaddle model.rightPaddle model.ball
+                            |> noCommand
 
                 EndingScreen ->
-                    ( model, Cmd.none )
+                    model |> noCommand
 
         PlayerClickedBallPathCheckbox viewBallPathCheckboxValue ->
-            ( { model | viewBallPath = viewBallPathCheckboxValue }, Cmd.none )
+            model
+                |> updateViewBallPath viewBallPathCheckboxValue
+                |> noCommand
 
         PlayerPressedKeyDown key ->
-            updateKeyPress key model
+            model
+                |> updateKeyPress key
+                |> noCommand
 
-        PlayerPressedKeyUp _ ->
-            clearKeyPresses model
+        PlayerReleasedKey _ ->
+            model
+                |> clearKeyPresses
+                |> noCommand
 
 
 
--- PREDICATES
+-- UPDATE PREDICATES
 
 
 ballHitTopEdge : Ball -> Window -> Bool
@@ -357,21 +353,29 @@ rightPaddleHasWinningScore rightPaddleScore winningScore =
 -- UPDATES
 
 
-updateBall : Ball -> Paddle -> Model -> Model
-updateBall newBall paddle model =
+updateBall : Ball -> Maybe Paddle -> Float -> Model -> Model
+updateBall newBall maybePaddle time model =
     let
         applyUpdates b =
-            case paddle.id of
-                Left ->
-                    { b
-                        | x = b.x + b.width
-                        , vx = negate <| (b.vx - 0.033)
-                    }
+            case maybePaddle of
+                Just paddle ->
+                    case paddle.id of
+                        Left ->
+                            { b
+                                | x = b.x + b.width
+                                , vx = negate <| (b.vx - 0.033)
+                            }
 
-                Right ->
+                        Right ->
+                            { b
+                                | x = b.x - b.width
+                                , vx = negate <| (b.vx + 0.033)
+                            }
+
+                Nothing ->
                     { b
-                        | x = b.x - b.width
-                        , vx = negate <| (b.vx + 0.033)
+                        | x = round <| toFloat b.x + b.vx * time
+                        , y = round <| toFloat b.y + b.vy * time
                     }
     in
     { model | ball = applyUpdates newBall }
@@ -392,22 +396,40 @@ updateLeftPaddleScore newLeftPaddleScore model =
     { model | leftPaddleScore = newLeftPaddleScore }
 
 
-
 updateLeftPaddle : Paddle -> Model -> Model
 updateLeftPaddle newLeftPaddle model =
     { model | leftPaddle = newLeftPaddle }
 
-updateRightPaddle : Paddle -> Model -> Model
-updateRightPaddle newRightPaddle model =
-    { model | rightPaddle = newRightPaddle }
+
+updateRightPaddle : Paddle -> Ball -> Model -> Model
+updateRightPaddle newRightPaddle ball model =
+    let
+        updatePaddle paddle =
+            if ball.y > paddle.y then
+                { paddle | y = keepPaddleInWindow paddle <| paddle.y + 5 }
+
+            else if ball.y < paddle.y then
+                { paddle | y = keepPaddleInWindow paddle <| paddle.y - 5 }
+
+            else
+                paddle
+    in
+    { model | rightPaddle = updatePaddle newRightPaddle }
+
 
 updateRightPaddleScore : Int -> Model -> Model
 updateRightPaddleScore newRightPaddleScore model =
     { model | rightPaddleScore = newRightPaddleScore }
 
+
+updateViewBallPath : Bool -> Model -> Model
+updateViewBallPath newViewBallPath model =
+    { model | viewBallPath = newViewBallPath }
+
+
 updateWinner : Maybe PaddleId -> Model -> Model
-updateWinner maybePaddleId model =
-    { model | winner = maybePaddleId }
+updateWinner newWinner model =
+    { model | winner = newWinner }
 
 
 
@@ -429,10 +451,10 @@ playSoundCommand soundFile model =
 
 
 updateBallPosition : Float -> Ball -> Ball
-updateBallPosition frame ball =
+updateBallPosition time ball =
     { ball
-        | x = round <| toFloat ball.x + ball.vx * frame
-        , y = round <| toFloat ball.y + ball.vy * frame
+        | x = round <| toFloat ball.x + ball.vx * time
+        , y = round <| toFloat ball.y + ball.vy * time
     }
 
 
@@ -446,6 +468,10 @@ updateAIPaddlePosition ball paddle =
 
     else
         paddle
+
+
+
+-- UPDATE HELPERS
 
 
 keepPaddleInWindow : Paddle -> Int -> Int
@@ -477,9 +503,9 @@ movePaddleUp paddle =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Browser.Events.onAnimationFrameDelta GameLoop
+        [ Browser.Events.onAnimationFrameDelta BrowserAdvancedAnimationFrame
         , Browser.Events.onKeyDown <| Json.Decode.map PlayerPressedKeyDown <| keyDecoder
-        , Browser.Events.onKeyUp <| Json.Decode.map PlayerPressedKeyUp <| keyDecoder
+        , Browser.Events.onKeyUp <| Json.Decode.map PlayerReleasedKey <| keyDecoder
         ]
 
 
@@ -492,9 +518,9 @@ keyDecoder =
     Json.Decode.field "key" Json.Decode.string
 
 
-clearKeyPresses : Model -> ( Model, Cmd Msg )
+clearKeyPresses : Model -> Model
 clearKeyPresses model =
-    ( { model | playerKeyPress = Set.empty }, Cmd.none )
+    { model | playerKeyPress = Set.empty }
 
 
 playerPressedKey : Set.Set String -> Bool
@@ -517,13 +543,13 @@ playerPressedArrowDownKey playerKeyPress =
     Set.member "ArrowDown" playerKeyPress
 
 
-updateKeyPress : String -> Model -> ( Model, Cmd Msg )
+updateKeyPress : String -> Model -> Model
 updateKeyPress key model =
     if Set.member key validKeys then
-        ( { model | playerKeyPress = Set.insert key model.playerKeyPress }, Cmd.none )
+        { model | playerKeyPress = Set.insert key model.playerKeyPress }
 
     else
-        ( model, Cmd.none )
+        model
 
 
 validKeys : Set.Set String
@@ -724,16 +750,6 @@ viewWinner maybePaddleId =
         ]
 
 
-paddleIdToString : PaddleId -> String
-paddleIdToString paddleId =
-    case paddleId of
-        Left ->
-            "Left"
-
-        Right ->
-            "Right"
-
-
 viewInstructions : Html.Html msg
 viewInstructions =
     Html.div [ Html.Attributes.class "pt-2" ]
@@ -777,6 +793,16 @@ viewviewBallPathOption viewBallPath_ =
 
 
 -- HELPERS
+
+
+paddleIdToString : PaddleId -> String
+paddleIdToString paddleId =
+    case paddleId of
+        Left ->
+            "Left"
+
+        Right ->
+            "Right"
 
 
 winningScoreToInt : WinningScore -> Int
