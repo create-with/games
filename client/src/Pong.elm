@@ -170,7 +170,7 @@ init _ =
 
 
 type Msg
-    = BrowserAdvancedAnimationFrame Float
+    = BrowserAdvancedAnimationFrame GameState Float
     | PlayerClickedShowBallPathRadioButton ShowBallPath
     | PlayerClickedWinningScoreRadioButton WinningScore
     | PlayerPressedKeyDown String
@@ -180,89 +180,87 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        BrowserAdvancedAnimationFrame time ->
-            case model.gameState of
-                StartingScreen ->
-                    if playerPressedSpacebarKey model.playerKeyPress then
-                        model
-                            |> updateGameState PlayingScreen
-                            |> noCommand
+        BrowserAdvancedAnimationFrame StartingScreen _ ->
+            if playerPressedSpacebarKey model.playerKeyPress then
+                model
+                    |> updateGameState PlayingScreen
+                    |> noCommand
 
-                    else
-                        model |> noCommand
+            else
+                model |> noCommand
 
-                PlayingScreen ->
-                    if leftPaddleHasWinningScore model.leftPaddleScore model.winningScore then
-                        model
-                            |> updateGameState EndingScreen
-                            |> updateWinner (Just model.leftPaddle.id)
-                            |> noCommand
+        BrowserAdvancedAnimationFrame PlayingScreen time ->
+            if leftPaddleHasWinningScore model.leftPaddleScore model.winningScore then
+                model
+                    |> updateGameState EndingScreen
+                    |> updateWinner (Just model.leftPaddle.id)
+                    |> noCommand
 
-                    else if rightPaddleHasWinningScore model.rightPaddleScore model.winningScore then
-                        model
-                            |> updateGameState EndingScreen
-                            |> updateWinner (Just model.rightPaddle.id)
-                            |> noCommand
+            else if rightPaddleHasWinningScore model.rightPaddleScore model.winningScore then
+                model
+                    |> updateGameState EndingScreen
+                    |> updateWinner (Just model.rightPaddle.id)
+                    |> noCommand
 
-                    else if ballHitLeftPaddle model.ball model.leftPaddle then
-                        model
-                            |> updateBall model.ball (Just model.leftPaddle) Nothing time
-                            |> playSoundCommand "beep.wav"
+            else if ballHitLeftPaddle model.ball model.leftPaddle then
+                model
+                    |> updateBall model.ball (Just model.leftPaddle) Nothing time
+                    |> playSoundCommand "beep.wav"
 
-                    else if ballHitRightPaddle model.ball model.rightPaddle then
-                        model
-                            |> updateBall model.ball (Just model.rightPaddle) Nothing time
-                            |> playSoundCommand "beep.wav"
+            else if ballHitRightPaddle model.ball model.rightPaddle then
+                model
+                    |> updateBall model.ball (Just model.rightPaddle) Nothing time
+                    |> playSoundCommand "beep.wav"
 
-                    else if ballHitRightEdge model.ball globalWindow then
-                        model
-                            |> updateBall initialBall Nothing Nothing time
-                            |> updateBallPath []
-                            |> updateLeftPaddleScore (model.leftPaddleScore + 1)
-                            |> noCommand
+            else if ballHitRightEdge model.ball globalWindow then
+                model
+                    |> updateBall initialBall Nothing Nothing time
+                    |> updateBallPath []
+                    |> updateLeftPaddleScore (model.leftPaddleScore + 1)
+                    |> noCommand
 
-                    else if ballHitLeftEdge model.ball globalWindow then
-                        model
-                            |> updateBall initialBall Nothing Nothing time
-                            |> updateBallPath []
-                            |> updateRightPaddleScore (model.rightPaddleScore + 1)
-                            |> noCommand
+            else if ballHitLeftEdge model.ball globalWindow then
+                model
+                    |> updateBall initialBall Nothing Nothing time
+                    |> updateBallPath []
+                    |> updateRightPaddleScore (model.rightPaddleScore + 1)
+                    |> noCommand
 
-                    else if ballHitTopEdge model.ball globalWindow then
-                        model
-                            |> updateBall model.ball Nothing (Just Top) time
-                            |> playSoundCommand "boop"
+            else if ballHitTopEdge model.ball globalWindow then
+                model
+                    |> updateBall model.ball Nothing (Just Top) time
+                    |> playSoundCommand "boop"
 
-                    else if ballHitBottomEdge model.ball globalWindow then
-                        model
-                            |> updateBall model.ball Nothing (Just Bottom) time
-                            |> playSoundCommand "boop"
+            else if ballHitBottomEdge model.ball globalWindow then
+                model
+                    |> updateBall model.ball Nothing (Just Bottom) time
+                    |> playSoundCommand "boop"
 
-                    else if playerPressedArrowUpKey model.playerKeyPress then
-                        model
-                            |> updateBall model.ball Nothing Nothing time
-                            |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
-                            |> updateLeftPaddle (movePaddleUp model.leftPaddle)
-                            |> updateRightPaddle model.rightPaddle model.ball
-                            |> noCommand
+            else if playerPressedArrowUpKey model.playerKeyPress then
+                model
+                    |> updateBall model.ball Nothing Nothing time
+                    |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                    |> updateLeftPaddle (movePaddleUp model.leftPaddle)
+                    |> updateRightPaddle model.rightPaddle model.ball
+                    |> noCommand
 
-                    else if playerPressedArrowDownKey model.playerKeyPress then
-                        model
-                            |> updateBall model.ball Nothing Nothing time
-                            |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
-                            |> updateLeftPaddle (movePaddleDown model.leftPaddle)
-                            |> updateRightPaddle model.rightPaddle model.ball
-                            |> noCommand
+            else if playerPressedArrowDownKey model.playerKeyPress then
+                model
+                    |> updateBall model.ball Nothing Nothing time
+                    |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                    |> updateLeftPaddle (movePaddleDown model.leftPaddle)
+                    |> updateRightPaddle model.rightPaddle model.ball
+                    |> noCommand
 
-                    else
-                        model
-                            |> updateBall model.ball Nothing Nothing time
-                            |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
-                            |> updateRightPaddle model.rightPaddle model.ball
-                            |> noCommand
+            else
+                model
+                    |> updateBall model.ball Nothing Nothing time
+                    |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                    |> updateRightPaddle model.rightPaddle model.ball
+                    |> noCommand
 
-                EndingScreen ->
-                    model |> noCommand
+        BrowserAdvancedAnimationFrame EndingScreen _ ->
+            model |> noCommand
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             model
@@ -439,10 +437,6 @@ updateRightPaddleScore newRightPaddleScore model =
 
 updateShowBallPath : ShowBallPath -> Model -> Model
 updateShowBallPath newShowBallPath model =
-    let
-        _ =
-            Debug.log "show Ball path" newShowBallPath
-    in
     { model | showBallPath = newShowBallPath }
 
 
@@ -501,12 +495,27 @@ movePaddleUp paddle =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions model =
     Sub.batch
-        [ Browser.Events.onAnimationFrameDelta BrowserAdvancedAnimationFrame
-        , Browser.Events.onKeyDown <| Json.Decode.map PlayerPressedKeyDown <| keyDecoder
-        , Browser.Events.onKeyUp <| Json.Decode.map PlayerReleasedKey <| keyDecoder
+        [ browserAnimationSubscription model.gameState
+        , keyDownSubscription
+        , keyUpSubscription
         ]
+
+
+browserAnimationSubscription : GameState -> Sub Msg
+browserAnimationSubscription gameState =
+    Browser.Events.onAnimationFrameDelta <| BrowserAdvancedAnimationFrame gameState
+
+
+keyDownSubscription : Sub Msg
+keyDownSubscription =
+    Browser.Events.onKeyDown <| Json.Decode.map PlayerPressedKeyDown <| keyDecoder
+
+
+keyUpSubscription : Sub Msg
+keyUpSubscription =
+    Browser.Events.onKeyUp <| Json.Decode.map PlayerReleasedKey <| keyDecoder
 
 
 
@@ -568,7 +577,8 @@ view : Model -> Html.Html Msg
 view model =
     Html.main_ [ Html.Attributes.class "px-6" ]
         [ Html.header []
-            [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ] [ Html.text "\u{1F3D3} Pong" ]
+            [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ]
+                [ Html.text "\u{1F3D3} Pong" ]
             ]
         , Html.section []
             [ case model.gameState of
@@ -622,13 +632,7 @@ viewSvg window model =
          , viewPaddle model.rightPaddle
          , viewBall model.ball
          ]
-            ++ (case model.showBallPath of
-                    On ->
-                        viewBallPath model.ballPath
-
-                    Off ->
-                        [ Html.span [] [] ]
-               )
+            ++ viewBallPath model.showBallPath model.ballPath
         )
 
 
@@ -675,10 +679,10 @@ viewPaddle : Paddle -> Svg.Svg msg
 viewPaddle paddle =
     Svg.rect
         [ Svg.Attributes.fill paddle.color
-        , Svg.Attributes.x <| String.fromInt <| paddle.x
-        , Svg.Attributes.y <| String.fromInt <| paddle.y
-        , Svg.Attributes.width <| String.fromInt <| paddle.width
-        , Svg.Attributes.height <| String.fromInt <| paddle.height
+        , Svg.Attributes.x <| String.fromInt paddle.x
+        , Svg.Attributes.y <| String.fromInt paddle.y
+        , Svg.Attributes.width <| String.fromInt paddle.width
+        , Svg.Attributes.height <| String.fromInt paddle.height
         ]
         []
 
@@ -687,29 +691,35 @@ viewBall : Ball -> Svg.Svg msg
 viewBall ball =
     Svg.rect
         [ Svg.Attributes.fill ball.color
-        , Svg.Attributes.x <| String.fromInt <| ball.x
-        , Svg.Attributes.y <| String.fromInt <| ball.y
+        , Svg.Attributes.x <| String.fromInt ball.x
+        , Svg.Attributes.y <| String.fromInt ball.y
         , Svg.Attributes.width <| String.fromInt ball.width
         , Svg.Attributes.height <| String.fromInt ball.height
         ]
         []
 
 
-viewBallPath : List Ball -> List (Svg.Svg msg)
-viewBallPath ballPath =
-    ballPath
-        |> List.indexedMap
-            (\index ball ->
-                Svg.rect
-                    [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (80 - index)
-                    , Svg.Attributes.fill "darkorange"
-                    , Svg.Attributes.x <| String.fromInt <| ball.x
-                    , Svg.Attributes.y <| String.fromInt <| ball.y
-                    , Svg.Attributes.width <| String.fromInt ball.width
-                    , Svg.Attributes.height <| String.fromInt ball.height
-                    ]
-                    []
-            )
+viewBallPath : ShowBallPath -> List Ball -> List (Svg.Svg msg)
+viewBallPath showBallPath ballPath =
+    case showBallPath of
+        On ->
+            List.indexedMap viewBallPathSegment ballPath
+
+        Off ->
+            []
+
+
+viewBallPathSegment : Int -> Ball -> Svg.Svg msg
+viewBallPathSegment index ball =
+    Svg.rect
+        [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (80 - index)
+        , Svg.Attributes.fill "darkorange"
+        , Svg.Attributes.x <| String.fromInt ball.x
+        , Svg.Attributes.y <| String.fromInt ball.y
+        , Svg.Attributes.width <| String.fromInt ball.width
+        , Svg.Attributes.height <| String.fromInt ball.height
+        ]
+        []
 
 
 viewWinner : Maybe PaddleId -> Html.Html msg
@@ -717,13 +727,18 @@ viewWinner maybePaddleId =
     Html.div [ Html.Attributes.class "pt-2" ]
         [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
             [ Html.text "Winner!" ]
-        , case maybePaddleId of
-            Just paddleId ->
-                Html.p [] [ Html.text <| "\u{1F947} " ++ paddleIdToString paddleId ++ " paddle wins!" ]
-
-            Nothing ->
-                Html.span [] []
+        , viewWinnerPaddle maybePaddleId
         ]
+
+
+viewWinnerPaddle : Maybe PaddleId -> Html.Html msg
+viewWinnerPaddle maybePaddleId =
+    case maybePaddleId of
+        Just paddleId ->
+            Html.p [] [ Html.text <| "\u{1F947} " ++ paddleIdToString paddleId ++ " paddle wins!" ]
+
+        Nothing ->
+            Html.span [] []
 
 
 viewInstructions : Html.Html msg
