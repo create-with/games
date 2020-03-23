@@ -90,6 +90,11 @@ type PaddleId
     | Right
 
 
+type ShowBallPath
+    = On
+    | Off
+
+
 type alias Window =
     { backgroundColor : String
     , x : Int
@@ -128,7 +133,7 @@ type alias Model =
     , playerKeyPress : Set.Set String
     , rightPaddle : Paddle
     , rightPaddleScore : Int
-    , viewBallPath : Bool
+    , showBallPath : ShowBallPath
     , winner : Maybe PaddleId
     , winningScore : WinningScore
     }
@@ -144,7 +149,7 @@ initialModel =
     , playerKeyPress = Set.empty
     , rightPaddle = initialRightPaddle
     , rightPaddleScore = 0
-    , viewBallPath = False
+    , showBallPath = Off
     , winner = Nothing
     , winningScore = Eleven
     }
@@ -166,7 +171,7 @@ init _ =
 
 type Msg
     = BrowserAdvancedAnimationFrame Float
-    | PlayerClickedBallPathCheckbox Bool
+    | PlayerClickedBallPathCheckbox ShowBallPath
     | PlayerClickedWinningScoreRadioButton WinningScore
     | PlayerPressedKeyDown String
     | PlayerReleasedKey String
@@ -259,9 +264,9 @@ update msg model =
                 EndingScreen ->
                     model |> noCommand
 
-        PlayerClickedBallPathCheckbox viewBallPathValue ->
+        PlayerClickedBallPathCheckbox showBallPathValue ->
             model
-                |> updateViewBallPath viewBallPathValue
+                |> updateShowBallPath showBallPathValue
                 |> noCommand
 
         PlayerClickedWinningScoreRadioButton winningScoreValue ->
@@ -432,9 +437,9 @@ updateRightPaddleScore newRightPaddleScore model =
     { model | rightPaddleScore = newRightPaddleScore }
 
 
-updateViewBallPath : Bool -> Model -> Model
-updateViewBallPath newViewBallPath model =
-    { model | viewBallPath = newViewBallPath }
+updateShowBallPath : ShowBallPath -> Model -> Model
+updateShowBallPath newShowBallPath model =
+    { model | showBallPath = newShowBallPath }
 
 
 updateWinner : Maybe PaddleId -> Model -> Model
@@ -567,14 +572,14 @@ view model =
                     Html.div []
                         [ viewSvg globalWindow model
                         , viewInstructions
-                        , viewOptions model.viewBallPath model.winningScore
+                        , viewOptions model.showBallPath model.winningScore
                         ]
 
                 PlayingScreen ->
                     Html.div []
                         [ viewSvg globalWindow model
                         , viewInstructions
-                        , viewOptions model.viewBallPath model.winningScore
+                        , viewOptions model.showBallPath model.winningScore
                         ]
 
                 EndingScreen ->
@@ -582,7 +587,7 @@ view model =
                         [ viewSvg globalWindow model
                         , viewWinner model.winner
                         , viewInstructions
-                        , viewOptions model.viewBallPath model.winningScore
+                        , viewOptions model.showBallPath model.winningScore
                         ]
             ]
         ]
@@ -613,11 +618,12 @@ viewSvg window model =
          , viewRightPaddle model.rightPaddle
          , viewBall model.ball
          ]
-            ++ (if model.viewBallPath then
-                    viewBallPath model.ballPath
+            ++ (case model.showBallPath of
+                    On ->
+                        showBallPath model.ballPath
 
-                else
-                    [ Html.span [] [] ]
+                    Off ->
+                        [ Html.span [] [] ]
                )
         )
 
@@ -710,8 +716,8 @@ viewBall ball =
         []
 
 
-viewBallPath : List Ball -> List (Svg.Svg msg)
-viewBallPath ballPath =
+showBallPath : List Ball -> List (Svg.Svg msg)
+showBallPath ballPath =
     ballPath
         |> List.indexedMap
             (\index ball ->
@@ -754,31 +760,32 @@ viewInstructions =
         ]
 
 
-viewOptions : Bool -> WinningScore -> Html.Html Msg
-viewOptions viewBallPath_ winningScore =
+viewOptions : ShowBallPath -> WinningScore -> Html.Html Msg
+viewOptions showBallPath_ winningScore =
     Html.div [ Html.Attributes.class "pt-2" ]
         [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
             [ Html.text "Options" ]
         , Html.form []
-            [ viewBallPathOption viewBallPath_
+            [ showBallPathOption showBallPath_
             , viewWinningScoreOptions winningScore
             ]
         ]
 
 
-viewBallPathOption : Bool -> Html.Html Msg
-viewBallPathOption viewBallPath_ =
+showBallPathOption : ShowBallPath -> Html.Html Msg
+showBallPathOption showBallPath_ =
     Html.fieldset []
-        [ Html.label []
-            [ Html.span [ Html.Attributes.class "font-medium italic mr-3" ]
-                [ Html.text "View ball path history?" ]
-            , Html.input
-                [ Html.Attributes.checked viewBallPath_
-                , Html.Attributes.name "ball-path-history"
-                , Html.Attributes.type_ "checkbox"
-                , Html.Events.onCheck PlayerClickedBallPathCheckbox
+        [ Html.span [ Html.Attributes.class "font-medium italic mr-3" ]
+            [ Html.text "Show ball path history:" ]
+        , Html.label []
+            [ Html.input
+                [ Html.Attributes.checked <| showBallPath_ == On
+                , Html.Attributes.type_ "radio"
+                , Html.Events.onClick <| PlayerClickedBallPathCheckbox showBallPath_
                 ]
                 []
+            , Html.span [ Html.Attributes.class "px-1 text-xs" ]
+                [ Html.text <| showBallPathToString showBallPath_ ]
             ]
         ]
 
@@ -788,29 +795,24 @@ viewWinningScoreOptions winningScore =
     Html.fieldset []
         [ Html.span [ Html.Attributes.class "font-medium italic mr-3" ]
             [ Html.text "Set winning score:" ]
-        , Html.label []
-            [ Html.input
-                [ Html.Attributes.checked <| winningScore == Eleven
-                , Html.Attributes.name <| winningScoreToString Eleven
-                , Html.Attributes.type_ "radio"
-                , Html.Events.onClick <| PlayerClickedWinningScoreRadioButton Eleven
-                ]
-                []
-            , Html.span [ Html.Attributes.class "px-1 text-xs" ]
-                [ Html.text <| winningScoreToString Eleven ]
-            ]
-        , Html.label []
-            [ Html.input
-                [ Html.Attributes.checked <| winningScore == Fifteen
-                , Html.Attributes.name <| winningScoreToString Fifteen
-                , Html.Attributes.type_ "radio"
-                , Html.Events.onClick <| PlayerClickedWinningScoreRadioButton Fifteen
-                ]
-                []
-            , Html.span [ Html.Attributes.class "px-1 text-xs" ]
-                [ Html.text <| winningScoreToString Fifteen ]
-            ]
+        , viewWinningScoreOption winningScore Eleven
+        , viewWinningScoreOption winningScore Fifteen
         ]
+
+
+viewWinningScoreOption : WinningScore -> WinningScore -> Html.Html Msg
+viewWinningScoreOption currentWinningScore winningScoreOption =
+    Html.label []
+        [ Html.input
+            [ Html.Attributes.checked <| currentWinningScore == winningScoreOption
+            , Html.Attributes.type_ "radio"
+            , Html.Events.onClick <| PlayerClickedWinningScoreRadioButton winningScoreOption
+            ]
+            []
+        , Html.span [ Html.Attributes.class "px-1 text-xs" ]
+            [ Html.text <| winningScoreToString winningScoreOption ]
+        ]
+
 
 
 -- HELPERS
@@ -824,6 +826,16 @@ paddleIdToString paddleId =
 
         Right ->
             "Right"
+
+
+showBallPathToString : ShowBallPath -> String
+showBallPathToString showBallPath_ =
+    case showBallPath_ of
+        On ->
+            "On"
+
+        Off ->
+            "Off"
 
 
 winningScoreToInt : WinningScore -> Int
