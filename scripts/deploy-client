@@ -1,9 +1,0 @@
-#!/bin/sh
-
-# Deploy client to GitHub Pages.
-
-set -e
-
-distFolder="./client/dist"
-
-git subtree push --prefix $distFolder origin gh-pages

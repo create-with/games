@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Build optimized client release in the `dist` folder using Parcel.
+# Deploy to GitHub Pages by pushing to the `master` branch.
 
 set -e
 
@@ -8,4 +9,4 @@ cd ./client
 
 rm -rf ./dist
 parcel build ./index.html --public-url ./
-open ./dist/index.html
+cp -r ./assets ./dist/assets
