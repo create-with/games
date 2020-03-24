@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Build optimized client release in the `dist` folder using Parcel.
+
+set -e
+
+cd ./client
+
+rm -rf ./dist
+parcel build ./index.html --public-url ./
+open ./dist/index.html

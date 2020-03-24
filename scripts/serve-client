@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Serve client files with Parcel and open in browser.
+
+set -e
+
+cd ./client
+
+sleep 2 && \
+  open http://localhost:1234 & \
+  parcel index.html

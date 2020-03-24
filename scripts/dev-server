@@ -1,8 +1,0 @@
-#!/bin/sh
-
-# scripts/dev-server: Serve client files with Parcel.
-
-set -e
-
-cd ./client
-parcel index.html
