@@ -229,12 +229,12 @@ update msg model =
             else if ballHitTopEdge model.ball globalWindow then
                 model
                     |> updateBall model.ball Nothing (Just Top) time
-                    |> playSoundCommand "boop"
+                    |> playSoundCommand "boop.wav"
 
             else if ballHitBottomEdge model.ball globalWindow then
                 model
                     |> updateBall model.ball Nothing (Just Bottom) time
-                    |> playSoundCommand "boop"
+                    |> playSoundCommand "boop.wav"
 
             else if playerPressedArrowUpKey model.playerKeyPress then
                 model

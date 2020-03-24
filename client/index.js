@@ -7,6 +7,11 @@ const app = Elm.Main.init({ node, flags });
 
 app.ports.playSound.subscribe(data => {
   console.log("Playing sound: " + data);
-  const sound = new Howl({src: ["assets/sounds/" + data]});
+
+  const soundPath = "./assets/sounds/" + data;
+  const sound = new Howl({
+    src: [soundPath]
+  });
+
   sound.play();
 });
