@@ -419,10 +419,10 @@ updateRightPaddle newRightPaddle ball model =
     let
         updatePaddle paddle =
             if ball.y > paddle.y then
-                { paddle | y = keepPaddleInWindow paddle (paddle.y + 5) globalWindow }
+                { paddle | y = keepPaddleInWindow paddle (paddle.y + 10) globalWindow }
 
             else if ball.y < paddle.y then
-                { paddle | y = keepPaddleInWindow paddle (paddle.y - 5) globalWindow }
+                { paddle | y = keepPaddleInWindow paddle (paddle.y - 10) globalWindow }
 
             else
                 paddle
