@@ -29,6 +29,7 @@ type GameState
     | PlayingScreen
     | EndingScreen
 
+
 type alias Player =
     { x : Int
     , y : Int
@@ -45,16 +46,18 @@ initialPlayer =
     , score = 0
     }
 
+
 type alias Matrix =
     List (List Int)
 
+
 initialMatrix : Matrix
 initialMatrix =
-    [
-        [ 0, 0, 0 ]
-        , [1, 1, 1]
-        , [0, 1, 0]
+    [ [ 0, 0, 0 ]
+    , [ 1, 1, 1 ]
+    , [ 0, 1, 0 ]
     ]
+
 
 type Shapes
     = A
@@ -84,6 +87,7 @@ globalWindow =
     , height = 600
     }
 
+
 type alias Arena =
     { backgroundColor : String
     , x : Int
@@ -91,6 +95,7 @@ type alias Arena =
     , width : Int
     , height : Int
     }
+
 
 initialArena : Arena
 initialArena =
@@ -146,30 +151,26 @@ update msg model =
     case msg of
         BrowserAdvancedAnimationFrame StartingScreen _ ->
             if playerPressedSpacebarKey model.playerKeyPress then
-                ( { model | gameState = PlayingScreen }, Cmd.none)
+                ( { model | gameState = PlayingScreen }, Cmd.none )
 
             else
-                (model, Cmd.none)
+                ( model, Cmd.none )
 
         BrowserAdvancedAnimationFrame PlayingScreen time ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         BrowserAdvancedAnimationFrame EndingScreen _ ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         PlayerPressedKeyDown key ->
-            ( updateKeyPress key model, Cmd.none)
+            ( updateKeyPress key model, Cmd.none )
 
         PlayerReleasedKey _ ->
             ( clearKeyPresses model, Cmd.none )
 
 
 
-
-
 -- COMMANDS
-
-
 
 
 playSoundCommand : String -> Model -> ( Model, Cmd Msg )
@@ -179,10 +180,6 @@ playSoundCommand soundFile model =
 
 
 -- UPDATE HELPERS
-
-
-
-
 -- SUBSCRIPTIONS
 
 
@@ -330,7 +327,6 @@ viewGameWindow window =
         []
 
 
-
 viewInstructions : Html.Html msg
 viewInstructions =
     Html.div [ Html.Attributes.class "pt-2" ]
@@ -350,6 +346,7 @@ viewOptions =
             [ Html.text "Options" ]
         , Html.form [] []
         ]
+
 
 
 -- PORTS

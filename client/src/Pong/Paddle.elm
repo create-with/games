@@ -54,11 +54,15 @@ initialRightPaddle =
     }
 
 
+
 -- UPDATE
+
 
 updateScore : Paddle -> Paddle
 updateScore paddle =
     { paddle | score = paddle.score + 1 }
+
+
 
 -- HELPERS
 

@@ -1,4 +1,4 @@
-module Pong.Main exposing
+module Pong exposing
     ( Model
     , Msg(..)
     , init
@@ -17,26 +17,28 @@ import Json.Decode
 import Json.Encode
 import Pong.Ball
 import Pong.Game
+import Pong.Keyboard
 import Pong.Paddle
 import Pong.Ports
 import Pong.Window
 import Set
 import Svg
 import Svg.Attributes
+import Util
 
 
 
 -- MODEL
 
 
-type alias Time =
+type alias DeltaTime =
     Float
-
 
 
 type alias Model =
     { ball : Pong.Ball.Ball
     , ballPath : Pong.Ball.BallPath
+    , deltaTimes : List DeltaTime
     , gameState : Pong.Game.State
     , leftPaddle : Pong.Paddle.Paddle
     , playerKeyPress : Set.Set String
@@ -46,12 +48,16 @@ type alias Model =
     , winningScore : Pong.Game.WinningScore
     }
 
+
+
 -- INIT
+
 
 initialModel : Model
 initialModel =
     { ball = Pong.Ball.initialBall
     , ballPath = Pong.Ball.initialBallPath
+    , deltaTimes = []
     , gameState = Pong.Game.initialState
     , leftPaddle = Pong.Paddle.initialLeftPaddle
     , playerKeyPress = Set.empty
@@ -77,7 +83,7 @@ init _ =
 
 
 type Msg
-    = BrowserAdvancedAnimationFrame Pong.Game.State Time
+    = BrowserAdvancedAnimationFrame Pong.Game.State DeltaTime
     | PlayerClickedShowBallPathRadioButton Pong.Ball.ShowBallPath
     | PlayerClickedWinningScoreRadioButton Pong.Game.WinningScore
     | PlayerPressedKeyDown String
@@ -88,7 +94,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         BrowserAdvancedAnimationFrame Pong.Game.StartingScreen _ ->
-            if playerPressedSpacebarKey model.playerKeyPress then
+            if Pong.Keyboard.playerPressedSpacebarKey model.playerKeyPress then
                 model
                     |> updateGameState Pong.Game.PlayingScreen
                     |> noCommand
@@ -96,7 +102,7 @@ update msg model =
             else
                 model |> noCommand
 
-        BrowserAdvancedAnimationFrame Pong.Game.PlayingScreen time ->
+        BrowserAdvancedAnimationFrame Pong.Game.PlayingScreen deltaTime ->
             if leftPaddleHasWinningScore model.leftPaddle.score model.winningScore then
                 model
                     |> updateGameState Pong.Game.EndingScreen
@@ -111,58 +117,67 @@ update msg model =
 
             else if ballHitLeftPaddle model.ball model.leftPaddle then
                 model
-                    |> updateBall model.ball (Just model.leftPaddle) Nothing time
+                    |> updateBall model.ball (Just model.leftPaddle) Nothing deltaTime
+                    |> updateDeltaTimes deltaTime
                     |> playSoundCommand "beep.wav"
 
             else if ballHitRightPaddle model.ball model.rightPaddle then
                 model
-                    |> updateBall model.ball (Just model.rightPaddle) Nothing time
+                    |> updateBall model.ball (Just model.rightPaddle) Nothing deltaTime
+                    |> updateDeltaTimes deltaTime
                     |> playSoundCommand "beep.wav"
 
             else if ballHitRightEdge model.ball Pong.Window.window then
                 model
-                    |> updateBall Pong.Ball.initialBall Nothing Nothing time
+                    |> updateBall Pong.Ball.initialBall Nothing Nothing deltaTime
+                    |> updateDeltaTimes deltaTime
                     |> updateBallPath []
                     |> updatePaddleScore model.leftPaddle
                     |> noCommand
 
             else if ballHitLeftEdge model.ball Pong.Window.window then
                 model
-                    |> updateBall Pong.Ball.initialBall Nothing Nothing time
+                    |> updateBall Pong.Ball.initialBall Nothing Nothing deltaTime
+                    |> updateDeltaTimes deltaTime
                     |> updateBallPath []
                     |> updatePaddleScore model.rightPaddle
                     |> noCommand
 
             else if ballHitTopEdge model.ball Pong.Window.window then
                 model
-                    |> updateBall model.ball Nothing (Just Pong.Window.Top) time
+                    |> updateBall model.ball Nothing (Just Pong.Window.Top) deltaTime
+                    |> updateDeltaTimes deltaTime
                     |> playSoundCommand "boop.wav"
 
             else if ballHitBottomEdge model.ball Pong.Window.window then
                 model
-                    |> updateBall model.ball Nothing (Just Pong.Window.Bottom) time
+                    |> updateBall model.ball Nothing (Just Pong.Window.Bottom) deltaTime
+                    |> updateDeltaTimes deltaTime
                     |> playSoundCommand "boop.wav"
 
-            else if playerPressedArrowUpKey model.playerKeyPress then
+            else if Pong.Keyboard.playerPressedArrowUpKey model.playerKeyPress then
                 model
-                    |> updateBall model.ball Nothing Nothing time
+                    |> updateBall model.ball Nothing Nothing deltaTime
                     |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                    |> updateDeltaTimes deltaTime
                     |> updateLeftPaddle (movePaddleUp model.leftPaddle)
                     |> updateRightPaddle model.rightPaddle model.ball
                     |> noCommand
 
-            else if playerPressedArrowDownKey model.playerKeyPress then
+            else if Pong.Keyboard.playerPressedArrowDownKey model.playerKeyPress then
                 model
-                    |> updateBall model.ball Nothing Nothing time
+                    |> updateBall model.ball Nothing Nothing deltaTime
                     |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                    |> updateDeltaTimes deltaTime
                     |> updateLeftPaddle (movePaddleDown model.leftPaddle)
                     |> updateRightPaddle model.rightPaddle model.ball
                     |> noCommand
 
             else
                 model
-                    |> updateBall model.ball Nothing Nothing time
+                    |> updateBall model.ball Nothing Nothing deltaTime
                     |> updateBallPath (List.take 99 <| model.ball :: model.ballPath)
+                    |> updateDeltaTimes deltaTime
                     |> updateRightPaddle model.rightPaddle model.ball
                     |> noCommand
 
@@ -249,8 +264,8 @@ rightPaddleHasWinningScore rightPaddleScore winningScore =
 -- UPDATES
 
 
-updateBall : Pong.Ball.Ball -> Maybe Pong.Paddle.Paddle -> Maybe Pong.Window.WindowEdge -> Time -> Model -> Model
-updateBall newBall maybePaddle maybeEdge time model =
+updateBall : Pong.Ball.Ball -> Maybe Pong.Paddle.Paddle -> Maybe Pong.Window.WindowEdge -> DeltaTime -> Model -> Model
+updateBall newBall maybePaddle maybeEdge deltaTime model =
     let
         applyUpdates ball =
             case ( maybePaddle, maybeEdge ) of
@@ -291,15 +306,15 @@ updateBall newBall maybePaddle maybeEdge time model =
                 -- ball hit paddle, ball hit edge (hadn't thought about this case)
                 ( Just _, Just _ ) ->
                     { ball
-                        | x = round <| toFloat ball.x + ball.vx * time
-                        , y = round <| toFloat ball.y + ball.vy * time
+                        | x = round <| toFloat ball.x + ball.vx * deltaTime
+                        , y = round <| toFloat ball.y + ball.vy * deltaTime
                     }
 
                 -- ball did not hit paddle, ball did not hit edge
                 ( Nothing, Nothing ) ->
                     { ball
-                        | x = round <| toFloat ball.x + ball.vx * time
-                        , y = round <| toFloat ball.y + ball.vy * time
+                        | x = round <| toFloat ball.x + ball.vx * deltaTime
+                        , y = round <| toFloat ball.y + ball.vy * deltaTime
                     }
     in
     { model | ball = applyUpdates newBall }
@@ -310,6 +325,11 @@ updateBallPath newBallPath model =
     { model | ballPath = newBallPath }
 
 
+updateDeltaTimes : DeltaTime -> Model -> Model
+updateDeltaTimes deltaTime model =
+    { model | deltaTimes = List.take 50 (deltaTime :: model.deltaTimes) }
+
+
 updateGameState : Pong.Game.State -> Model -> Model
 updateGameState newGameState model =
     { model | gameState = newGameState }
@@ -318,13 +338,11 @@ updateGameState newGameState model =
 updatePaddleScore : Pong.Paddle.Paddle -> Model -> Model
 updatePaddleScore paddle model =
     case paddle.id of
-       Pong.Paddle.Left ->
+        Pong.Paddle.Left ->
             { model | leftPaddle = Pong.Paddle.updateScore paddle }
 
-       Pong.Paddle.Right ->
+        Pong.Paddle.Right ->
             { model | rightPaddle = Pong.Paddle.updateScore paddle }
-
-
 
 
 updateLeftPaddle : Pong.Paddle.Paddle -> Model -> Model
@@ -346,8 +364,6 @@ updateRightPaddle newRightPaddle ball model =
                 paddle
     in
     { model | rightPaddle = updatePaddle newRightPaddle }
-
-
 
 
 updateShowBallPath : Pong.Ball.ShowBallPath -> Model -> Model
@@ -420,26 +436,22 @@ subscriptions model =
 
 browserAnimationSubscription : Pong.Game.State -> Sub Msg
 browserAnimationSubscription gameState =
-    Browser.Events.onAnimationFrameDelta (\milliseconds -> BrowserAdvancedAnimationFrame gameState (milliseconds / 1000))
+    Browser.Events.onAnimationFrameDelta <| handleAnimationFrames gameState
+
+
+handleAnimationFrames : Pong.Game.State -> DeltaTime -> Msg
+handleAnimationFrames gameState milliseconds =
+    BrowserAdvancedAnimationFrame gameState <| milliseconds / 1000
 
 
 keyDownSubscription : Sub Msg
 keyDownSubscription =
-    Browser.Events.onKeyDown <| Json.Decode.map PlayerPressedKeyDown <| keyDecoder
+    Browser.Events.onKeyDown <| Json.Decode.map PlayerPressedKeyDown <| Pong.Keyboard.keyDecoder
 
 
 keyUpSubscription : Sub Msg
 keyUpSubscription =
-    Browser.Events.onKeyUp <| Json.Decode.map PlayerReleasedKey <| keyDecoder
-
-
-
--- KEYBOARD INPUT HANDLING
-
-
-keyDecoder : Json.Decode.Decoder String
-keyDecoder =
-    Json.Decode.field "key" Json.Decode.string
+    Browser.Events.onKeyUp <| Json.Decode.map PlayerReleasedKey <| Pong.Keyboard.keyDecoder
 
 
 clearKeyPresses : Model -> Model
@@ -447,41 +459,13 @@ clearKeyPresses model =
     { model | playerKeyPress = Set.empty }
 
 
-playerPressedKey : Set.Set String -> Bool
-playerPressedKey playerKeyPress =
-    (Set.isEmpty >> not) playerKeyPress
-
-
-playerPressedSpacebarKey : Set.Set String -> Bool
-playerPressedSpacebarKey playerKeyPress =
-    Set.member " " playerKeyPress
-
-
-playerPressedArrowUpKey : Set.Set String -> Bool
-playerPressedArrowUpKey playerKeyPress =
-    Set.member "ArrowUp" playerKeyPress
-
-
-playerPressedArrowDownKey : Set.Set String -> Bool
-playerPressedArrowDownKey playerKeyPress =
-    Set.member "ArrowDown" playerKeyPress
-
-
 updateKeyPress : String -> Model -> Model
 updateKeyPress key model =
-    if Set.member key validKeys then
+    if Set.member key Pong.Keyboard.validKeys then
         { model | playerKeyPress = Set.insert key model.playerKeyPress }
 
     else
         model
-
-
-validKeys : Set.Set String
-validKeys =
-    Set.empty
-        |> Set.insert "ArrowUp"
-        |> Set.insert "ArrowDown"
-        |> Set.insert " "
 
 
 
@@ -518,12 +502,14 @@ view model =
             ]
         ]
 
+
 viewHeader : Html.Html msg
 viewHeader =
     Html.header []
         [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ]
             [ Html.text "\u{1F3D3} Pong" ]
         ]
+
 
 viewSvg : Pong.Window.Window -> Model -> Svg.Svg msg
 viewSvg window model =
@@ -549,6 +535,7 @@ viewSvg window model =
          , viewPaddle model.leftPaddle
          , viewPaddle model.rightPaddle
          , viewBall model.ball
+         , Util.fpsMeter model.deltaTimes
          ]
             ++ viewBallPath model.showBallPath model.ballPath
         )
@@ -584,7 +571,7 @@ viewPaddleScore : Int -> Pong.Window.Window -> Int -> Svg.Svg msg
 viewPaddleScore score window positionOffset =
     Svg.text_
         [ Svg.Attributes.fill "white"
-        , Svg.Attributes.fontFamily "Courier New"
+        , Svg.Attributes.fontFamily "monospace"
         , Svg.Attributes.fontSize "80"
         , Svg.Attributes.fontWeight "bold"
         , Svg.Attributes.x <| String.fromInt <| (window.width // 2) + positionOffset
