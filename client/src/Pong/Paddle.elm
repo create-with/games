@@ -16,6 +16,8 @@ type alias Paddle =
     , score : Int
     , x : Int
     , y : Int
+    , vx : Float
+    , vy : Float
     , width : Int
     , height : Int
     }
@@ -37,6 +39,8 @@ initialLeftPaddle =
     , score = 0
     , x = 48
     , y = 200
+    , vx = 0
+    , vy = 300.0
     , width = 10
     , height = 60
     }
@@ -49,6 +53,8 @@ initialRightPaddle =
     , score = 0
     , x = 740
     , y = 300
+    , vx = 0
+    , vy = 300.0
     , width = 10
     , height = 60
     }

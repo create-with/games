@@ -40,8 +40,8 @@ initialBall =
     { color = "white"
     , x = 400
     , y = 300
-    , vx = 300
-    , vy = 300
+    , vx = 300.0
+    , vy = 300.0
     , width = 10
     , height = 10
     }

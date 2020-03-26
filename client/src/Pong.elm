@@ -182,7 +182,11 @@ update msg model =
                     |> noCommand
 
         BrowserAdvancedAnimationFrame Pong.Game.EndingScreen _ ->
-            model |> noCommand
+            if Pong.Keyboard.playerPressedSpacebarKey model.playerKeyPress then
+                initialModel |> noCommand
+
+            else
+                model |> noCommand
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             model
