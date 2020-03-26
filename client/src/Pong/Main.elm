@@ -1,4 +1,4 @@
-port module Pong exposing
+module Pong.Main exposing
     ( Model
     , Msg(..)
     , init
@@ -15,6 +15,7 @@ import Html.Attributes
 import Html.Events
 import Json.Decode
 import Json.Encode
+import Pong.Ports
 import Set
 import Svg
 import Svg.Attributes
@@ -40,8 +41,8 @@ initialBall =
     { color = "white"
     , x = 400
     , y = 300
-    , vx = 0.4
-    , vy = 0.4
+    , vx = 300
+    , vy = 300
     , width = 10
     , height = 10
     }
@@ -93,6 +94,10 @@ type PaddleId
 type ShowBallPath
     = On
     | Off
+
+
+type alias Time =
+    Float
 
 
 type alias Window =
@@ -170,7 +175,7 @@ init _ =
 
 
 type Msg
-    = BrowserAdvancedAnimationFrame GameState Float
+    = BrowserAdvancedAnimationFrame GameState Time
     | PlayerClickedShowBallPathRadioButton ShowBallPath
     | PlayerClickedWinningScoreRadioButton WinningScore
     | PlayerPressedKeyDown String
@@ -342,24 +347,28 @@ rightPaddleHasWinningScore rightPaddleScore winningScore =
 -- UPDATES
 
 
-updateBall : Ball -> Maybe Paddle -> Maybe WindowEdge -> Float -> Model -> Model
+updateBall : Ball -> Maybe Paddle -> Maybe WindowEdge -> Time -> Model -> Model
 updateBall newBall maybePaddle maybeEdge time model =
     let
         applyUpdates ball =
             case ( maybePaddle, maybeEdge ) of
                 -- ball hit paddle, ball did not hit edge
                 ( Just paddle, Nothing ) ->
+                    let
+                        changeInSpeed =
+                            50
+                    in
                     case paddle.id of
                         Left ->
                             { ball
                                 | x = ball.x + ball.width
-                                , vx = negate <| (ball.vx - 0.033)
+                                , vx = negate <| (ball.vx - changeInSpeed)
                             }
 
                         Right ->
                             { ball
                                 | x = ball.x - ball.width
-                                , vx = negate <| (ball.vx + 0.033)
+                                , vx = negate <| (ball.vx + changeInSpeed)
                             }
 
                 -- ball did not hit paddle, ball hit edge
@@ -461,7 +470,7 @@ noCommand model =
 
 playSoundCommand : String -> Model -> ( Model, Cmd Msg )
 playSoundCommand soundFile model =
-    ( model, playSound <| Json.Encode.string soundFile )
+    ( model, Pong.Ports.playSound <| Json.Encode.string soundFile )
 
 
 
@@ -505,7 +514,7 @@ subscriptions model =
 
 browserAnimationSubscription : GameState -> Sub Msg
 browserAnimationSubscription gameState =
-    Browser.Events.onAnimationFrameDelta <| BrowserAdvancedAnimationFrame gameState
+    Browser.Events.onAnimationFrameDelta (\milliseconds -> BrowserAdvancedAnimationFrame gameState (milliseconds / 1000))
 
 
 keyDownSubscription : Sub Msg
@@ -846,10 +855,3 @@ winningScoreToString winningScore =
 
         Fifteen ->
             "15"
-
-
-
--- PORTS
-
-
-port playSound : Json.Encode.Value -> Cmd msg

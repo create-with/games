@@ -3,18 +3,18 @@ module Main exposing (main)
 -- IMPORTS
 
 import Browser
-import Pong
+import Pong.Main
 
 
 
 -- MAIN
 
 
-main : Program () Pong.Model Pong.Msg
+main : Program () Pong.Main.Model Pong.Main.Msg
 main =
     Browser.element
-        { init = Pong.init
-        , update = Pong.update
-        , subscriptions = Pong.subscriptions
-        , view = Pong.view
+        { init = Pong.Main.init
+        , update = Pong.Main.update
+        , subscriptions = Pong.Main.subscriptions
+        , view = Pong.Main.view
         }
