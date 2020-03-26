@@ -15,7 +15,11 @@ import Html.Attributes
 import Html.Events
 import Json.Decode
 import Json.Encode
+import Pong.Ball
+import Pong.Game
+import Pong.Paddle
 import Pong.Ports
+import Pong.Window
 import Set
 import Svg
 import Svg.Attributes
@@ -25,138 +29,40 @@ import Svg.Attributes
 -- MODEL
 
 
-type alias Ball =
-    { color : String
-    , x : Int
-    , y : Int
-    , vx : Float
-    , vy : Float
-    , width : Int
-    , height : Int
-    }
-
-
-initialBall : Ball
-initialBall =
-    { color = "white"
-    , x = 400
-    , y = 300
-    , vx = 300
-    , vy = 300
-    , width = 10
-    , height = 10
-    }
-
-
-type GameState
-    = StartingScreen
-    | PlayingScreen
-    | EndingScreen
-
-
-type alias Paddle =
-    { color : String
-    , id : PaddleId
-    , x : Int
-    , y : Int
-    , width : Int
-    , height : Int
-    }
-
-
-initialLeftPaddle : Paddle
-initialLeftPaddle =
-    { color = "lightblue"
-    , id = Left
-    , x = 48
-    , y = 200
-    , width = 10
-    , height = 60
-    }
-
-
-initialRightPaddle : Paddle
-initialRightPaddle =
-    { color = "lightpink"
-    , id = Right
-    , x = 740
-    , y = 300
-    , width = 10
-    , height = 60
-    }
-
-
-type PaddleId
-    = Left
-    | Right
-
-
-type ShowBallPath
-    = On
-    | Off
-
-
 type alias Time =
     Float
 
 
-type alias Window =
-    { backgroundColor : String
-    , x : Int
-    , y : Int
-    , width : Int
-    , height : Int
-    }
-
-
-globalWindow : Window
-globalWindow =
-    { backgroundColor = "black"
-    , x = 0
-    , y = 0
-    , width = 800
-    , height = 600
-    }
-
-
-type WindowEdge
-    = Top
-    | Bottom
-
-
-type WinningScore
-    = Eleven
-    | Fifteen
-
 
 type alias Model =
-    { ball : Ball
-    , ballPath : List Ball
-    , gameState : GameState
-    , leftPaddle : Paddle
+    { ball : Pong.Ball.Ball
+    , ballPath : Pong.Ball.BallPath
+    , gameState : Pong.Game.State
+    , leftPaddle : Pong.Paddle.Paddle
     , leftPaddleScore : Int
     , playerKeyPress : Set.Set String
-    , rightPaddle : Paddle
+    , rightPaddle : Pong.Paddle.Paddle
     , rightPaddleScore : Int
-    , showBallPath : ShowBallPath
-    , winner : Maybe PaddleId
-    , winningScore : WinningScore
+    , showBallPath : Pong.Ball.ShowBallPath
+    , winner : Maybe Pong.Paddle.PaddleId
+    , winningScore : Pong.Game.WinningScore
     }
 
+-- INIT
 
 initialModel : Model
 initialModel =
-    { ball = initialBall
-    , ballPath = []
-    , gameState = StartingScreen
-    , leftPaddle = initialLeftPaddle
+    { ball = Pong.Ball.initialBall
+    , ballPath = Pong.Ball.initialBallPath
+    , gameState = Pong.Game.initialState
+    , leftPaddle = Pong.Paddle.initialLeftPaddle
     , leftPaddleScore = 0
     , playerKeyPress = Set.empty
-    , rightPaddle = initialRightPaddle
+    , rightPaddle = Pong.Paddle.initialRightPaddle
     , rightPaddleScore = 0
-    , showBallPath = Off
+    , showBallPath = Pong.Ball.initialShowBallPath
     , winner = Nothing
-    , winningScore = Eleven
+    , winningScore = Pong.Game.Eleven
     }
 
 
@@ -175,9 +81,9 @@ init _ =
 
 
 type Msg
-    = BrowserAdvancedAnimationFrame GameState Time
-    | PlayerClickedShowBallPathRadioButton ShowBallPath
-    | PlayerClickedWinningScoreRadioButton WinningScore
+    = BrowserAdvancedAnimationFrame Pong.Game.State Time
+    | PlayerClickedShowBallPathRadioButton Pong.Ball.ShowBallPath
+    | PlayerClickedWinningScoreRadioButton Pong.Game.WinningScore
     | PlayerPressedKeyDown String
     | PlayerReleasedKey String
 
@@ -185,25 +91,25 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        BrowserAdvancedAnimationFrame StartingScreen _ ->
+        BrowserAdvancedAnimationFrame Pong.Game.StartingScreen _ ->
             if playerPressedSpacebarKey model.playerKeyPress then
                 model
-                    |> updateGameState PlayingScreen
+                    |> updateGameState Pong.Game.PlayingScreen
                     |> noCommand
 
             else
                 model |> noCommand
 
-        BrowserAdvancedAnimationFrame PlayingScreen time ->
+        BrowserAdvancedAnimationFrame Pong.Game.PlayingScreen time ->
             if leftPaddleHasWinningScore model.leftPaddleScore model.winningScore then
                 model
-                    |> updateGameState EndingScreen
+                    |> updateGameState Pong.Game.EndingScreen
                     |> updateWinner (Just model.leftPaddle.id)
                     |> noCommand
 
             else if rightPaddleHasWinningScore model.rightPaddleScore model.winningScore then
                 model
-                    |> updateGameState EndingScreen
+                    |> updateGameState Pong.Game.EndingScreen
                     |> updateWinner (Just model.rightPaddle.id)
                     |> noCommand
 
@@ -217,28 +123,28 @@ update msg model =
                     |> updateBall model.ball (Just model.rightPaddle) Nothing time
                     |> playSoundCommand "beep.wav"
 
-            else if ballHitRightEdge model.ball globalWindow then
+            else if ballHitRightEdge model.ball Pong.Window.window then
                 model
-                    |> updateBall initialBall Nothing Nothing time
+                    |> updateBall Pong.Ball.initialBall Nothing Nothing time
                     |> updateBallPath []
                     |> updateLeftPaddleScore (model.leftPaddleScore + 1)
                     |> noCommand
 
-            else if ballHitLeftEdge model.ball globalWindow then
+            else if ballHitLeftEdge model.ball Pong.Window.window then
                 model
-                    |> updateBall initialBall Nothing Nothing time
+                    |> updateBall Pong.Ball.initialBall Nothing Nothing time
                     |> updateBallPath []
                     |> updateRightPaddleScore (model.rightPaddleScore + 1)
                     |> noCommand
 
-            else if ballHitTopEdge model.ball globalWindow then
+            else if ballHitTopEdge model.ball Pong.Window.window then
                 model
-                    |> updateBall model.ball Nothing (Just Top) time
+                    |> updateBall model.ball Nothing (Just Pong.Window.Top) time
                     |> playSoundCommand "boop.wav"
 
-            else if ballHitBottomEdge model.ball globalWindow then
+            else if ballHitBottomEdge model.ball Pong.Window.window then
                 model
-                    |> updateBall model.ball Nothing (Just Bottom) time
+                    |> updateBall model.ball Nothing (Just Pong.Window.Bottom) time
                     |> playSoundCommand "boop.wav"
 
             else if playerPressedArrowUpKey model.playerKeyPress then
@@ -264,7 +170,7 @@ update msg model =
                     |> updateRightPaddle model.rightPaddle model.ball
                     |> noCommand
 
-        BrowserAdvancedAnimationFrame EndingScreen _ ->
+        BrowserAdvancedAnimationFrame Pong.Game.EndingScreen _ ->
             model |> noCommand
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
@@ -292,39 +198,39 @@ update msg model =
 -- UPDATE PREDICATES
 
 
-ballHitTopEdge : Ball -> Window -> Bool
+ballHitTopEdge : Pong.Ball.Ball -> Pong.Window.Window -> Bool
 ballHitTopEdge ball window =
     (ball.y - ball.height) <= window.x
 
 
-ballHitBottomEdge : Ball -> Window -> Bool
+ballHitBottomEdge : Pong.Ball.Ball -> Pong.Window.Window -> Bool
 ballHitBottomEdge ball window =
     (ball.y + ball.height) >= window.height
 
 
-ballHitLeftEdge : Ball -> Window -> Bool
+ballHitLeftEdge : Pong.Ball.Ball -> Pong.Window.Window -> Bool
 ballHitLeftEdge ball window =
     (ball.x - ball.width) <= window.x
 
 
-ballHitRightEdge : Ball -> Window -> Bool
+ballHitRightEdge : Pong.Ball.Ball -> Pong.Window.Window -> Bool
 ballHitRightEdge ball window =
     (ball.x + ball.width) >= window.width
 
 
-ballHitLeftPaddle : Ball -> Paddle -> Bool
+ballHitLeftPaddle : Pong.Ball.Ball -> Pong.Paddle.Paddle -> Bool
 ballHitLeftPaddle ball paddle =
     (paddle.y < ball.y && ball.y < paddle.y + paddle.height)
         && (paddle.x < ball.x && ball.x < paddle.x + paddle.width)
 
 
-ballHitRightPaddle : Ball -> Paddle -> Bool
+ballHitRightPaddle : Pong.Ball.Ball -> Pong.Paddle.Paddle -> Bool
 ballHitRightPaddle ball paddle =
     (paddle.y < ball.y && ball.y < paddle.y + paddle.height)
         && (paddle.x < ball.x + ball.width && ball.x < paddle.x + paddle.width)
 
 
-ballHitRightPaddleLocations : Ball -> Paddle -> ( Int, Int )
+ballHitRightPaddleLocations : Pong.Ball.Ball -> Pong.Paddle.Paddle -> ( Int, Int )
 ballHitRightPaddleLocations ball paddle =
     if ballHitRightPaddle ball paddle then
         ( ball.y, paddle.y )
@@ -333,21 +239,21 @@ ballHitRightPaddleLocations ball paddle =
         ( 0, 0 )
 
 
-leftPaddleHasWinningScore : Int -> WinningScore -> Bool
+leftPaddleHasWinningScore : Int -> Pong.Game.WinningScore -> Bool
 leftPaddleHasWinningScore leftPaddleScore winningScore =
-    leftPaddleScore == winningScoreToInt winningScore
+    leftPaddleScore == Pong.Game.winningScoreToInt winningScore
 
 
-rightPaddleHasWinningScore : Int -> WinningScore -> Bool
+rightPaddleHasWinningScore : Int -> Pong.Game.WinningScore -> Bool
 rightPaddleHasWinningScore rightPaddleScore winningScore =
-    rightPaddleScore == winningScoreToInt winningScore
+    rightPaddleScore == Pong.Game.winningScoreToInt winningScore
 
 
 
 -- UPDATES
 
 
-updateBall : Ball -> Maybe Paddle -> Maybe WindowEdge -> Time -> Model -> Model
+updateBall : Pong.Ball.Ball -> Maybe Pong.Paddle.Paddle -> Maybe Pong.Window.WindowEdge -> Time -> Model -> Model
 updateBall newBall maybePaddle maybeEdge time model =
     let
         applyUpdates ball =
@@ -359,13 +265,13 @@ updateBall newBall maybePaddle maybeEdge time model =
                             50
                     in
                     case paddle.id of
-                        Left ->
+                        Pong.Paddle.Left ->
                             { ball
                                 | x = ball.x + ball.width
                                 , vx = negate <| (ball.vx - changeInSpeed)
                             }
 
-                        Right ->
+                        Pong.Paddle.Right ->
                             { ball
                                 | x = ball.x - ball.width
                                 , vx = negate <| (ball.vx + changeInSpeed)
@@ -374,13 +280,13 @@ updateBall newBall maybePaddle maybeEdge time model =
                 -- ball did not hit paddle, ball hit edge
                 ( Nothing, Just edge ) ->
                     case edge of
-                        Top ->
+                        Pong.Window.Top ->
                             { ball
                                 | y = ball.y + ball.height
                                 , vy = negate ball.vy
                             }
 
-                        Bottom ->
+                        Pong.Window.Bottom ->
                             { ball
                                 | y = ball.y - ball.height
                                 , vy = negate ball.vy
@@ -403,12 +309,12 @@ updateBall newBall maybePaddle maybeEdge time model =
     { model | ball = applyUpdates newBall }
 
 
-updateBallPath : List Ball -> Model -> Model
+updateBallPath : List Pong.Ball.Ball -> Model -> Model
 updateBallPath newBallPath model =
     { model | ballPath = newBallPath }
 
 
-updateGameState : GameState -> Model -> Model
+updateGameState : Pong.Game.State -> Model -> Model
 updateGameState newGameState model =
     { model | gameState = newGameState }
 
@@ -418,20 +324,20 @@ updateLeftPaddleScore newLeftPaddleScore model =
     { model | leftPaddleScore = newLeftPaddleScore }
 
 
-updateLeftPaddle : Paddle -> Model -> Model
+updateLeftPaddle : Pong.Paddle.Paddle -> Model -> Model
 updateLeftPaddle newLeftPaddle model =
     { model | leftPaddle = newLeftPaddle }
 
 
-updateRightPaddle : Paddle -> Ball -> Model -> Model
+updateRightPaddle : Pong.Paddle.Paddle -> Pong.Ball.Ball -> Model -> Model
 updateRightPaddle newRightPaddle ball model =
     let
         updatePaddle paddle =
             if ball.y > paddle.y then
-                { paddle | y = keepPaddleInWindow paddle (paddle.y + 10) globalWindow }
+                { paddle | y = keepPaddleInWindow paddle (paddle.y + 10) Pong.Window.window }
 
             else if ball.y < paddle.y then
-                { paddle | y = keepPaddleInWindow paddle (paddle.y - 10) globalWindow }
+                { paddle | y = keepPaddleInWindow paddle (paddle.y - 10) Pong.Window.window }
 
             else
                 paddle
@@ -444,17 +350,17 @@ updateRightPaddleScore newRightPaddleScore model =
     { model | rightPaddleScore = newRightPaddleScore }
 
 
-updateShowBallPath : ShowBallPath -> Model -> Model
+updateShowBallPath : Pong.Ball.ShowBallPath -> Model -> Model
 updateShowBallPath newShowBallPath model =
     { model | showBallPath = newShowBallPath }
 
 
-updateWinner : Maybe PaddleId -> Model -> Model
+updateWinner : Maybe Pong.Paddle.PaddleId -> Model -> Model
 updateWinner newWinner model =
     { model | winner = newWinner }
 
 
-updateWinningScore : WinningScore -> Model -> Model
+updateWinningScore : Pong.Game.WinningScore -> Model -> Model
 updateWinningScore newWinningScore model =
     { model | winningScore = newWinningScore }
 
@@ -477,7 +383,7 @@ playSoundCommand soundFile model =
 -- UPDATE HELPERS
 
 
-keepPaddleInWindow : Paddle -> Int -> Window -> Int
+keepPaddleInWindow : Pong.Paddle.Paddle -> Int -> Pong.Window.Window -> Int
 keepPaddleInWindow paddle paddleYPosition window =
     let
         topEdge =
@@ -489,14 +395,14 @@ keepPaddleInWindow paddle paddleYPosition window =
     Basics.clamp topEdge bottomEdge paddleYPosition
 
 
-movePaddleDown : Paddle -> Paddle
+movePaddleDown : Pong.Paddle.Paddle -> Pong.Paddle.Paddle
 movePaddleDown paddle =
-    { paddle | y = keepPaddleInWindow paddle (paddle.y + 10) globalWindow }
+    { paddle | y = keepPaddleInWindow paddle (paddle.y + 10) Pong.Window.window }
 
 
-movePaddleUp : Paddle -> Paddle
+movePaddleUp : Pong.Paddle.Paddle -> Pong.Paddle.Paddle
 movePaddleUp paddle =
-    { paddle | y = keepPaddleInWindow paddle (paddle.y - 10) globalWindow }
+    { paddle | y = keepPaddleInWindow paddle (paddle.y - 10) Pong.Window.window }
 
 
 
@@ -512,7 +418,7 @@ subscriptions model =
         ]
 
 
-browserAnimationSubscription : GameState -> Sub Msg
+browserAnimationSubscription : Pong.Game.State -> Sub Msg
 browserAnimationSubscription gameState =
     Browser.Events.onAnimationFrameDelta (\milliseconds -> BrowserAdvancedAnimationFrame gameState (milliseconds / 1000))
 
@@ -585,29 +491,26 @@ validKeys =
 view : Model -> Html.Html Msg
 view model =
     Html.main_ [ Html.Attributes.class "px-6" ]
-        [ Html.header []
-            [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ]
-                [ Html.text "\u{1F3D3} Pong" ]
-            ]
+        [ viewHeader
         , Html.section []
             [ case model.gameState of
-                StartingScreen ->
+                Pong.Game.StartingScreen ->
                     Html.div []
-                        [ viewSvg globalWindow model
+                        [ viewSvg Pong.Window.window model
                         , viewInstructions
                         , viewOptions model.showBallPath model.winningScore
                         ]
 
-                PlayingScreen ->
+                Pong.Game.PlayingScreen ->
                     Html.div []
-                        [ viewSvg globalWindow model
+                        [ viewSvg Pong.Window.window model
                         , viewInstructions
                         , viewOptions model.showBallPath model.winningScore
                         ]
 
-                EndingScreen ->
+                Pong.Game.EndingScreen ->
                     Html.div []
-                        [ viewSvg globalWindow model
+                        [ viewSvg Pong.Window.window model
                         , viewWinner model.winner
                         , viewInstructions
                         , viewOptions model.showBallPath model.winningScore
@@ -615,8 +518,14 @@ view model =
             ]
         ]
 
+viewHeader : Html.Html msg
+viewHeader =
+    Html.header []
+        [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ]
+            [ Html.text "\u{1F3D3} Pong" ]
+        ]
 
-viewSvg : Window -> Model -> Svg.Svg msg
+viewSvg : Pong.Window.Window -> Model -> Svg.Svg msg
 viewSvg window model =
     let
         viewBoxString =
@@ -645,7 +554,7 @@ viewSvg window model =
         )
 
 
-viewGameWindow : Window -> Svg.Svg msg
+viewGameWindow : Pong.Window.Window -> Svg.Svg msg
 viewGameWindow window =
     Svg.rect
         [ Svg.Attributes.fill window.backgroundColor
@@ -657,7 +566,7 @@ viewGameWindow window =
         []
 
 
-viewNet : Window -> Svg.Svg msg
+viewNet : Pong.Window.Window -> Svg.Svg msg
 viewNet window =
     Svg.line
         [ Svg.Attributes.stroke "white"
@@ -671,7 +580,7 @@ viewNet window =
         []
 
 
-viewPaddleScore : Int -> Window -> Int -> Svg.Svg msg
+viewPaddleScore : Int -> Pong.Window.Window -> Int -> Svg.Svg msg
 viewPaddleScore score window positionOffset =
     Svg.text_
         [ Svg.Attributes.fill "white"
@@ -684,7 +593,7 @@ viewPaddleScore score window positionOffset =
         [ Svg.text <| String.fromInt score ]
 
 
-viewPaddle : Paddle -> Svg.Svg msg
+viewPaddle : Pong.Paddle.Paddle -> Svg.Svg msg
 viewPaddle paddle =
     Svg.rect
         [ Svg.Attributes.fill paddle.color
@@ -696,7 +605,7 @@ viewPaddle paddle =
         []
 
 
-viewBall : Ball -> Svg.Svg msg
+viewBall : Pong.Ball.Ball -> Svg.Svg msg
 viewBall ball =
     Svg.rect
         [ Svg.Attributes.fill ball.color
@@ -708,17 +617,17 @@ viewBall ball =
         []
 
 
-viewBallPath : ShowBallPath -> List Ball -> List (Svg.Svg msg)
+viewBallPath : Pong.Ball.ShowBallPath -> List Pong.Ball.Ball -> List (Svg.Svg msg)
 viewBallPath showBallPath ballPath =
     case showBallPath of
-        On ->
+        Pong.Ball.On ->
             List.indexedMap viewBallPathSegment ballPath
 
-        Off ->
+        Pong.Ball.Off ->
             []
 
 
-viewBallPathSegment : Int -> Ball -> Svg.Svg msg
+viewBallPathSegment : Int -> Pong.Ball.Ball -> Svg.Svg msg
 viewBallPathSegment index ball =
     Svg.rect
         [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (80 - index)
@@ -731,7 +640,7 @@ viewBallPathSegment index ball =
         []
 
 
-viewWinner : Maybe PaddleId -> Html.Html msg
+viewWinner : Maybe Pong.Paddle.PaddleId -> Html.Html msg
 viewWinner maybePaddleId =
     Html.div [ Html.Attributes.class "pt-2" ]
         [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
@@ -740,11 +649,11 @@ viewWinner maybePaddleId =
         ]
 
 
-viewWinnerPaddle : Maybe PaddleId -> Html.Html msg
+viewWinnerPaddle : Maybe Pong.Paddle.PaddleId -> Html.Html msg
 viewWinnerPaddle maybePaddleId =
     case maybePaddleId of
         Just paddleId ->
-            Html.p [] [ Html.text <| "\u{1F947} " ++ paddleIdToString paddleId ++ " paddle wins!" ]
+            Html.p [] [ Html.text <| "\u{1F947} " ++ Pong.Paddle.paddleIdToString paddleId ++ " paddle wins!" ]
 
         Nothing ->
             Html.span [] []
@@ -763,7 +672,7 @@ viewInstructions =
         ]
 
 
-viewOptions : ShowBallPath -> WinningScore -> Html.Html Msg
+viewOptions : Pong.Ball.ShowBallPath -> Pong.Game.WinningScore -> Html.Html Msg
 viewOptions showBallPath_ winningScore =
     Html.div [ Html.Attributes.class "pt-2" ]
         [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
@@ -775,23 +684,23 @@ viewOptions showBallPath_ winningScore =
         ]
 
 
-viewShowBallPathOptions : ShowBallPath -> Html.Html Msg
+viewShowBallPathOptions : Pong.Ball.ShowBallPath -> Html.Html Msg
 viewShowBallPathOptions showBallPath_ =
     Html.fieldset []
         [ Html.span [ Html.Attributes.class "font-medium italic mr-3" ]
             [ Html.text "Show ball path history:" ]
-        , viewRadioButton Off showBallPath_ showBallPathToString PlayerClickedShowBallPathRadioButton
-        , viewRadioButton On showBallPath_ showBallPathToString PlayerClickedShowBallPathRadioButton
+        , viewRadioButton Pong.Ball.Off showBallPath_ Pong.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
+        , viewRadioButton Pong.Ball.On showBallPath_ Pong.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
         ]
 
 
-viewWinningScoreOptions : WinningScore -> Html.Html Msg
+viewWinningScoreOptions : Pong.Game.WinningScore -> Html.Html Msg
 viewWinningScoreOptions winningScore =
     Html.fieldset []
         [ Html.span [ Html.Attributes.class "font-medium italic mr-3" ]
             [ Html.text "Set winning score:" ]
-        , viewRadioButton Eleven winningScore winningScoreToString PlayerClickedWinningScoreRadioButton
-        , viewRadioButton Fifteen winningScore winningScoreToString PlayerClickedWinningScoreRadioButton
+        , viewRadioButton Pong.Game.Eleven winningScore Pong.Game.winningScoreToString PlayerClickedWinningScoreRadioButton
+        , viewRadioButton Pong.Game.Fifteen winningScore Pong.Game.winningScoreToString PlayerClickedWinningScoreRadioButton
         ]
 
 
@@ -811,47 +720,3 @@ viewRadioButton type_ current toString msg =
         , Html.span [ Html.Attributes.class "px-1 text-xs" ]
             [ Html.text <| toString type_ ]
         ]
-
-
-
--- CONVERSION HELPERS
-
-
-paddleIdToString : PaddleId -> String
-paddleIdToString paddleId =
-    case paddleId of
-        Left ->
-            "Left"
-
-        Right ->
-            "Right"
-
-
-showBallPathToString : ShowBallPath -> String
-showBallPathToString showBallPath_ =
-    case showBallPath_ of
-        On ->
-            "On"
-
-        Off ->
-            "Off"
-
-
-winningScoreToInt : WinningScore -> Int
-winningScoreToInt winningScore =
-    case winningScore of
-        Eleven ->
-            11
-
-        Fifteen ->
-            15
-
-
-winningScoreToString : WinningScore -> String
-winningScoreToString winningScore =
-    case winningScore of
-        Eleven ->
-            "11"
-
-        Fifteen ->
-            "15"
