@@ -97,46 +97,6 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         BrowserAdvancedAnimationFrame deltaTime ->
-            -- determine winner (Left/Right)
-            -- ball hit paddle (Left/Right)
-            -- ball hit window edge (Bottom/Left/Right/Top)
-            -- handle keyboard input (Down/Up)
-            -- let
-            --     ballHitEdge =
-            --         Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow
-            -- in
-            -- case ballHitEdge of
-            --     Just Pong.Window.Bottom ->
-            --         model
-            --             |> updateBall model.ball Nothing (Just Pong.Window.Bottom) deltaTime
-            --             |> updateDeltaTimes model.showFps deltaTime
-            --             |> playSoundCommand "boop.wav"
-            --     Just Pong.Window.Left ->
-            --         model
-            --             |> updateBall Pong.Ball.initialBall Nothing Nothing deltaTime
-            --             |> updateDeltaTimes model.showFps deltaTime
-            --             |> clearBallPath
-            --             |> updatePaddleScore model.rightPaddle
-            --             |> noCommand
-            --     Just Pong.Window.Right ->
-            --         model
-            --             |> updateBall Pong.Ball.initialBall Nothing Nothing deltaTime
-            --             |> updateDeltaTimes model.showFps deltaTime
-            --             |> clearBallPath
-            --             |> updatePaddleScore model.leftPaddle
-            --             |> noCommand
-            --     Just Pong.Window.Top ->
-            --         model
-            --             |> updateBall model.ball Nothing (Just Pong.Window.Top) deltaTime
-            --             |> updateDeltaTimes model.showFps deltaTime
-            --             |> playSoundCommand "boop.wav"
-            --     Nothing ->
-            --         model
-            --             |> updateBall model.ball Nothing Nothing deltaTime
-            --             |> updateBallPath model.ball model.ballPath
-            --             |> updateDeltaTimes model.showFps deltaTime
-            --             |> updateRightPaddle model.rightPaddle model.ball
-            --             |> noCommand
             if leftPaddleHasWinningScore model.leftPaddle.score model.winningScore then
                 model
                     |> updateGameState Pong.Game.EndingScreen
@@ -194,7 +154,6 @@ update msg model =
                     |> updateBall model.ball Nothing Nothing deltaTime
                     |> updateBallPath model.ball model.ballPath
                     |> updateDeltaTimes model.showFps deltaTime
-                    -- updatePaddle paddle direction ball window deltaTime model =
                     |> updatePaddle model.leftPaddle Pong.Paddle.Up model.ball Pong.Window.globalWindow deltaTime
                     |> updatePaddle model.rightPaddle Pong.Paddle.Idle model.ball Pong.Window.globalWindow deltaTime
                     |> noCommand
@@ -265,14 +224,14 @@ update msg model =
 
 ballHitLeftPaddle : Pong.Ball.Ball -> Pong.Paddle.Paddle -> Bool
 ballHitLeftPaddle ball paddle =
-    (paddle.y < ball.y && ball.y < paddle.y + paddle.height)
-        && (paddle.x < ball.x && ball.x < paddle.x + paddle.width)
+    (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
+        && (paddle.x <= ball.x && ball.x <= paddle.x + paddle.width)
 
 
 ballHitRightPaddle : Pong.Ball.Ball -> Pong.Paddle.Paddle -> Bool
 ballHitRightPaddle ball paddle =
-    (paddle.y < ball.y && ball.y < paddle.y + paddle.height)
-        && (paddle.x < ball.x + ball.width && ball.x < paddle.x + paddle.width)
+    (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
+        && (paddle.x <= ball.x + ball.width && ball.x <= paddle.x + paddle.width)
 
 
 leftPaddleHasWinningScore : Int -> Pong.Game.WinningScore -> Bool
