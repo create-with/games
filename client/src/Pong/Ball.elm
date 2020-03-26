@@ -27,8 +27,8 @@ type alias BallPath =
 
 
 type ShowBallPath
-    = On
-    | Off
+    = Off
+    | On
 
 
 
