@@ -39,10 +39,8 @@ type alias Model =
     , ballPath : Pong.Ball.BallPath
     , gameState : Pong.Game.State
     , leftPaddle : Pong.Paddle.Paddle
-    , leftPaddleScore : Int
     , playerKeyPress : Set.Set String
     , rightPaddle : Pong.Paddle.Paddle
-    , rightPaddleScore : Int
     , showBallPath : Pong.Ball.ShowBallPath
     , winner : Maybe Pong.Paddle.PaddleId
     , winningScore : Pong.Game.WinningScore
@@ -56,10 +54,8 @@ initialModel =
     , ballPath = Pong.Ball.initialBallPath
     , gameState = Pong.Game.initialState
     , leftPaddle = Pong.Paddle.initialLeftPaddle
-    , leftPaddleScore = 0
     , playerKeyPress = Set.empty
     , rightPaddle = Pong.Paddle.initialRightPaddle
-    , rightPaddleScore = 0
     , showBallPath = Pong.Ball.initialShowBallPath
     , winner = Nothing
     , winningScore = Pong.Game.Eleven
@@ -101,13 +97,13 @@ update msg model =
                 model |> noCommand
 
         BrowserAdvancedAnimationFrame Pong.Game.PlayingScreen time ->
-            if leftPaddleHasWinningScore model.leftPaddleScore model.winningScore then
+            if leftPaddleHasWinningScore model.leftPaddle.score model.winningScore then
                 model
                     |> updateGameState Pong.Game.EndingScreen
                     |> updateWinner (Just model.leftPaddle.id)
                     |> noCommand
 
-            else if rightPaddleHasWinningScore model.rightPaddleScore model.winningScore then
+            else if rightPaddleHasWinningScore model.rightPaddle.score model.winningScore then
                 model
                     |> updateGameState Pong.Game.EndingScreen
                     |> updateWinner (Just model.rightPaddle.id)
@@ -127,14 +123,14 @@ update msg model =
                 model
                     |> updateBall Pong.Ball.initialBall Nothing Nothing time
                     |> updateBallPath []
-                    |> updateLeftPaddleScore (model.leftPaddleScore + 1)
+                    |> updatePaddleScore model.leftPaddle
                     |> noCommand
 
             else if ballHitLeftEdge model.ball Pong.Window.window then
                 model
                     |> updateBall Pong.Ball.initialBall Nothing Nothing time
                     |> updateBallPath []
-                    |> updateRightPaddleScore (model.rightPaddleScore + 1)
+                    |> updatePaddleScore model.rightPaddle
                     |> noCommand
 
             else if ballHitTopEdge model.ball Pong.Window.window then
@@ -319,9 +315,16 @@ updateGameState newGameState model =
     { model | gameState = newGameState }
 
 
-updateLeftPaddleScore : Int -> Model -> Model
-updateLeftPaddleScore newLeftPaddleScore model =
-    { model | leftPaddleScore = newLeftPaddleScore }
+updatePaddleScore : Pong.Paddle.Paddle -> Model -> Model
+updatePaddleScore paddle model =
+    case paddle.id of
+       Pong.Paddle.Left ->
+            { model | leftPaddle = Pong.Paddle.updateScore paddle }
+
+       Pong.Paddle.Right ->
+            { model | rightPaddle = Pong.Paddle.updateScore paddle }
+
+
 
 
 updateLeftPaddle : Pong.Paddle.Paddle -> Model -> Model
@@ -345,9 +348,6 @@ updateRightPaddle newRightPaddle ball model =
     { model | rightPaddle = updatePaddle newRightPaddle }
 
 
-updateRightPaddleScore : Int -> Model -> Model
-updateRightPaddleScore newRightPaddleScore model =
-    { model | rightPaddleScore = newRightPaddleScore }
 
 
 updateShowBallPath : Pong.Ball.ShowBallPath -> Model -> Model
@@ -544,8 +544,8 @@ viewSvg window model =
         ]
         ([ viewGameWindow window
          , viewNet window
-         , viewPaddleScore model.leftPaddleScore window -200
-         , viewPaddleScore model.rightPaddleScore window 150
+         , viewPaddleScore model.leftPaddle.score window -200
+         , viewPaddleScore model.rightPaddle.score window 150
          , viewPaddle model.leftPaddle
          , viewPaddle model.rightPaddle
          , viewBall model.ball

@@ -4,6 +4,7 @@ module Pong.Paddle exposing
     , initialLeftPaddle
     , initialRightPaddle
     , paddleIdToString
+    , updateScore
     )
 
 -- MODEL
@@ -12,6 +13,7 @@ module Pong.Paddle exposing
 type alias Paddle =
     { color : String
     , id : PaddleId
+    , score : Int
     , x : Int
     , y : Int
     , width : Int
@@ -32,6 +34,7 @@ initialLeftPaddle : Paddle
 initialLeftPaddle =
     { color = "lightblue"
     , id = Left
+    , score = 0
     , x = 48
     , y = 200
     , width = 10
@@ -43,6 +46,7 @@ initialRightPaddle : Paddle
 initialRightPaddle =
     { color = "lightpink"
     , id = Right
+    , score = 0
     , x = 740
     , y = 300
     , width = 10
@@ -50,6 +54,11 @@ initialRightPaddle =
     }
 
 
+-- UPDATE
+
+updateScore : Paddle -> Paddle
+updateScore paddle =
+    { paddle | score = paddle.score + 1 }
 
 -- HELPERS
 
