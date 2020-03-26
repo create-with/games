@@ -1,11 +1,19 @@
 module Pong.Game exposing
     ( State(..)
+    , Winner
     , WinningScore(..)
     , initialState
+    , initialWinner
     , initialWinningScore
     , winningScoreToInt
     , winningScoreToString
     )
+
+-- IMPORTS
+
+import Pong.Paddle
+
+
 
 -- MODEL
 
@@ -14,6 +22,10 @@ type State
     = StartingScreen
     | PlayingScreen
     | EndingScreen
+
+
+type alias Winner =
+    Maybe Pong.Paddle.Paddle
 
 
 type WinningScore
@@ -28,6 +40,11 @@ type WinningScore
 initialState : State
 initialState =
     StartingScreen
+
+
+initialWinner : Winner
+initialWinner =
+    Nothing
 
 
 initialWinningScore : WinningScore

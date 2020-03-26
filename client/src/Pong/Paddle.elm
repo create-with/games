@@ -1,13 +1,30 @@
 module Pong.Paddle exposing
-    ( Paddle
+    ( Direction(..)
+    , Paddle
     , PaddleId(..)
     , initialLeftPaddle
     , initialRightPaddle
     , paddleIdToString
+    , updateLeftPaddle
+    , updateRightPaddle
     , updateScore
+    , updateYWithinWindow
     )
 
+-- IMPORTS
+
+import Pong.Ball
+import Pong.Window
+
+
+
 -- MODEL
+
+
+type Direction
+    = Down
+    | Idle
+    | Up
 
 
 type alias Paddle =
@@ -38,7 +55,7 @@ initialLeftPaddle =
     , score = 0
     , x = 48
     , y = 200
-    , vy = 300.0
+    , vy = 500.0
     , width = 10
     , height = 60
     }
@@ -51,7 +68,7 @@ initialRightPaddle =
     , score = 0
     , x = 740
     , y = 300
-    , vy = 300.0
+    , vy = 500.0
     , width = 10
     , height = 60
     }
@@ -64,6 +81,43 @@ initialRightPaddle =
 updateScore : Paddle -> Paddle
 updateScore paddle =
     { paddle | score = paddle.score + 1 }
+
+
+updateLeftPaddle : Direction -> Pong.Ball.Ball -> Float -> Paddle -> Paddle
+updateLeftPaddle direction _ deltaTime paddle =
+    case direction of
+        Down ->
+            { paddle | y = round <| toFloat paddle.y + paddle.vy * deltaTime }
+
+        Idle ->
+            paddle
+
+        Up ->
+            { paddle | y = round <| toFloat paddle.y - paddle.vy * deltaTime }
+
+
+updateRightPaddle : Direction -> Pong.Ball.Ball -> Float -> Paddle -> Paddle
+updateRightPaddle _ ball deltaTime paddle =
+    if ball.y > paddle.y then
+        { paddle | y = round <| toFloat paddle.y + paddle.vy * deltaTime }
+
+    else if ball.y < paddle.y then
+        { paddle | y = round <| toFloat paddle.y - paddle.vy * deltaTime }
+
+    else
+        paddle
+
+
+updateYWithinWindow : Pong.Window.Window -> Paddle -> Paddle
+updateYWithinWindow window paddle =
+    let
+        topEdge =
+            window.y
+
+        bottomEdge =
+            window.height - paddle.height
+    in
+    { paddle | y = Basics.clamp topEdge bottomEdge paddle.y }
 
 
 
