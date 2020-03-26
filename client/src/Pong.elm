@@ -85,7 +85,7 @@ init _ =
 
 
 type Msg
-    = BrowserAdvancedAnimationFrame Pong.Game.State DeltaTime
+    = BrowserAdvancedAnimationFrame DeltaTime
     | PlayerClickedShowBallPathRadioButton Pong.Ball.ShowBallPath
     | PlayerClickedShowFpsRadioButton Pong.Fps.ShowFps
     | PlayerClickedWinningScoreRadioButton Pong.Game.WinningScore
@@ -96,16 +96,7 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        BrowserAdvancedAnimationFrame Pong.Game.StartingScreen _ ->
-            if Pong.Keyboard.playerPressedSpacebarKey model.playerKeyPress then
-                model
-                    |> updateGameState Pong.Game.PlayingScreen
-                    |> noCommand
-
-            else
-                model |> noCommand
-
-        BrowserAdvancedAnimationFrame Pong.Game.PlayingScreen deltaTime ->
+        BrowserAdvancedAnimationFrame deltaTime ->
             if leftPaddleHasWinningScore model.leftPaddle.score model.winningScore then
                 model
                     |> updateGameState Pong.Game.EndingScreen
@@ -121,19 +112,19 @@ update msg model =
             else if ballHitLeftPaddle model.ball model.leftPaddle then
                 model
                     |> updateBall model.ball (Just model.leftPaddle) Nothing deltaTime
-                    |> updateDeltaTimes deltaTime
+                    |> updateDeltaTimes model.showFps deltaTime
                     |> playSoundCommand "beep.wav"
 
             else if ballHitRightPaddle model.ball model.rightPaddle then
                 model
                     |> updateBall model.ball (Just model.rightPaddle) Nothing deltaTime
-                    |> updateDeltaTimes deltaTime
+                    |> updateDeltaTimes model.showFps deltaTime
                     |> playSoundCommand "beep.wav"
 
             else if Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow == Just Pong.Window.Right then
                 model
                     |> updateBall Pong.Ball.initialBall Nothing Nothing deltaTime
-                    |> updateDeltaTimes deltaTime
+                    |> updateDeltaTimes model.showFps deltaTime
                     |> clearBallPath
                     |> updatePaddleScore model.leftPaddle
                     |> noCommand
@@ -141,7 +132,7 @@ update msg model =
             else if Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow == Just Pong.Window.Left then
                 model
                     |> updateBall Pong.Ball.initialBall Nothing Nothing deltaTime
-                    |> updateDeltaTimes deltaTime
+                    |> updateDeltaTimes model.showFps deltaTime
                     |> clearBallPath
                     |> updatePaddleScore model.rightPaddle
                     |> noCommand
@@ -149,20 +140,20 @@ update msg model =
             else if Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow == Just Pong.Window.Top then
                 model
                     |> updateBall model.ball Nothing (Just Pong.Window.Top) deltaTime
-                    |> updateDeltaTimes deltaTime
+                    |> updateDeltaTimes model.showFps deltaTime
                     |> playSoundCommand "boop.wav"
 
             else if Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow == Just Pong.Window.Bottom then
                 model
                     |> updateBall model.ball Nothing (Just Pong.Window.Bottom) deltaTime
-                    |> updateDeltaTimes deltaTime
+                    |> updateDeltaTimes model.showFps deltaTime
                     |> playSoundCommand "boop.wav"
 
             else if Pong.Keyboard.playerPressedArrowUpKey model.playerKeyPress then
                 model
                     |> updateBall model.ball Nothing Nothing deltaTime
                     |> updateBallPath model.ball model.ballPath
-                    |> updateDeltaTimes deltaTime
+                    |> updateDeltaTimes model.showFps deltaTime
                     |> updateLeftPaddle (movePaddleUp model.leftPaddle)
                     |> updateRightPaddle model.rightPaddle model.ball
                     |> noCommand
@@ -171,7 +162,7 @@ update msg model =
                 model
                     |> updateBall model.ball Nothing Nothing deltaTime
                     |> updateBallPath model.ball model.ballPath
-                    |> updateDeltaTimes deltaTime
+                    |> updateDeltaTimes model.showFps deltaTime
                     |> updateLeftPaddle (movePaddleDown model.leftPaddle)
                     |> updateRightPaddle model.rightPaddle model.ball
                     |> noCommand
@@ -180,16 +171,9 @@ update msg model =
                 model
                     |> updateBall model.ball Nothing Nothing deltaTime
                     |> updateBallPath model.ball model.ballPath
-                    |> updateDeltaTimes deltaTime
+                    |> updateDeltaTimes model.showFps deltaTime
                     |> updateRightPaddle model.rightPaddle model.ball
                     |> noCommand
-
-        BrowserAdvancedAnimationFrame Pong.Game.EndingScreen _ ->
-            if Pong.Keyboard.playerPressedSpacebarKey model.playerKeyPress then
-                initialModel |> noCommand
-
-            else
-                model |> noCommand
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             model
@@ -207,9 +191,26 @@ update msg model =
                 |> noCommand
 
         PlayerPressedKeyDown key ->
-            model
-                |> updateKeyPress key
-                |> noCommand
+            case key of
+                " " -> 
+                    case model.gameState of
+                        Pong.Game.StartingScreen ->
+                            model
+                                |> updateGameState Pong.Game.PlayingScreen
+                                |> noCommand
+                        
+                        Pong.Game.PlayingScreen ->
+                            model |> noCommand
+                        
+                        Pong.Game.EndingScreen ->
+                            model
+                                |> updateGameState Pong.Game.StartingScreen
+                                |> noCommand
+
+                _ ->
+                    model
+                        |> updateKeyPress key
+                        |> noCommand
 
         PlayerReleasedKey _ ->
             model
@@ -324,9 +325,14 @@ clearBallPath model =
     { model | ballPath = [] }
 
 
-updateDeltaTimes : DeltaTime -> Model -> Model
-updateDeltaTimes deltaTime model =
-    { model | deltaTimes = List.take 50 (deltaTime :: model.deltaTimes) }
+updateDeltaTimes : Pong.Fps.ShowFps -> DeltaTime -> Model -> Model
+updateDeltaTimes showFps deltaTime model =
+    case showFps of
+        Pong.Fps.Off ->
+            model
+    
+        Pong.Fps.On ->
+            { model | deltaTimes = List.take 50 (deltaTime :: model.deltaTimes) }
 
 
 updateGameState : Pong.Game.State -> Model -> Model
@@ -343,6 +349,19 @@ updatePaddleScore paddle model =
         Pong.Paddle.Right ->
             { model | rightPaddle = Pong.Paddle.updateScore paddle }
 
+
+clearKeyPresses : Model -> Model
+clearKeyPresses model =
+    { model | playerKeyPress = Set.empty }
+
+
+updateKeyPress : String -> Model -> Model
+updateKeyPress key model =
+    if Set.member key Pong.Keyboard.validKeys then
+        { model | playerKeyPress = Set.insert key model.playerKeyPress }
+
+    else
+        model
 
 updateLeftPaddle : Pong.Paddle.Paddle -> Model -> Model
 updateLeftPaddle newLeftPaddle model =
@@ -440,12 +459,20 @@ subscriptions model =
 
 browserAnimationSubscription : Pong.Game.State -> Sub Msg
 browserAnimationSubscription gameState =
-    Browser.Events.onAnimationFrameDelta <| handleAnimationFrames gameState
+    case gameState of
+        Pong.Game.StartingScreen ->
+            Sub.none
+
+        Pong.Game.PlayingScreen ->
+            Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
+
+        Pong.Game.EndingScreen ->
+            Sub.none
 
 
-handleAnimationFrames : Pong.Game.State -> DeltaTime -> Msg
-handleAnimationFrames gameState milliseconds =
-    BrowserAdvancedAnimationFrame gameState <| milliseconds / 1000
+handleAnimationFrames : DeltaTime -> Msg
+handleAnimationFrames milliseconds =
+    BrowserAdvancedAnimationFrame <| milliseconds / 1000
 
 
 keyDownSubscription : Sub Msg
@@ -456,20 +483,6 @@ keyDownSubscription =
 keyUpSubscription : Sub Msg
 keyUpSubscription =
     Browser.Events.onKeyUp <| Json.Decode.map PlayerReleasedKey <| Pong.Keyboard.keyDecoder
-
-
-clearKeyPresses : Model -> Model
-clearKeyPresses model =
-    { model | playerKeyPress = Set.empty }
-
-
-updateKeyPress : String -> Model -> Model
-updateKeyPress key model =
-    if Set.member key Pong.Keyboard.validKeys then
-        { model | playerKeyPress = Set.insert key model.playerKeyPress }
-
-    else
-        model
 
 
 
