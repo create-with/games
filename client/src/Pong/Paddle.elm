@@ -2,6 +2,7 @@ module Pong.Paddle exposing
     ( Direction(..)
     , Paddle
     , PaddleId(..)
+    , getPaddleHitByBall
     , initialLeftPaddle
     , initialRightPaddle
     , paddleIdToString
@@ -120,6 +121,34 @@ updateYWithinWindow window paddle =
             window.height - paddle.height
     in
     { paddle | y = Basics.clamp topEdge bottomEdge paddle.y }
+
+
+
+-- COLLISIONS
+
+
+ballHitLeftPaddle : Pong.Ball.Ball -> Paddle -> Bool
+ballHitLeftPaddle ball paddle =
+    (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
+        && (paddle.x <= ball.x && ball.x <= paddle.x + paddle.width)
+
+
+ballHitRightPaddle : Pong.Ball.Ball -> Paddle -> Bool
+ballHitRightPaddle ball paddle =
+    (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
+        && (paddle.x <= ball.x + ball.width && ball.x <= paddle.x + paddle.width)
+
+
+getPaddleHitByBall : Pong.Ball.Ball -> Paddle -> Paddle -> Maybe Paddle
+getPaddleHitByBall ball leftPaddle rightPaddle =
+    if ballHitLeftPaddle ball leftPaddle then
+        Just leftPaddle
+
+    else if ballHitRightPaddle ball rightPaddle then
+        Just rightPaddle
+
+    else
+        Nothing
 
 
 

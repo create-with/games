@@ -94,27 +94,28 @@ update msg model =
     case msg of
         BrowserAdvancedAnimationFrame deltaTime ->
             let
-                paddleHitByBall_ =
-                    paddleHitByBall model.ball model.leftPaddle model.rightPaddle
+                getWindowEdgeHitByBall =
+                    Pong.Window.getWindowEdgeHitByBall model.ball Pong.Window.globalWindow
 
-                ballHitWindowEdge =
-                    Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow
+                getPaddleHitByBall =
+                    Pong.Paddle.getPaddleHitByBall model.ball model.leftPaddle model.rightPaddle
+
+                getWinner =
+                    Pong.Game.getWinner model.leftPaddle model.rightPaddle model.winningScore
 
                 leftPaddleDirection =
                     Pong.Paddle.playerKeyPressToDirection model.playerKeyPress
-
-                determineWinner_ =
-                    determineWinner model.leftPaddle model.rightPaddle model.winningScore
             in
             model
-                |> updateBall model.ball paddleHitByBall_ ballHitWindowEdge deltaTime
-                |> updateBallPath model.ball model.ballPath
+                |> updateBall model.ball getPaddleHitByBall getWindowEdgeHitByBall deltaTime
+                |> updateBallPath model.ball model.ballPath getWindowEdgeHitByBall
                 |> updateDeltaTimes model.showFps deltaTime
                 |> updatePaddle model.leftPaddle leftPaddleDirection model.ball Pong.Window.globalWindow deltaTime
                 |> updatePaddle model.rightPaddle Nothing model.ball Pong.Window.globalWindow deltaTime
-                |> updatePaddleScores ballHitWindowEdge
-                |> updateWinner determineWinner_
-                |> addCommand paddleHitByBall_ ballHitWindowEdge
+                |> updatePaddleScores getWindowEdgeHitByBall
+                |> updateWinner getWinner
+                |> updateGameState model.gameState getWinner
+                |> addCommand getPaddleHitByBall getWindowEdgeHitByBall
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             ( { model | showBallPath = showBallPathValue }, Cmd.none )
@@ -130,59 +131,19 @@ update msg model =
                 " " ->
                     case model.gameState of
                         Pong.Game.StartingScreen ->
-                            ( updateGameState Pong.Game.PlayingScreen model, Cmd.none)
+                            ( updateGameState Pong.Game.PlayingScreen Nothing model, Cmd.none )
 
                         Pong.Game.PlayingScreen ->
                             ( model, Cmd.none )
 
                         Pong.Game.EndingScreen ->
-                            ( updateGameState Pong.Game.StartingScreen model, Cmd.none)
+                            ( updateGameState Pong.Game.StartingScreen Nothing model, Cmd.none )
 
                 _ ->
                     ( updateKeyPress key model, Cmd.none )
 
         PlayerReleasedKey _ ->
             ( clearKeyPresses model, Cmd.none )
-
-
-
--- UPDATE PREDICATES
-
-
-paddleHitByBall : Ball -> Paddle -> Paddle -> Maybe Paddle
-paddleHitByBall ball leftPaddle rightPaddle =
-    if ballHitLeftPaddle ball leftPaddle then
-        Just leftPaddle
-
-    else if ballHitRightPaddle ball rightPaddle then
-        Just rightPaddle
-
-    else
-        Nothing
-
-
-ballHitLeftPaddle : Ball -> Paddle -> Bool
-ballHitLeftPaddle ball paddle =
-    (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
-        && (paddle.x <= ball.x && ball.x <= paddle.x + paddle.width)
-
-
-ballHitRightPaddle : Ball -> Paddle -> Bool
-ballHitRightPaddle ball paddle =
-    (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
-        && (paddle.x <= ball.x + ball.width && ball.x <= paddle.x + paddle.width)
-
-
-determineWinner : Paddle -> Paddle -> WinningScore -> Maybe Paddle
-determineWinner leftPaddle rightPaddle winningScore =
-    if leftPaddle.score == Pong.Game.winningScoreToInt winningScore then
-        Just leftPaddle
-
-    else if rightPaddle.score == Pong.Game.winningScoreToInt winningScore then
-        Just rightPaddle
-
-    else
-        Nothing
 
 
 
@@ -197,7 +158,6 @@ updateBall ball maybePaddle maybeWindowEdge deltaTime model =
 updateBallWithCollisions : Ball -> Maybe Paddle -> Maybe WindowEdge -> DeltaTime -> Ball
 updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
     case ( maybePaddle, maybeWindowEdge ) of
-        -- ball hit paddle, ball did not hit edge
         ( Just paddle, Nothing ) ->
             case paddle.id of
                 Pong.Paddle.Left ->
@@ -212,7 +172,6 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                         , vx = negate <| ball.vx + 50
                     }
 
-        -- ball did not hit paddle, ball hit edge
         ( Nothing, Just edge ) ->
             case edge of
                 Pong.Window.Bottom ->
@@ -233,7 +192,6 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                         , vy = negate ball.vy
                     }
 
-        -- ball hit paddle, ball hit edge (hadn't thought about this case)
         ( Just paddle, Just _ ) ->
             case paddle.id of
                 Pong.Paddle.Left ->
@@ -248,7 +206,6 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                         , vx = negate <| ball.vx + 50
                     }
 
-        -- ball did not hit paddle, ball did not hit edge
         ( Nothing, Nothing ) ->
             { ball
                 | x = round <| toFloat ball.x + ball.vx * deltaTime
@@ -256,14 +213,22 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
             }
 
 
-updateBallPath : Ball -> BallPath -> Model -> Model
-updateBallPath ball ballPath model =
+updateBallPath : Ball -> BallPath -> Maybe WindowEdge -> Model -> Model
+updateBallPath ball ballPath maybeWindowEdge model =
     case model.showBallPath of
         Pong.Ball.Off ->
             { model | ballPath = [] }
 
         Pong.Ball.On ->
-            { model | ballPath = List.take 99 <| ball :: ballPath }
+            case maybeWindowEdge of
+                Just Pong.Window.Left ->
+                    { model | ballPath = [] }
+
+                Just Pong.Window.Right ->
+                    { model | ballPath = [] }
+
+                _ ->
+                    { model | ballPath = List.take 99 <| ball :: ballPath }
 
 
 clearBallPath : Model -> Model
@@ -281,9 +246,14 @@ updateDeltaTimes showFps deltaTime model =
             { model | deltaTimes = List.take 50 (deltaTime :: model.deltaTimes) }
 
 
-updateGameState : State -> Model -> Model
-updateGameState newGameState model =
-    { model | gameState = newGameState }
+updateGameState : State -> Maybe Paddle -> Model -> Model
+updateGameState gameState maybePaddle model =
+    case maybePaddle of
+        Just _ ->
+            { model | gameState = Pong.Game.EndingScreen }
+
+        Nothing ->
+            { model | gameState = gameState }
 
 
 updatePaddleScores : Maybe WindowEdge -> Model -> Model
@@ -342,8 +312,8 @@ updatePaddle paddle maybeDirection ball window deltaTime model =
 
 
 updateWinner : Maybe Paddle -> Model -> Model
-updateWinner winner model =
-    { model | winner = winner }
+updateWinner maybePaddle model =
+    { model | winner = maybePaddle }
 
 
 

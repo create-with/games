@@ -3,6 +3,7 @@ module Pong.Game exposing
     , State(..)
     , Winner
     , WinningScore(..)
+    , getWinner
     , initialState
     , initialWinner
     , initialWinningScore
@@ -55,6 +56,22 @@ initialWinner =
 initialWinningScore : WinningScore
 initialWinningScore =
     Eleven
+
+
+
+-- GET
+
+
+getWinner : Pong.Paddle.Paddle -> Pong.Paddle.Paddle -> WinningScore -> Maybe Pong.Paddle.Paddle
+getWinner leftPaddle rightPaddle winningScore =
+    if leftPaddle.score == winningScoreToInt winningScore then
+        Just leftPaddle
+
+    else if rightPaddle.score == winningScoreToInt winningScore then
+        Just rightPaddle
+
+    else
+        Nothing
 
 
 

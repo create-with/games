@@ -1,7 +1,7 @@
 module Pong.Window exposing
     ( Window
     , WindowEdge(..)
-    , ballHitEdge
+    , getWindowEdgeHitByBall
     , globalWindow
     )
 
@@ -48,8 +48,8 @@ globalWindow =
 -- COLLISIONS
 
 
-ballHitEdge : Pong.Ball.Ball -> Window -> Maybe WindowEdge
-ballHitEdge ball window =
+getWindowEdgeHitByBall : Pong.Ball.Ball -> Window -> Maybe WindowEdge
+getWindowEdgeHitByBall ball window =
     if (ball.y + ball.height) >= window.height then
         Just Bottom
 
