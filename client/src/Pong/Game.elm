@@ -1,5 +1,6 @@
 module Pong.Game exposing
-    ( State(..)
+    ( DeltaTime
+    , State(..)
     , Winner
     , WinningScore(..)
     , initialState
@@ -16,6 +17,10 @@ import Pong.Paddle
 
 
 -- MODEL
+
+
+type alias DeltaTime =
+    Float
 
 
 type State

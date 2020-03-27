@@ -23,7 +23,6 @@ import Pong.Window
 
 type Direction
     = Down
-    | Idle
     | Up
 
 
@@ -83,21 +82,21 @@ updateScore paddle =
     { paddle | score = paddle.score + 1 }
 
 
-updateLeftPaddle : Direction -> Pong.Ball.Ball -> Float -> Paddle -> Paddle
+updateLeftPaddle : Maybe Direction -> Pong.Ball.Ball -> Float -> Paddle -> Paddle
 updateLeftPaddle direction _ deltaTime paddle =
     case direction of
-        Down ->
+        Just Down ->
             { paddle | y = round <| toFloat paddle.y + paddle.vy * deltaTime }
 
-        Idle ->
-            paddle
-
-        Up ->
+        Just Up ->
             { paddle | y = round <| toFloat paddle.y - paddle.vy * deltaTime }
 
+        Nothing ->
+            paddle
 
-updateRightPaddle : Direction -> Pong.Ball.Ball -> Float -> Paddle -> Paddle
-updateRightPaddle _ ball deltaTime paddle =
+
+updateRightPaddle : Pong.Ball.Ball -> Float -> Paddle -> Paddle
+updateRightPaddle ball deltaTime paddle =
     if ball.y > paddle.y then
         { paddle | y = round <| toFloat paddle.y + paddle.vy * deltaTime }
 

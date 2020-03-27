@@ -31,10 +31,6 @@ import Svg.Attributes
 -- MODEL
 
 
-type alias DeltaTime =
-    Float
-
-
 type alias Model =
     { ball : Pong.Ball.Ball
     , ballPath : Pong.Ball.BallPath
@@ -85,7 +81,7 @@ init _ =
 
 
 type Msg
-    = BrowserAdvancedAnimationFrame DeltaTime
+    = BrowserAdvancedAnimationFrame Pong.Game.DeltaTime
     | PlayerClickedShowBallPathRadioButton Pong.Ball.ShowBallPath
     | PlayerClickedShowFpsRadioButton Pong.Fps.ShowFps
     | PlayerClickedWinningScoreRadioButton Pong.Game.WinningScore
@@ -97,83 +93,37 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         BrowserAdvancedAnimationFrame deltaTime ->
-            if leftPaddleHasWinningScore model.leftPaddle.score model.winningScore then
-                model
-                    |> updateGameState Pong.Game.EndingScreen
-                    |> updateWinner (Just model.leftPaddle)
-                    |> noCommand
+            let
+                ballHitPaddle =
+                    if ballHitLeftPaddle model.ball model.leftPaddle then
+                        Just model.leftPaddle
 
-            else if rightPaddleHasWinningScore model.rightPaddle.score model.winningScore then
-                model
-                    |> updateGameState Pong.Game.EndingScreen
-                    |> updateWinner (Just model.rightPaddle)
-                    |> noCommand
+                    else if ballHitRightPaddle model.ball model.rightPaddle then
+                        Just model.rightPaddle
 
-            else if ballHitLeftPaddle model.ball model.leftPaddle then
-                model
-                    |> updateBall model.ball (Just model.leftPaddle) Nothing deltaTime
-                    |> updateDeltaTimes model.showFps deltaTime
-                    |> playSoundCommand "beep.wav"
+                    else
+                        Nothing
 
-            else if ballHitRightPaddle model.ball model.rightPaddle then
-                model
-                    |> updateBall model.ball (Just model.rightPaddle) Nothing deltaTime
-                    |> updateDeltaTimes model.showFps deltaTime
-                    |> playSoundCommand "beep.wav"
+                ballHitWindowEdge =
+                    Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow
 
-            else if Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow == Just Pong.Window.Right then
-                model
-                    |> updateBall Pong.Ball.initialBall Nothing Nothing deltaTime
-                    |> updateDeltaTimes model.showFps deltaTime
-                    |> clearBallPath
-                    |> updatePaddleScore model.leftPaddle
-                    |> noCommand
+                leftPaddleDirection =
+                    if Pong.Keyboard.playerPressedArrowUpKey model.playerKeyPress then
+                        Just Pong.Paddle.Up
 
-            else if Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow == Just Pong.Window.Left then
-                model
-                    |> updateBall Pong.Ball.initialBall Nothing Nothing deltaTime
-                    |> updateDeltaTimes model.showFps deltaTime
-                    |> clearBallPath
-                    |> updatePaddleScore model.rightPaddle
-                    |> noCommand
+                    else if Pong.Keyboard.playerPressedArrowDownKey model.playerKeyPress then
+                        Just Pong.Paddle.Down
 
-            else if Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow == Just Pong.Window.Top then
-                model
-                    |> updateBall model.ball Nothing (Just Pong.Window.Top) deltaTime
-                    |> updateDeltaTimes model.showFps deltaTime
-                    |> playSoundCommand "boop.wav"
-
-            else if Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow == Just Pong.Window.Bottom then
-                model
-                    |> updateBall model.ball Nothing (Just Pong.Window.Bottom) deltaTime
-                    |> updateDeltaTimes model.showFps deltaTime
-                    |> playSoundCommand "boop.wav"
-
-            else if Pong.Keyboard.playerPressedArrowUpKey model.playerKeyPress then
-                model
-                    |> updateBall model.ball Nothing Nothing deltaTime
-                    |> updateBallPath model.ball model.ballPath
-                    |> updateDeltaTimes model.showFps deltaTime
-                    |> updatePaddle model.leftPaddle Pong.Paddle.Up model.ball Pong.Window.globalWindow deltaTime
-                    |> updatePaddle model.rightPaddle Pong.Paddle.Idle model.ball Pong.Window.globalWindow deltaTime
-                    |> noCommand
-
-            else if Pong.Keyboard.playerPressedArrowDownKey model.playerKeyPress then
-                model
-                    |> updateBall model.ball Nothing Nothing deltaTime
-                    |> updateBallPath model.ball model.ballPath
-                    |> updateDeltaTimes model.showFps deltaTime
-                    |> updatePaddle model.leftPaddle Pong.Paddle.Down model.ball Pong.Window.globalWindow deltaTime
-                    |> updatePaddle model.rightPaddle Pong.Paddle.Idle model.ball Pong.Window.globalWindow deltaTime
-                    |> noCommand
-
-            else
-                model
-                    |> updateBall model.ball Nothing Nothing deltaTime
-                    |> updateBallPath model.ball model.ballPath
-                    |> updateDeltaTimes model.showFps deltaTime
-                    |> updatePaddle model.rightPaddle Pong.Paddle.Idle model.ball Pong.Window.globalWindow deltaTime
-                    |> noCommand
+                    else
+                        Nothing
+            in
+            model
+                |> updateBall model.ball ballHitPaddle ballHitWindowEdge deltaTime
+                |> updateBallPath model.ball model.ballPath
+                |> updateDeltaTimes model.showFps deltaTime
+                |> updatePaddle model.leftPaddle leftPaddleDirection model.ball Pong.Window.globalWindow deltaTime
+                |> updatePaddle model.rightPaddle Nothing model.ball Pong.Window.globalWindow deltaTime
+                |> noCommand
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             model
@@ -248,66 +198,71 @@ rightPaddleHasWinningScore rightPaddleScore winningScore =
 -- UPDATES
 
 
-updateBall : Pong.Ball.Ball -> Maybe Pong.Paddle.Paddle -> Maybe Pong.Window.WindowEdge -> DeltaTime -> Model -> Model
-updateBall newBall maybePaddle maybeEdge deltaTime model =
-    let
-        applyUpdates ball =
-            case ( maybePaddle, maybeEdge ) of
-                -- ball hit paddle, ball did not hit edge
-                ( Just paddle, Nothing ) ->
-                    let
-                        changeInSpeed =
-                            50
-                    in
-                    case paddle.id of
-                        Pong.Paddle.Left ->
-                            { ball
-                                | x = ball.x + ball.width
-                                , vx = negate <| (ball.vx - changeInSpeed)
-                            }
+updateBall : Pong.Ball.Ball -> Maybe Pong.Paddle.Paddle -> Maybe Pong.Window.WindowEdge -> Pong.Game.DeltaTime -> Model -> Model
+updateBall ball maybePaddle maybeEdge deltaTime model =
+    { model | ball = updateBallWithCollisions ball maybePaddle maybeEdge deltaTime }
 
-                        Pong.Paddle.Right ->
-                            { ball
-                                | x = ball.x - ball.width
-                                , vx = negate <| (ball.vx + changeInSpeed)
-                            }
 
-                -- ball did not hit paddle, ball hit edge
-                ( Nothing, Just edge ) ->
-                    case edge of
-                        Pong.Window.Bottom ->
-                            { ball
-                                | y = ball.y - ball.height
-                                , vy = negate ball.vy
-                            }
-
-                        Pong.Window.Left ->
-                            ball
-
-                        Pong.Window.Right ->
-                            ball
-
-                        Pong.Window.Top ->
-                            { ball
-                                | y = ball.y + ball.height
-                                , vy = negate ball.vy
-                            }
-
-                -- ball hit paddle, ball hit edge (hadn't thought about this case)
-                ( Just _, Just _ ) ->
+updateBallWithCollisions : Pong.Ball.Ball -> Maybe Pong.Paddle.Paddle -> Maybe Pong.Window.WindowEdge -> Pong.Game.DeltaTime -> Pong.Ball.Ball
+updateBallWithCollisions ball maybePaddle maybeEdge deltaTime =
+    case ( maybePaddle, maybeEdge ) of
+        -- ball hit paddle, ball did not hit edge
+        ( Just paddle, Nothing ) ->
+            case paddle.id of
+                Pong.Paddle.Left ->
                     { ball
-                        | x = round <| toFloat ball.x + ball.vx * deltaTime
-                        , y = round <| toFloat ball.y + ball.vy * deltaTime
+                        | x = ball.x + ball.width
+                        , vx = negate <| ball.vx - 50
                     }
 
-                -- ball did not hit paddle, ball did not hit edge
-                ( Nothing, Nothing ) ->
+                Pong.Paddle.Right ->
                     { ball
-                        | x = round <| toFloat ball.x + ball.vx * deltaTime
-                        , y = round <| toFloat ball.y + ball.vy * deltaTime
+                        | x = ball.x - ball.width
+                        , vx = negate <| ball.vx + 50
                     }
-    in
-    { model | ball = applyUpdates newBall }
+
+        -- ball did not hit paddle, ball hit edge
+        ( Nothing, Just edge ) ->
+            case edge of
+                Pong.Window.Bottom ->
+                    { ball
+                        | y = ball.y - ball.height
+                        , vy = negate ball.vy
+                    }
+
+                Pong.Window.Left ->
+                    Pong.Ball.initialBall
+
+                Pong.Window.Right ->
+                    Pong.Ball.initialBall
+
+                Pong.Window.Top ->
+                    { ball
+                        | y = ball.y + ball.height
+                        , vy = negate ball.vy
+                    }
+
+        -- ball hit paddle, ball hit edge (hadn't thought about this case)
+        ( Just paddle, Just _ ) ->
+            case paddle.id of
+                Pong.Paddle.Left ->
+                    { ball
+                        | x = ball.x + ball.width
+                        , vx = negate <| ball.vx - 50
+                    }
+
+                Pong.Paddle.Right ->
+                    { ball
+                        | x = ball.x - ball.width
+                        , vx = negate <| ball.vx + 50
+                    }
+
+        -- ball did not hit paddle, ball did not hit edge
+        ( Nothing, Nothing ) ->
+            { ball
+                | x = round <| toFloat ball.x + ball.vx * deltaTime
+                , y = round <| toFloat ball.y + ball.vy * deltaTime
+            }
 
 
 updateBallPath : Pong.Ball.Ball -> Pong.Ball.BallPath -> Model -> Model
@@ -325,7 +280,7 @@ clearBallPath model =
     { model | ballPath = [] }
 
 
-updateDeltaTimes : Pong.Fps.ShowFps -> DeltaTime -> Model -> Model
+updateDeltaTimes : Pong.Fps.ShowFps -> Pong.Game.DeltaTime -> Model -> Model
 updateDeltaTimes showFps deltaTime model =
     case showFps of
         Pong.Fps.Off ->
@@ -364,14 +319,14 @@ updateKeyPress key model =
         model
 
 
-updatePaddle : Pong.Paddle.Paddle -> Pong.Paddle.Direction -> Pong.Ball.Ball -> Pong.Window.Window -> DeltaTime -> Model -> Model
-updatePaddle paddle direction ball window deltaTime model =
+updatePaddle : Pong.Paddle.Paddle -> Maybe Pong.Paddle.Direction -> Pong.Ball.Ball -> Pong.Window.Window -> Pong.Game.DeltaTime -> Model -> Model
+updatePaddle paddle maybeDirection ball window deltaTime model =
     case paddle.id of
         Pong.Paddle.Left ->
             { model
                 | leftPaddle =
                     paddle
-                        |> Pong.Paddle.updateLeftPaddle direction ball deltaTime
+                        |> Pong.Paddle.updateLeftPaddle maybeDirection ball deltaTime
                         |> Pong.Paddle.updateYWithinWindow window
             }
 
@@ -379,7 +334,7 @@ updatePaddle paddle direction ball window deltaTime model =
             { model
                 | rightPaddle =
                     paddle
-                        |> Pong.Paddle.updateRightPaddle direction ball deltaTime
+                        |> Pong.Paddle.updateRightPaddle ball deltaTime
                         |> Pong.Paddle.updateYWithinWindow window
             }
 
@@ -444,7 +399,7 @@ browserAnimationSubscription gameState =
             Sub.none
 
 
-handleAnimationFrames : DeltaTime -> Msg
+handleAnimationFrames : Pong.Game.DeltaTime -> Msg
 handleAnimationFrames milliseconds =
     BrowserAdvancedAnimationFrame <| milliseconds / 1000
 
