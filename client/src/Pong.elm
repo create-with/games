@@ -22,6 +22,7 @@ import Pong.Game exposing (DeltaTime, State, Winner, WinningScore)
 import Pong.Paddle exposing (Direction, Paddle)
 import Pong.Ports
 import Pong.Window exposing (Window, WindowEdge)
+import Random
 import Set
 import Svg exposing (Svg)
 import Svg.Attributes
@@ -82,6 +83,7 @@ init _ =
 
 type Msg
     = BrowserAdvancedAnimationFrame DeltaTime
+    | CollisionGeneratedRandomBallPosition (Int, Int)
     | PlayerClickedShowBallPathRadioButton ShowBallPath
     | PlayerClickedShowFpsRadioButton ShowFps
     | PlayerClickedWinningScoreRadioButton WinningScore
@@ -116,6 +118,9 @@ update msg model =
                 |> updateWinner getWinner
                 |> updateGameState model.gameState getWinner
                 |> addCommand getPaddleHitByBall getWindowEdgeHitByBall
+
+        CollisionGeneratedRandomBallPosition (x, y) ->
+            ( model, Cmd.none )
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             ( { model | showBallPath = showBallPathValue }, Cmd.none )
@@ -191,10 +196,22 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                     }
 
                 Pong.Window.Left ->
-                    Pong.Ball.initialBall
+                    { ball
+                        | x = Pong.Ball.initialBall.x
+                        , y = Pong.Ball.initialBall.y
+                        , vx = negate Pong.Ball.initialBall.vx
+                        -- add randomness
+                        , vy = Pong.Ball.initialBall.vy
+                    }
 
                 Pong.Window.Right ->
-                    Pong.Ball.initialBall
+                    { ball
+                        | x = Pong.Ball.initialBall.x
+                        , y = Pong.Ball.initialBall.y
+                        , vx = Pong.Ball.initialBall.vx
+                        -- add randomness
+                        , vy = Pong.Ball.initialBall.vy
+                    }
 
                 Pong.Window.Top ->
                     { ball
@@ -319,11 +336,21 @@ addCommand maybePaddle maybeWindowEdge model =
             ( model, playSoundCommand "beep.wav" )
 
         ( Nothing, Just _ ) ->
-            ( model, playSoundCommand "boop.wav" )
+            ( model, Cmd.batch [ playSoundCommand "boop.wav", generateRandomBallPosition ] )
 
         ( _, _ ) ->
             ( model, Cmd.none )
 
+
+randomIntGenerator =
+    (Random.int Pong.Window.globalWindow.y Pong.Window.globalWindow.height)
+
+randomPosition =
+    Random.pair randomIntGenerator randomIntGenerator
+
+generateRandomBallPosition : Cmd Msg
+generateRandomBallPosition =
+  Random.generate CollisionGeneratedRandomBallPosition randomPosition
 
 playSoundCommand : String -> Cmd Msg
 playSoundCommand soundFile =

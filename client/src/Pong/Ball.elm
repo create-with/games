@@ -15,6 +15,8 @@ module Pong.Ball exposing
 import Svg
 import Svg.Attributes
 
+
+
 -- MODEL
 
 
@@ -45,10 +47,10 @@ type ShowBallPath
 initialBall : Ball
 initialBall =
     { color = "white"
-    , x = 400
-    , y = 300
-    , vx = 300.0
-    , vy = 300.0
+    , x = 395
+    , y = 310
+    , vx = 350.0
+    , vy = 350.0
     , width = 10
     , height = 10
     }
@@ -76,6 +78,8 @@ showBallPathToString showBallPath =
 
         Off ->
             "Off"
+
+
 
 -- VIEW
 

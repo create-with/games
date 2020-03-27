@@ -63,7 +63,7 @@ initialLeftPaddle =
     , score = 0
     , x = 48
     , y = 200
-    , vy = 500.0
+    , vy = 600.0
     , width = 10
     , height = 60
     }
@@ -141,14 +141,14 @@ ballHitLeftPaddle : Pong.Ball.Ball -> Paddle -> Bool
 ballHitLeftPaddle ball paddle =
     (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
         && (paddle.x <= ball.x && ball.x <= paddle.x + paddle.width)
-        -- && (ball.vx < 0)
+        && (ball.vx < 0)
 
 
 ballHitRightPaddle : Pong.Ball.Ball -> Paddle -> Bool
 ballHitRightPaddle ball paddle =
     (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
         && (paddle.x <= ball.x + ball.width && ball.x <= paddle.x + paddle.width)
-        -- && (ball.vx > 0)
+        && (ball.vx > 0)
 
 
 getPaddleHitByBall : Pong.Ball.Ball -> Paddle -> Paddle -> Maybe Paddle
