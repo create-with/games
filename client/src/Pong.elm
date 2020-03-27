@@ -22,7 +22,7 @@ import Pong.Game exposing (DeltaTime, State, Winner, WinningScore)
 import Pong.Paddle exposing (Direction, Paddle)
 import Pong.Ports
 import Pong.Window exposing (Window, WindowEdge)
-import Set exposing (Set)
+import Set
 import Svg exposing (Svg)
 import Svg.Attributes
 
@@ -123,7 +123,7 @@ update msg model =
                 |> updateDeltaTimes model.showFps deltaTime
                 |> updatePaddle model.leftPaddle leftPaddleDirection model.ball Pong.Window.globalWindow deltaTime
                 |> updatePaddle model.rightPaddle Nothing model.ball Pong.Window.globalWindow deltaTime
-                |> noCommand
+                |> addCommand ballHitPaddle ballHitWindowEdge
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             model
@@ -360,7 +360,7 @@ updateWinningScore newWinningScore model =
 
 
 
--- COMMANDS
+-- COMMAND WRAPPERS
 
 
 noCommand : Model -> ( Model, Cmd Msg )
@@ -368,9 +368,26 @@ noCommand model =
     ( model, Cmd.none )
 
 
-playSoundCommand : String -> Model -> ( Model, Cmd Msg )
-playSoundCommand soundFile model =
-    ( model, Pong.Ports.playSound <| Json.Encode.string soundFile )
+addCommand : Maybe Paddle -> Maybe WindowEdge -> Model -> ( Model, Cmd Msg )
+addCommand maybePaddle maybeEdge model =
+    case ( maybePaddle, maybeEdge ) of
+        ( Just _, Nothing ) ->
+            ( model, playSoundCommand "beep.wav" )
+
+        ( Nothing, Just _ ) ->
+            ( model, playSoundCommand "boop.wav" )
+
+        ( _, _ ) ->
+            ( model, Cmd.none )
+
+
+
+-- COMMANDS
+
+
+playSoundCommand : String -> Cmd Msg
+playSoundCommand soundFile =
+    Pong.Ports.playSound <| Json.Encode.string soundFile
 
 
 
