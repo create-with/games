@@ -143,7 +143,7 @@ update msg model =
                     ( updateKeyPress key model, Cmd.none )
 
         PlayerReleasedKey _ ->
-            ( clearKeyPresses model, Cmd.none )
+            ( { model | playerKeyPress = Set.empty }, Cmd.none )
 
 
 
@@ -217,7 +217,7 @@ updateBallPath : Ball -> BallPath -> Maybe WindowEdge -> Model -> Model
 updateBallPath ball ballPath maybeWindowEdge model =
     case model.showBallPath of
         Pong.Ball.Off ->
-            { model | ballPath = [] }
+            model
 
         Pong.Ball.On ->
             case maybeWindowEdge of
@@ -229,11 +229,6 @@ updateBallPath ball ballPath maybeWindowEdge model =
 
                 _ ->
                     { model | ballPath = List.take 99 <| ball :: ballPath }
-
-
-clearBallPath : Model -> Model
-clearBallPath model =
-    { model | ballPath = [] }
 
 
 updateDeltaTimes : ShowFps -> DeltaTime -> Model -> Model
@@ -254,32 +249,6 @@ updateGameState gameState maybePaddle model =
 
         Nothing ->
             { model | gameState = gameState }
-
-
-updatePaddleScores : Maybe WindowEdge -> Model -> Model
-updatePaddleScores maybeWindowEdge model =
-    case maybeWindowEdge of
-        Just Pong.Window.Left ->
-            let
-                paddle =
-                    model.rightPaddle
-            in
-            { model | rightPaddle = Pong.Paddle.updateScore paddle }
-
-        Just Pong.Window.Right ->
-            let
-                paddle =
-                    model.leftPaddle
-            in
-            { model | leftPaddle = Pong.Paddle.updateScore paddle }
-
-        _ ->
-            model
-
-
-clearKeyPresses : Model -> Model
-clearKeyPresses model =
-    { model | playerKeyPress = Set.empty }
 
 
 updateKeyPress : String -> Model -> Model
@@ -309,6 +278,19 @@ updatePaddle paddle maybeDirection ball window deltaTime model =
                         |> Pong.Paddle.updateRightPaddle ball deltaTime
                         |> Pong.Paddle.updateYWithinWindow window
             }
+
+
+updatePaddleScores : Maybe WindowEdge -> Model -> Model
+updatePaddleScores maybeWindowEdge model =
+    case maybeWindowEdge of
+        Just Pong.Window.Left ->
+            { model | rightPaddle = Pong.Paddle.updateScore model.rightPaddle }
+
+        Just Pong.Window.Right ->
+            { model | leftPaddle = Pong.Paddle.updateScore model.leftPaddle }
+
+        _ ->
+            model
 
 
 updateWinner : Maybe Paddle -> Model -> Model
@@ -387,30 +369,7 @@ view : Model -> Html Msg
 view model =
     Html.main_ [ Html.Attributes.class "px-6" ]
         [ viewHeader
-        , Html.section []
-            [ case model.gameState of
-                Pong.Game.StartingScreen ->
-                    Html.div []
-                        [ viewSvg Pong.Window.globalWindow model
-                        , viewInstructions
-                        , viewOptions model.showBallPath model.showFps model.winningScore
-                        ]
-
-                Pong.Game.PlayingScreen ->
-                    Html.div []
-                        [ viewSvg Pong.Window.globalWindow model
-                        , viewInstructions
-                        , viewOptions model.showBallPath model.showFps model.winningScore
-                        ]
-
-                Pong.Game.EndingScreen ->
-                    Html.div []
-                        [ viewSvg Pong.Window.globalWindow model
-                        , viewWinner model.winner
-                        , viewInstructions
-                        , viewOptions model.showBallPath model.showFps model.winningScore
-                        ]
-            ]
+        , viewGameSection model
         ]
 
 
@@ -419,6 +378,16 @@ viewHeader =
     Html.header []
         [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ]
             [ Html.text "\u{1F3D3} Pong" ]
+        ]
+
+
+viewGameSection : Model -> Html Msg
+viewGameSection model =
+    Html.section []
+        [ viewSvg Pong.Window.globalWindow model
+        , viewWinner model.gameState model.winner
+        , viewInstructions
+        , viewOptions model.showBallPath model.showFps model.winningScore
         ]
 
 
@@ -439,112 +408,33 @@ viewSvg window model =
         , Svg.Attributes.width <| String.fromInt window.width
         , Svg.Attributes.height <| String.fromInt window.height
         ]
-        ([ viewGameWindow window
-         , viewNet window
-         , viewPaddleScore model.leftPaddle.score window -200
-         , viewPaddleScore model.rightPaddle.score window 150
-         , viewPaddle model.leftPaddle
-         , viewPaddle model.rightPaddle
-         , viewBall model.ball
-         , Pong.Fps.viewFps model.showFps model.deltaTimes
-         ]
-            ++ viewBallPath model.showBallPath model.ballPath
-        )
-
-
-viewGameWindow : Window -> Svg msg
-viewGameWindow window =
-    Svg.rect
-        [ Svg.Attributes.fill window.backgroundColor
-        , Svg.Attributes.x <| String.fromInt window.x
-        , Svg.Attributes.y <| String.fromInt window.y
-        , Svg.Attributes.width <| String.fromInt window.width
-        , Svg.Attributes.height <| String.fromInt window.height
+        [ Pong.Window.viewGameWindow window
+        , Pong.Window.viewNet window
+        , Pong.Paddle.viewPaddleScore model.leftPaddle.score window -200
+        , Pong.Paddle.viewPaddleScore model.rightPaddle.score window 150
+        , Pong.Paddle.viewPaddle model.leftPaddle
+        , Pong.Paddle.viewPaddle model.rightPaddle
+        , Pong.Ball.viewBall model.ball
+        , Pong.Fps.viewFps model.showFps model.deltaTimes
+        , Pong.Ball.viewBallPath model.showBallPath model.ballPath |> Svg.g []
         ]
-        []
 
 
-viewNet : Window -> Svg msg
-viewNet window =
-    Svg.line
-        [ Svg.Attributes.stroke "white"
-        , Svg.Attributes.strokeDasharray "14, 14"
-        , Svg.Attributes.strokeWidth "4"
-        , Svg.Attributes.x1 <| String.fromInt <| (window.width // 2)
-        , Svg.Attributes.x2 <| String.fromInt <| (window.width // 2)
-        , Svg.Attributes.y1 <| String.fromInt window.y
-        , Svg.Attributes.y2 <| String.fromInt window.height
-        ]
-        []
+viewWinner : State -> Maybe Paddle -> Html msg
+viewWinner gameState maybePaddle =
+    case gameState of
+        Pong.Game.StartingScreen ->
+            Html.span [] []
 
+        Pong.Game.PlayingScreen ->
+            Html.span [] []
 
-viewPaddleScore : Int -> Window -> Int -> Svg msg
-viewPaddleScore score window positionOffset =
-    Svg.text_
-        [ Svg.Attributes.fill "white"
-        , Svg.Attributes.fontFamily "monospace"
-        , Svg.Attributes.fontSize "80"
-        , Svg.Attributes.fontWeight "bold"
-        , Svg.Attributes.x <| String.fromInt <| (window.width // 2) + positionOffset
-        , Svg.Attributes.y "100"
-        ]
-        [ Svg.text <| String.fromInt score ]
-
-
-viewPaddle : Paddle -> Svg msg
-viewPaddle paddle =
-    Svg.rect
-        [ Svg.Attributes.fill paddle.color
-        , Svg.Attributes.x <| String.fromInt paddle.x
-        , Svg.Attributes.y <| String.fromInt paddle.y
-        , Svg.Attributes.width <| String.fromInt paddle.width
-        , Svg.Attributes.height <| String.fromInt paddle.height
-        ]
-        []
-
-
-viewBall : Ball -> Svg msg
-viewBall ball =
-    Svg.rect
-        [ Svg.Attributes.fill ball.color
-        , Svg.Attributes.x <| String.fromInt ball.x
-        , Svg.Attributes.y <| String.fromInt ball.y
-        , Svg.Attributes.width <| String.fromInt ball.width
-        , Svg.Attributes.height <| String.fromInt ball.height
-        ]
-        []
-
-
-viewBallPath : ShowBallPath -> List Ball -> List (Svg msg)
-viewBallPath showBallPath ballPath =
-    case showBallPath of
-        Pong.Ball.On ->
-            List.indexedMap viewBallPathSegment ballPath
-
-        Pong.Ball.Off ->
-            []
-
-
-viewBallPathSegment : Int -> Ball -> Svg msg
-viewBallPathSegment index ball =
-    Svg.rect
-        [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (80 - index)
-        , Svg.Attributes.fill "darkorange"
-        , Svg.Attributes.x <| String.fromInt ball.x
-        , Svg.Attributes.y <| String.fromInt ball.y
-        , Svg.Attributes.width <| String.fromInt ball.width
-        , Svg.Attributes.height <| String.fromInt ball.height
-        ]
-        []
-
-
-viewWinner : Maybe Paddle -> Html msg
-viewWinner maybePaddle =
-    Html.div [ Html.Attributes.class "pt-2" ]
-        [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
-            [ Html.text "Winner!" ]
-        , viewWinnerPaddle maybePaddle
-        ]
+        Pong.Game.EndingScreen ->
+            Html.div [ Html.Attributes.class "pt-2" ]
+                [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
+                    [ Html.text "Winner!" ]
+                , viewWinnerPaddle maybePaddle
+                ]
 
 
 viewWinnerPaddle : Maybe Paddle -> Html msg

@@ -11,6 +11,8 @@ module Pong.Paddle exposing
     , updateRightPaddle
     , updateScore
     , updateYWithinWindow
+    , viewPaddle
+    , viewPaddleScore
     )
 
 -- IMPORTS
@@ -19,6 +21,8 @@ import Keyboard
 import Pong.Ball
 import Pong.Window
 import Set
+import Svg
+import Svg.Attributes
 
 
 
@@ -175,3 +179,28 @@ paddleIdToString paddleId =
 
         Right ->
             "Right"
+
+-- VIEW
+
+viewPaddle : Paddle -> Svg.Svg msg
+viewPaddle paddle =
+    Svg.rect
+        [ Svg.Attributes.fill paddle.color
+        , Svg.Attributes.x <| String.fromInt paddle.x
+        , Svg.Attributes.y <| String.fromInt paddle.y
+        , Svg.Attributes.width <| String.fromInt paddle.width
+        , Svg.Attributes.height <| String.fromInt paddle.height
+        ]
+        []
+
+viewPaddleScore : Int -> Pong.Window.Window -> Int -> Svg.Svg msg
+viewPaddleScore score window positionOffset =
+    Svg.text_
+        [ Svg.Attributes.fill "white"
+        , Svg.Attributes.fontFamily "monospace"
+        , Svg.Attributes.fontSize "80"
+        , Svg.Attributes.fontWeight "bold"
+        , Svg.Attributes.x <| String.fromInt <| (window.width // 2) + positionOffset
+        , Svg.Attributes.y "100"
+        ]
+        [ Svg.text <| String.fromInt score ]

@@ -3,11 +3,15 @@ module Pong.Window exposing
     , WindowEdge(..)
     , getWindowEdgeHitByBall
     , globalWindow
+    , viewGameWindow
+    , viewNet
     )
 
 -- IMPORTS
 
 import Pong.Ball
+import Svg
+import Svg.Attributes
 
 
 
@@ -64,3 +68,33 @@ getWindowEdgeHitByBall ball window =
 
     else
         Nothing
+
+
+
+-- VIEW
+
+
+viewGameWindow : Window -> Svg.Svg msg
+viewGameWindow window =
+    Svg.rect
+        [ Svg.Attributes.fill window.backgroundColor
+        , Svg.Attributes.x <| String.fromInt window.x
+        , Svg.Attributes.y <| String.fromInt window.y
+        , Svg.Attributes.width <| String.fromInt window.width
+        , Svg.Attributes.height <| String.fromInt window.height
+        ]
+        []
+
+
+viewNet : Window -> Svg.Svg msg
+viewNet window =
+    Svg.line
+        [ Svg.Attributes.stroke "white"
+        , Svg.Attributes.strokeDasharray "14, 14"
+        , Svg.Attributes.strokeWidth "4"
+        , Svg.Attributes.x1 <| String.fromInt <| (window.width // 2)
+        , Svg.Attributes.x2 <| String.fromInt <| (window.width // 2)
+        , Svg.Attributes.y1 <| String.fromInt window.y
+        , Svg.Attributes.y2 <| String.fromInt window.height
+        ]
+        []

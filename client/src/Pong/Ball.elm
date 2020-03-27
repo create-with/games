@@ -6,7 +6,14 @@ module Pong.Ball exposing
     , initialBallPath
     , initialShowBallPath
     , showBallPathToString
+    , viewBall
+    , viewBallPath
     )
+
+-- IMPORTS
+
+import Svg
+import Svg.Attributes
 
 -- MODEL
 
@@ -69,3 +76,40 @@ showBallPathToString showBallPath =
 
         Off ->
             "Off"
+
+-- VIEW
+
+
+viewBall : Ball -> Svg.Svg msg
+viewBall ball =
+    Svg.rect
+        [ Svg.Attributes.fill ball.color
+        , Svg.Attributes.x <| String.fromInt ball.x
+        , Svg.Attributes.y <| String.fromInt ball.y
+        , Svg.Attributes.width <| String.fromInt ball.width
+        , Svg.Attributes.height <| String.fromInt ball.height
+        ]
+        []
+
+
+viewBallPath : ShowBallPath -> List Ball -> List (Svg.Svg msg)
+viewBallPath showBallPath ballPath =
+    case showBallPath of
+        On ->
+            List.indexedMap viewBallPathSegment ballPath
+
+        Off ->
+            []
+
+
+viewBallPathSegment : Int -> Ball -> Svg.Svg msg
+viewBallPathSegment index ball =
+    Svg.rect
+        [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (80 - index)
+        , Svg.Attributes.fill "darkorange"
+        , Svg.Attributes.x <| String.fromInt ball.x
+        , Svg.Attributes.y <| String.fromInt ball.y
+        , Svg.Attributes.width <| String.fromInt ball.width
+        , Svg.Attributes.height <| String.fromInt ball.height
+        ]
+        []
