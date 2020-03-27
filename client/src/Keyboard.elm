@@ -1,5 +1,7 @@
-module Pong.Keyboard exposing
-    ( keyDecoder
+module Keyboard exposing
+    ( Controls
+    , initialKeys
+    , keyDecoder
     , playerPressedArrowDownKey
     , playerPressedArrowUpKey
     , playerPressedKey
@@ -11,6 +13,23 @@ module Pong.Keyboard exposing
 
 import Json.Decode
 import Set
+
+
+
+-- MODEL
+
+
+type alias Controls =
+    Set.Set String
+
+
+
+-- INIT
+
+
+initialKeys : Controls
+initialKeys =
+    Set.empty
 
 
 
