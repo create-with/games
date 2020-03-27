@@ -94,82 +94,71 @@ update msg model =
     case msg of
         BrowserAdvancedAnimationFrame deltaTime ->
             let
-                ballHitPaddle =
-                    if ballHitLeftPaddle model.ball model.leftPaddle then
-                        Just model.leftPaddle
-
-                    else if ballHitRightPaddle model.ball model.rightPaddle then
-                        Just model.rightPaddle
-
-                    else
-                        Nothing
+                paddleHitByBall_ =
+                    paddleHitByBall model.ball model.leftPaddle model.rightPaddle
 
                 ballHitWindowEdge =
                     Pong.Window.ballHitEdge model.ball Pong.Window.globalWindow
 
                 leftPaddleDirection =
-                    if Keyboard.playerPressedArrowUpKey model.playerKeyPress then
-                        Just Pong.Paddle.Up
+                    Pong.Paddle.playerKeyPressToDirection model.playerKeyPress
 
-                    else if Keyboard.playerPressedArrowDownKey model.playerKeyPress then
-                        Just Pong.Paddle.Down
-
-                    else
-                        Nothing
+                determineWinner_ =
+                    determineWinner model.leftPaddle model.rightPaddle model.winningScore
             in
             model
-                |> updateBall model.ball ballHitPaddle ballHitWindowEdge deltaTime
+                |> updateBall model.ball paddleHitByBall_ ballHitWindowEdge deltaTime
                 |> updateBallPath model.ball model.ballPath
                 |> updateDeltaTimes model.showFps deltaTime
                 |> updatePaddle model.leftPaddle leftPaddleDirection model.ball Pong.Window.globalWindow deltaTime
                 |> updatePaddle model.rightPaddle Nothing model.ball Pong.Window.globalWindow deltaTime
-                |> addCommand ballHitPaddle ballHitWindowEdge
+                |> updatePaddleScores ballHitWindowEdge
+                |> updateWinner determineWinner_
+                |> addCommand paddleHitByBall_ ballHitWindowEdge
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
-            model
-                |> updateShowBallPath showBallPathValue
-                |> noCommand
+            ( { model | showBallPath = showBallPathValue }, Cmd.none )
 
         PlayerClickedShowFpsRadioButton showFpsValue ->
-            model
-                |> updateShowFps showFpsValue
-                |> noCommand
+            ( { model | showFps = showFpsValue }, Cmd.none )
 
         PlayerClickedWinningScoreRadioButton winningScoreValue ->
-            model
-                |> updateWinningScore winningScoreValue
-                |> noCommand
+            ( { model | winningScore = winningScoreValue }, Cmd.none )
 
         PlayerPressedKeyDown key ->
             case key of
                 " " ->
                     case model.gameState of
                         Pong.Game.StartingScreen ->
-                            model
-                                |> updateGameState Pong.Game.PlayingScreen
-                                |> noCommand
+                            ( updateGameState Pong.Game.PlayingScreen model, Cmd.none)
 
                         Pong.Game.PlayingScreen ->
-                            model |> noCommand
+                            ( model, Cmd.none )
 
                         Pong.Game.EndingScreen ->
-                            model
-                                |> updateGameState Pong.Game.StartingScreen
-                                |> noCommand
+                            ( updateGameState Pong.Game.StartingScreen model, Cmd.none)
 
                 _ ->
-                    model
-                        |> updateKeyPress key
-                        |> noCommand
+                    ( updateKeyPress key model, Cmd.none )
 
         PlayerReleasedKey _ ->
-            model
-                |> clearKeyPresses
-                |> noCommand
+            ( clearKeyPresses model, Cmd.none )
 
 
 
 -- UPDATE PREDICATES
+
+
+paddleHitByBall : Ball -> Paddle -> Paddle -> Maybe Paddle
+paddleHitByBall ball leftPaddle rightPaddle =
+    if ballHitLeftPaddle ball leftPaddle then
+        Just leftPaddle
+
+    else if ballHitRightPaddle ball rightPaddle then
+        Just rightPaddle
+
+    else
+        Nothing
 
 
 ballHitLeftPaddle : Ball -> Paddle -> Bool
@@ -184,14 +173,16 @@ ballHitRightPaddle ball paddle =
         && (paddle.x <= ball.x + ball.width && ball.x <= paddle.x + paddle.width)
 
 
-leftPaddleHasWinningScore : Int -> WinningScore -> Bool
-leftPaddleHasWinningScore leftPaddleScore winningScore =
-    leftPaddleScore == Pong.Game.winningScoreToInt winningScore
+determineWinner : Paddle -> Paddle -> WinningScore -> Maybe Paddle
+determineWinner leftPaddle rightPaddle winningScore =
+    if leftPaddle.score == Pong.Game.winningScoreToInt winningScore then
+        Just leftPaddle
 
+    else if rightPaddle.score == Pong.Game.winningScoreToInt winningScore then
+        Just rightPaddle
 
-rightPaddleHasWinningScore : Int -> WinningScore -> Bool
-rightPaddleHasWinningScore rightPaddleScore winningScore =
-    rightPaddleScore == Pong.Game.winningScoreToInt winningScore
+    else
+        Nothing
 
 
 
@@ -199,13 +190,13 @@ rightPaddleHasWinningScore rightPaddleScore winningScore =
 
 
 updateBall : Ball -> Maybe Paddle -> Maybe WindowEdge -> DeltaTime -> Model -> Model
-updateBall ball maybePaddle maybeEdge deltaTime model =
-    { model | ball = updateBallWithCollisions ball maybePaddle maybeEdge deltaTime }
+updateBall ball maybePaddle maybeWindowEdge deltaTime model =
+    { model | ball = updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime }
 
 
 updateBallWithCollisions : Ball -> Maybe Paddle -> Maybe WindowEdge -> DeltaTime -> Ball
-updateBallWithCollisions ball maybePaddle maybeEdge deltaTime =
-    case ( maybePaddle, maybeEdge ) of
+updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
+    case ( maybePaddle, maybeWindowEdge ) of
         -- ball hit paddle, ball did not hit edge
         ( Just paddle, Nothing ) ->
             case paddle.id of
@@ -295,14 +286,25 @@ updateGameState newGameState model =
     { model | gameState = newGameState }
 
 
-updatePaddleScore : Paddle -> Model -> Model
-updatePaddleScore paddle model =
-    case paddle.id of
-        Pong.Paddle.Left ->
+updatePaddleScores : Maybe WindowEdge -> Model -> Model
+updatePaddleScores maybeWindowEdge model =
+    case maybeWindowEdge of
+        Just Pong.Window.Left ->
+            let
+                paddle =
+                    model.rightPaddle
+            in
+            { model | rightPaddle = Pong.Paddle.updateScore paddle }
+
+        Just Pong.Window.Right ->
+            let
+                paddle =
+                    model.leftPaddle
+            in
             { model | leftPaddle = Pong.Paddle.updateScore paddle }
 
-        Pong.Paddle.Right ->
-            { model | rightPaddle = Pong.Paddle.updateScore paddle }
+        _ ->
+            model
 
 
 clearKeyPresses : Model -> Model
@@ -339,38 +341,18 @@ updatePaddle paddle maybeDirection ball window deltaTime model =
             }
 
 
-updateShowBallPath : ShowBallPath -> Model -> Model
-updateShowBallPath newShowBallPath model =
-    { model | showBallPath = newShowBallPath }
-
-
-updateShowFps : ShowFps -> Model -> Model
-updateShowFps newShowFps model =
-    { model | showFps = newShowFps }
-
-
 updateWinner : Maybe Paddle -> Model -> Model
-updateWinner newWinner model =
-    { model | winner = newWinner }
-
-
-updateWinningScore : WinningScore -> Model -> Model
-updateWinningScore newWinningScore model =
-    { model | winningScore = newWinningScore }
+updateWinner winner model =
+    { model | winner = winner }
 
 
 
--- COMMAND WRAPPERS
-
-
-noCommand : Model -> ( Model, Cmd Msg )
-noCommand model =
-    ( model, Cmd.none )
+-- COMMANDS
 
 
 addCommand : Maybe Paddle -> Maybe WindowEdge -> Model -> ( Model, Cmd Msg )
-addCommand maybePaddle maybeEdge model =
-    case ( maybePaddle, maybeEdge ) of
+addCommand maybePaddle maybeWindowEdge model =
+    case ( maybePaddle, maybeWindowEdge ) of
         ( Just _, Nothing ) ->
             ( model, playSoundCommand "beep.wav" )
 
@@ -379,10 +361,6 @@ addCommand maybePaddle maybeEdge model =
 
         ( _, _ ) ->
             ( model, Cmd.none )
-
-
-
--- COMMANDS
 
 
 playSoundCommand : String -> Cmd Msg

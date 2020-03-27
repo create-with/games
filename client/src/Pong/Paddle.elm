@@ -5,6 +5,7 @@ module Pong.Paddle exposing
     , initialLeftPaddle
     , initialRightPaddle
     , paddleIdToString
+    , playerKeyPressToDirection
     , updateLeftPaddle
     , updateRightPaddle
     , updateScore
@@ -13,8 +14,10 @@ module Pong.Paddle exposing
 
 -- IMPORTS
 
+import Keyboard
 import Pong.Ball
 import Pong.Window
+import Set
 
 
 
@@ -121,6 +124,18 @@ updateYWithinWindow window paddle =
 
 
 -- HELPERS
+
+
+playerKeyPressToDirection : Set.Set String -> Maybe Direction
+playerKeyPressToDirection playerKeyPress =
+    if Keyboard.playerPressedArrowUpKey playerKeyPress then
+        Just Up
+
+    else if Keyboard.playerPressedArrowDownKey playerKeyPress then
+        Just Down
+
+    else
+        Nothing
 
 
 paddleIdToString : PaddleId -> String
