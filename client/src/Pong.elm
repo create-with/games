@@ -157,6 +157,15 @@ updateBall ball maybePaddle maybeWindowEdge deltaTime model =
 
 updateBallWithCollisions : Ball -> Maybe Paddle -> Maybe WindowEdge -> DeltaTime -> Ball
 updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
+    let
+        vy =
+            case Pong.Paddle.getPaddleHitByBallDistanceFromCenter ball maybePaddle of
+                Just distance ->
+                    distance * 5
+
+                Nothing ->
+                    0
+    in
     case ( maybePaddle, maybeWindowEdge ) of
         ( Just paddle, Nothing ) ->
             case paddle.id of
@@ -164,6 +173,7 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                     { ball
                         | x = ball.x + ball.width
                         , vx = negate <| ball.vx - 50
+                        , vy = toFloat vy
                     }
 
                 Pong.Paddle.Right ->

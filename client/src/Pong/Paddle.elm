@@ -3,6 +3,7 @@ module Pong.Paddle exposing
     , Paddle
     , PaddleId(..)
     , getPaddleHitByBall
+    , getPaddleHitByBallDistanceFromCenter
     , initialLeftPaddle
     , initialRightPaddle
     , paddleIdToString
@@ -131,16 +132,23 @@ updateYWithinWindow window paddle =
 -- COLLISIONS
 
 
+ballHitPaddle : Pong.Ball.Ball -> Paddle -> Bool
+ballHitPaddle ball paddle =
+    ballHitLeftPaddle ball paddle || ballHitRightPaddle ball paddle
+
+
 ballHitLeftPaddle : Pong.Ball.Ball -> Paddle -> Bool
 ballHitLeftPaddle ball paddle =
     (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
         && (paddle.x <= ball.x && ball.x <= paddle.x + paddle.width)
+        -- && (ball.vx < 0)
 
 
 ballHitRightPaddle : Pong.Ball.Ball -> Paddle -> Bool
 ballHitRightPaddle ball paddle =
     (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
         && (paddle.x <= ball.x + ball.width && ball.x <= paddle.x + paddle.width)
+        -- && (ball.vx > 0)
 
 
 getPaddleHitByBall : Pong.Ball.Ball -> Paddle -> Paddle -> Maybe Paddle
@@ -153,6 +161,25 @@ getPaddleHitByBall ball leftPaddle rightPaddle =
 
     else
         Nothing
+
+
+getPaddleHitByBallDistanceFromCenter : Pong.Ball.Ball -> Maybe Paddle -> Maybe Int
+getPaddleHitByBallDistanceFromCenter ball maybePaddle =
+    case maybePaddle of
+        Just paddle ->
+            if ballHitPaddle ball paddle then
+                let
+                    paddleCenter =
+                        paddle.height // 2
+                in
+                -- Top -100, Center 0, Bottom 100
+                Just <| (ball.y - paddle.y - paddleCenter) * 100 // paddleCenter
+
+            else
+                Nothing
+
+        Nothing ->
+            Nothing
 
 
 
@@ -180,7 +207,10 @@ paddleIdToString paddleId =
         Right ->
             "Right"
 
+
+
 -- VIEW
+
 
 viewPaddle : Paddle -> Svg.Svg msg
 viewPaddle paddle =
@@ -192,6 +222,7 @@ viewPaddle paddle =
         , Svg.Attributes.height <| String.fromInt paddle.height
         ]
         []
+
 
 viewPaddleScore : Int -> Pong.Window.Window -> Int -> Svg.Svg msg
 viewPaddleScore score window positionOffset =
