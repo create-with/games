@@ -435,23 +435,21 @@ view model =
     Html.main_ [ Html.Attributes.class "bg-yellow-200 p-6" ]
         [ viewHeader
         , viewGameSection model
+        , viewInformation model
         ]
 
 
 viewHeader : Html msg
 viewHeader =
-    Html.header []
+    Html.header [ Html.Attributes.class "flex justify-center" ]
         [ Pong.Cabinet.logo ]
 
 
 viewGameSection : Model -> Html Msg
 viewGameSection model =
-    Html.section []
-        [ Pong.Cabinet.viewHole
-        , viewSvg Pong.Window.globalWindow model
-        , viewWinner model.gameState model.winner
-        , viewInstructions
-        , viewOptions model.showBallPath model.showFps model.winningScore
+    Html.section [ Html.Attributes.class "flex justify-center my-4" ]
+        [ Html.div [ Html.Attributes.class "flex-shrink-0" ]
+            [ viewSvg Pong.Window.globalWindow model ]
         ]
 
 
@@ -514,6 +512,15 @@ viewWinnerPaddle maybePaddle =
 
         Nothing ->
             Html.span [] []
+
+
+viewInformation : Model -> Html Msg
+viewInformation model =
+    Html.section []
+        [ viewWinner model.gameState model.winner
+        , viewInstructions
+        , viewOptions model.showBallPath model.showFps model.winningScore
+        ]
 
 
 viewInstructions : Html msg
