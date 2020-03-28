@@ -143,7 +143,7 @@ update msg model =
                             ( model, Cmd.none )
 
                         Pong.Game.EndingScreen ->
-                            ( updateGameState Pong.Game.StartingScreen Nothing model, Cmd.none )
+                            ( updateGameState Pong.Game.StartingScreen Nothing initialModel, Cmd.none )
 
                 _ ->
                     ( updateKeyPress key model, Cmd.none )
@@ -505,7 +505,7 @@ viewWinner gameState maybePaddle =
 
         Pong.Game.EndingScreen ->
             Html.div [ Html.Attributes.class "pt-2" ]
-                [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-xl" ]
+                [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
                     [ Html.text "Winner!" ]
                 , viewWinnerPaddle maybePaddle
                 ]

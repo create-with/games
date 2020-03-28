@@ -1,5 +1,4 @@
-module Pong.Cabinet exposing
-    ( logo )
+module Pong.Cabinet exposing (logo)
 
 -- IMPORTS
 
