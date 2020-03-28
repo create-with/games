@@ -76,7 +76,7 @@ initialRightPaddle =
     , score = 0
     , x = 740
     , y = 300
-    , vy = 500.0
+    , vy = 475.0
     , width = 10
     , height = 60
     }
@@ -179,7 +179,7 @@ getPaddleHitByBallDistanceFromCenter ball maybePaddle =
                 Nothing
 
         Nothing ->
-            Nothing
+            Just 0
 
 
 

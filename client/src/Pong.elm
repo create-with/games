@@ -164,10 +164,16 @@ updateBall ball maybePaddle maybeWindowEdge deltaTime model =
 updateBallWithCollisions : Ball -> Maybe Paddle -> Maybe WindowEdge -> DeltaTime -> Ball
 updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
     let
-        vy =
+        ( vxMin, vxMax ) =
+            ( -650, 650 )
+
+        vxChangeAfterCollision =
+            50
+
+        vyAfterCollision =
             case Pong.Paddle.getPaddleHitByBallDistanceFromCenter ball maybePaddle of
                 Just distance ->
-                    distance * 5
+                    distance * 6
 
                 Nothing ->
                     0
@@ -178,14 +184,15 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                 Pong.Paddle.Left ->
                     { ball
                         | x = ball.x + ball.width
-                        , vx = negate <| ball.vx - 50
-                        , vy = toFloat vy
+                        , vx = clamp vxMin vxMax <| negate <| ball.vx - vxChangeAfterCollision
+                        , vy = toFloat vyAfterCollision
                     }
 
                 Pong.Paddle.Right ->
                     { ball
                         | x = ball.x - ball.width
-                        , vx = negate <| ball.vx + 50
+                        , vx = clamp vxMin vxMax <| negate <| ball.vx + vxChangeAfterCollision
+                        , vy = toFloat vyAfterCollision
                     }
 
         ( Nothing, Just edge ) ->
@@ -221,13 +228,13 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                 Pong.Paddle.Left ->
                     { ball
                         | x = ball.x + ball.width
-                        , vx = negate <| ball.vx - 50
+                        , vx = clamp vxMin vxMax <| negate <| ball.vx - vxChangeAfterCollision
                     }
 
                 Pong.Paddle.Right ->
                     { ball
                         | x = ball.x - ball.width
-                        , vx = negate <| ball.vx + 50
+                        , vx = clamp vxMin vxMax <| negate <| ball.vx + vxChangeAfterCollision
                     }
 
         ( Nothing, Nothing ) ->
@@ -479,6 +486,11 @@ viewSvg window model =
         , Pong.Ball.viewBall model.ball
         , Pong.Fps.viewFps model.showFps model.deltaTimes
         , Pong.Ball.viewBallPath model.showBallPath model.ballPath |> Svg.g []
+
+        -- , Svg.path
+        --     [ Svg.Attributes.d "M50,0 h700 q50,0 50,50 v450 q0,50 -50,50 h-700 q-50,0 -50,-50 v-450 q0,-50 50,-50 z"
+        --     , Svg.Attributes.fill "#fefcbf" ]
+        --     []
         ]
 
 
