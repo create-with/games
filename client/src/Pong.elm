@@ -205,14 +205,14 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
 
                 Pong.Window.Left ->
                     { ball
-                        | x = Pong.Ball.initialBall.x
+                        | x = Pong.Ball.initialBall.x + 100
                         , vx = negate Pong.Ball.initialBall.vx
                         , vy = Pong.Ball.initialBall.vy
                     }
 
                 Pong.Window.Right ->
                     { ball
-                        | x = Pong.Ball.initialBall.x
+                        | x = Pong.Ball.initialBall.x - 100
                         , vx = Pong.Ball.initialBall.vx
                         , vy = Pong.Ball.initialBall.vy
                     }
