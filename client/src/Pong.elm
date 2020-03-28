@@ -22,7 +22,7 @@ import Pong.Game exposing (DeltaTime, State, Winner, WinningScore)
 import Pong.Paddle exposing (Direction, Paddle)
 import Pong.Ports
 import Pong.Window exposing (Window, WindowEdge)
-import Random
+import Random exposing (Generator)
 import Set
 import Svg exposing (Svg)
 import Svg.Attributes
@@ -83,7 +83,7 @@ init _ =
 
 type Msg
     = BrowserAdvancedAnimationFrame DeltaTime
-    | CollisionGeneratedRandomBallPosition (Int, Int)
+    | CollisionGeneratedRandomBallYPositionAndYVelocity ( Int, Float )
     | PlayerClickedShowBallPathRadioButton ShowBallPath
     | PlayerClickedShowFpsRadioButton ShowFps
     | PlayerClickedWinningScoreRadioButton WinningScore
@@ -119,8 +119,8 @@ update msg model =
                 |> updateGameState model.gameState getWinner
                 |> addCommand getPaddleHitByBall getWindowEdgeHitByBall
 
-        CollisionGeneratedRandomBallPosition (x, y) ->
-            ( model, Cmd.none )
+        CollisionGeneratedRandomBallYPositionAndYVelocity ( randomYPosition, randomYVelocity ) ->
+            ( { model | ball = updateBallWithRandomness randomYPosition randomYVelocity model.ball }, Cmd.none )
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             ( { model | showBallPath = showBallPathValue }, Cmd.none )
@@ -198,18 +198,14 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                 Pong.Window.Left ->
                     { ball
                         | x = Pong.Ball.initialBall.x
-                        , y = Pong.Ball.initialBall.y
                         , vx = negate Pong.Ball.initialBall.vx
-                        -- add randomness
                         , vy = Pong.Ball.initialBall.vy
                     }
 
                 Pong.Window.Right ->
                     { ball
                         | x = Pong.Ball.initialBall.x
-                        , y = Pong.Ball.initialBall.y
                         , vx = Pong.Ball.initialBall.vx
-                        -- add randomness
                         , vy = Pong.Ball.initialBall.vy
                     }
 
@@ -238,6 +234,14 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                 | x = round <| toFloat ball.x + ball.vx * deltaTime
                 , y = round <| toFloat ball.y + ball.vy * deltaTime
             }
+
+
+updateBallWithRandomness : Int -> Float -> Ball -> Ball
+updateBallWithRandomness y vy ball =
+    { ball
+        | y = y
+        , vy = vy
+    }
 
 
 updateBallPath : Ball -> BallPath -> Maybe WindowEdge -> Model -> Model
@@ -335,22 +339,45 @@ addCommand maybePaddle maybeWindowEdge model =
         ( Just _, Nothing ) ->
             ( model, playSoundCommand "beep.wav" )
 
-        ( Nothing, Just _ ) ->
-            ( model, Cmd.batch [ playSoundCommand "boop.wav", generateRandomBallPosition ] )
+        ( Nothing, Just edge ) ->
+            case edge of
+                Pong.Window.Bottom ->
+                    ( model, playSoundCommand "boop.wav" )
+
+                Pong.Window.Left ->
+                    ( model, generateRandomBallPosition )
+
+                Pong.Window.Right ->
+                    ( model, generateRandomBallPosition )
+
+                Pong.Window.Top ->
+                    ( model, playSoundCommand "boop.wav" )
 
         ( _, _ ) ->
             ( model, Cmd.none )
 
 
-randomIntGenerator =
-    (Random.int Pong.Window.globalWindow.y Pong.Window.globalWindow.height)
+randomBallYPositionGenerator : Generator Int
+randomBallYPositionGenerator =
+    Random.int
+        (Pong.Window.globalWindow.y + 100)
+        (Pong.Window.globalWindow.height - 100)
 
-randomPosition =
-    Random.pair randomIntGenerator randomIntGenerator
+
+randomBallYVelocityGenerator : Generator Float
+randomBallYVelocityGenerator =
+    Random.float -350.0 350.0
+
+
+randomBallPositionAndVelocity : Generator ( Int, Float )
+randomBallPositionAndVelocity =
+    Random.pair randomBallYPositionGenerator randomBallYVelocityGenerator
+
 
 generateRandomBallPosition : Cmd Msg
 generateRandomBallPosition =
-  Random.generate CollisionGeneratedRandomBallPosition randomPosition
+    Random.generate CollisionGeneratedRandomBallYPositionAndYVelocity randomBallPositionAndVelocity
+
 
 playSoundCommand : String -> Cmd Msg
 playSoundCommand soundFile =
@@ -404,7 +431,7 @@ keyUpSubscription =
 
 view : Model -> Html Msg
 view model =
-    Html.main_ [ Html.Attributes.class "px-6" ]
+    Html.main_ [ Html.Attributes.class "bg-yellow-200 px-6" ]
         [ viewHeader
         , viewGameSection model
         ]
