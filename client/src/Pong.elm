@@ -17,6 +17,7 @@ import Json.Decode
 import Json.Encode
 import Keyboard exposing (Controls)
 import Pong.Ball exposing (Ball, BallPath, ShowBallPath)
+import Pong.Cabinet
 import Pong.Fps exposing (DeltaTimes, ShowFps)
 import Pong.Game exposing (DeltaTime, State, Winner, WinningScore)
 import Pong.Paddle exposing (Direction, Paddle)
@@ -431,7 +432,7 @@ keyUpSubscription =
 
 view : Model -> Html Msg
 view model =
-    Html.main_ [ Html.Attributes.class "bg-yellow-200 px-6" ]
+    Html.main_ [ Html.Attributes.class "bg-yellow-200 p-6" ]
         [ viewHeader
         , viewGameSection model
         ]
@@ -440,15 +441,14 @@ view model =
 viewHeader : Html msg
 viewHeader =
     Html.header []
-        [ Html.h1 [ Html.Attributes.class "font-black text-black text-5xl" ]
-            [ Html.text "\u{1F3D3} Pong" ]
-        ]
+        [ Pong.Cabinet.logo ]
 
 
 viewGameSection : Model -> Html Msg
 viewGameSection model =
     Html.section []
-        [ viewSvg Pong.Window.globalWindow model
+        [ Pong.Cabinet.viewHole
+        , viewSvg Pong.Window.globalWindow model
         , viewWinner model.gameState model.winner
         , viewInstructions
         , viewOptions model.showBallPath model.showFps model.winningScore
