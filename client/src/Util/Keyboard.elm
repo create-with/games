@@ -11,8 +11,8 @@ module Util.Keyboard exposing
 
 -- IMPORTS
 
-import Json.Decode
-import Set
+import Json.Decode exposing (Decoder)
+import Set exposing (Set)
 
 
 
@@ -20,7 +20,7 @@ import Set
 
 
 type alias Controls =
-    Set.Set String
+    Set String
 
 
 
@@ -36,7 +36,7 @@ initialKeys =
 -- DECODER
 
 
-keyDecoder : Json.Decode.Decoder String
+keyDecoder : Decoder String
 keyDecoder =
     Json.Decode.field "key" Json.Decode.string
 
@@ -45,7 +45,7 @@ keyDecoder =
 -- VALIDATION
 
 
-validKeys : Set.Set String
+validKeys : Set String
 validKeys =
     Set.empty
         |> Set.insert "ArrowUp"
@@ -57,21 +57,21 @@ validKeys =
 -- HELPERS
 
 
-playerPressedKey : Set.Set String -> Bool
+playerPressedKey : Set String -> Bool
 playerPressedKey =
     Set.isEmpty >> not
 
 
-playerPressedSpacebarKey : Set.Set String -> Bool
+playerPressedSpacebarKey : Set String -> Bool
 playerPressedSpacebarKey =
     Set.member " "
 
 
-playerPressedArrowUpKey : Set.Set String -> Bool
+playerPressedArrowUpKey : Set String -> Bool
 playerPressedArrowUpKey =
     Set.member "ArrowUp"
 
 
-playerPressedArrowDownKey : Set.Set String -> Bool
+playerPressedArrowDownKey : Set String -> Bool
 playerPressedArrowDownKey =
     Set.member "ArrowDown"

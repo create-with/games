@@ -9,7 +9,7 @@ module Util.Fps exposing
 
 -- IMPORTS
 
-import Svg
+import Svg exposing (Svg)
 import Svg.Attributes
 
 
@@ -43,7 +43,7 @@ initialShowFps =
 -- VIEW
 
 
-viewFps : ShowFps -> List Time -> Svg.Svg msg
+viewFps : ShowFps -> List Time -> Svg msg
 viewFps showFps deltaTimes =
     let
         average currentWeight sumOfWeights weightedSum list =
