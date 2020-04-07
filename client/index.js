@@ -39,3 +39,29 @@ document.documentElement.addEventListener(
   (event) => preventDefaultForGameKeys(event),
   false
 );
+
+// DevTools Easter Egg
+
+const string = `
+C
+r b
+e y
+a .
+t .
+e .
+d .
+
+B .
+i .
+j B
+a o
+n u
+. s
+. t
+. a
+. n
+. i
+🐰🥚
+`
+
+console.log(string);
