@@ -15,11 +15,8 @@ import Html.Attributes
 import Html.Events
 import Json.Decode
 import Json.Encode
-import Keyboard exposing (Controls)
 import Pong.Ball exposing (Ball, BallPath, ShowBallPath)
-import Pong.Cabinet
-import Pong.Fps exposing (DeltaTimes, ShowFps)
-import Pong.Game exposing (DeltaTime, State, Winner, WinningScore)
+import Pong.Game exposing (State, Winner, WinningScore)
 import Pong.Paddle exposing (Direction, Paddle)
 import Pong.Ports
 import Pong.Window exposing (Window, WindowEdge)
@@ -27,6 +24,8 @@ import Random exposing (Generator)
 import Set
 import Svg exposing (Svg)
 import Svg.Attributes
+import Util.Fps exposing (ShowFps, Time)
+import Util.Keyboard exposing (Controls)
 
 
 
@@ -36,7 +35,7 @@ import Svg.Attributes
 type alias Model =
     { ball : Ball
     , ballPath : BallPath
-    , deltaTimes : DeltaTimes
+    , deltaTimes : List Time
     , gameState : State
     , leftPaddle : Paddle
     , playerKeyPress : Controls
@@ -56,13 +55,13 @@ initialModel : Model
 initialModel =
     { ball = Pong.Ball.initialBall
     , ballPath = Pong.Ball.initialBallPath
-    , deltaTimes = Pong.Fps.initialDeltaTimes
+    , deltaTimes = Util.Fps.initialDeltaTimes
     , gameState = Pong.Game.initialState
     , leftPaddle = Pong.Paddle.initialLeftPaddle
-    , playerKeyPress = Keyboard.initialKeys
+    , playerKeyPress = Util.Keyboard.initialKeys
     , rightPaddle = Pong.Paddle.initialRightPaddle
     , showBallPath = Pong.Ball.initialShowBallPath
-    , showFps = Pong.Fps.initialShowFps
+    , showFps = Util.Fps.initialShowFps
     , winner = Pong.Game.initialWinner
     , winningScore = Pong.Game.initialWinningScore
     }
@@ -83,8 +82,8 @@ init _ =
 
 
 type Msg
-    = BrowserAdvancedAnimationFrame DeltaTime
-    | CollisionGeneratedRandomBallYPositionAndYVelocity ( Int, Float )
+    = BrowserAdvancedAnimationFrame Time
+    | CollisionGeneratedRandomBallYPositionAndYVelocity ( Float, Float )
     | PlayerClickedShowBallPathRadioButton ShowBallPath
     | PlayerClickedShowFpsRadioButton ShowFps
     | PlayerClickedWinningScoreRadioButton WinningScore
@@ -156,12 +155,12 @@ update msg model =
 -- UPDATES
 
 
-updateBall : Ball -> Maybe Paddle -> Maybe WindowEdge -> DeltaTime -> Model -> Model
+updateBall : Ball -> Maybe Paddle -> Maybe WindowEdge -> Time -> Model -> Model
 updateBall ball maybePaddle maybeWindowEdge deltaTime model =
     { model | ball = updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime }
 
 
-updateBallWithCollisions : Ball -> Maybe Paddle -> Maybe WindowEdge -> DeltaTime -> Ball
+updateBallWithCollisions : Ball -> Maybe Paddle -> Maybe WindowEdge -> Time -> Ball
 updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
     let
         ( vxMin, vxMax ) =
@@ -185,14 +184,14 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                     { ball
                         | x = ball.x + ball.width
                         , vx = clamp vxMin vxMax <| negate <| ball.vx - vxChangeAfterCollision
-                        , vy = toFloat vyAfterCollision
+                        , vy = vyAfterCollision
                     }
 
                 Pong.Paddle.Right ->
                     { ball
                         | x = ball.x - ball.width
                         , vx = clamp vxMin vxMax <| negate <| ball.vx + vxChangeAfterCollision
-                        , vy = toFloat vyAfterCollision
+                        , vy = vyAfterCollision
                     }
 
         ( Nothing, Just edge ) ->
@@ -239,12 +238,12 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
 
         ( Nothing, Nothing ) ->
             { ball
-                | x = round <| toFloat ball.x + ball.vx * deltaTime
-                , y = round <| toFloat ball.y + ball.vy * deltaTime
+                | x = ball.x + ball.vx * deltaTime
+                , y = ball.y + ball.vy * deltaTime
             }
 
 
-updateBallWithRandomness : Int -> Float -> Ball -> Ball
+updateBallWithRandomness : Float -> Float -> Ball -> Ball
 updateBallWithRandomness y vy ball =
     { ball
         | y = y
@@ -270,13 +269,13 @@ updateBallPath ball ballPath maybeWindowEdge model =
                     { model | ballPath = List.take 99 <| ball :: ballPath }
 
 
-updateDeltaTimes : ShowFps -> DeltaTime -> Model -> Model
+updateDeltaTimes : ShowFps -> Time -> Model -> Model
 updateDeltaTimes showFps deltaTime model =
     case showFps of
-        Pong.Fps.Off ->
+        Util.Fps.Off ->
             model
 
-        Pong.Fps.On ->
+        Util.Fps.On ->
             { model | deltaTimes = List.take 50 (deltaTime :: model.deltaTimes) }
 
 
@@ -292,14 +291,14 @@ updateGameState gameState maybePaddle model =
 
 updateKeyPress : String -> Model -> Model
 updateKeyPress key model =
-    if Set.member key Keyboard.validKeys then
+    if Set.member key Util.Keyboard.validKeys then
         { model | playerKeyPress = Set.insert key model.playerKeyPress }
 
     else
         model
 
 
-updatePaddle : Paddle -> Maybe Direction -> Ball -> Window -> DeltaTime -> Model -> Model
+updatePaddle : Paddle -> Maybe Direction -> Ball -> Window -> Time -> Model -> Model
 updatePaddle paddle maybeDirection ball window deltaTime model =
     case paddle.id of
         Pong.Paddle.Left ->
@@ -365,9 +364,9 @@ addCommand maybePaddle maybeWindowEdge model =
             ( model, Cmd.none )
 
 
-randomBallYPositionGenerator : Generator Int
+randomBallYPositionGenerator : Generator Float
 randomBallYPositionGenerator =
-    Random.int
+    Random.float
         (Pong.Window.globalWindow.y + 100)
         (Pong.Window.globalWindow.height - 100)
 
@@ -377,7 +376,7 @@ randomBallYVelocityGenerator =
     Random.float -350.0 350.0
 
 
-randomBallPositionAndVelocity : Generator ( Int, Float )
+randomBallPositionAndVelocity : Generator ( Float, Float )
 randomBallPositionAndVelocity =
     Random.pair randomBallYPositionGenerator randomBallYVelocityGenerator
 
@@ -418,19 +417,19 @@ browserAnimationSubscription gameState =
             Sub.none
 
 
-handleAnimationFrames : DeltaTime -> Msg
+handleAnimationFrames : Time -> Msg
 handleAnimationFrames milliseconds =
     BrowserAdvancedAnimationFrame <| milliseconds / 1000
 
 
 keyDownSubscription : Sub Msg
 keyDownSubscription =
-    Browser.Events.onKeyDown <| Json.Decode.map PlayerPressedKeyDown <| Keyboard.keyDecoder
+    Browser.Events.onKeyDown <| Json.Decode.map PlayerPressedKeyDown <| Util.Keyboard.keyDecoder
 
 
 keyUpSubscription : Sub Msg
 keyUpSubscription =
-    Browser.Events.onKeyUp <| Json.Decode.map PlayerReleasedKey <| Keyboard.keyDecoder
+    Browser.Events.onKeyUp <| Json.Decode.map PlayerReleasedKey <| Util.Keyboard.keyDecoder
 
 
 
@@ -441,7 +440,7 @@ view : Model -> Html Msg
 view model =
     Html.main_ [ Html.Attributes.class "bg-yellow-200 p-6" ]
         [ viewHeader
-        , viewGameSection model
+        , viewGame model
         , viewInformation model
         ]
 
@@ -449,11 +448,31 @@ view model =
 viewHeader : Html msg
 viewHeader =
     Html.header [ Html.Attributes.class "flex justify-center" ]
-        [ Pong.Cabinet.logo ]
+        [ logo ]
 
 
-viewGameSection : Model -> Html Msg
-viewGameSection model =
+logo : Svg msg
+logo =
+    Svg.svg
+        [ Svg.Attributes.version "1.0"
+        , Svg.Attributes.width "400"
+        , Svg.Attributes.height "75"
+        , Svg.Attributes.viewBox "0 0 400 75"
+        ]
+        [ Svg.g
+            [ Svg.Attributes.transform "translate(75,75) scale(0.03,-0.03)"
+            , Svg.Attributes.fill "black"
+            ]
+            [ Svg.path [ Svg.Attributes.d "M2785 2319 c-356 -51 -684 -291 -840 -613 -206 -425 -123 -920 210 -1251 239 -238 582 -357 937 -325 298 26 520 124 715 313 184 179 285 388 313 652 23 222 -18 443 -118 639 -60 116 -114 187 -221 288 -172 161 -400 265 -651 298 -90 11 -262 11 -345 -1z m390 -439 c240 -75 419 -250 501 -490 27 -78 27 -282 0 -360 -38 -112 -88 -192 -171 -275 -84 -84 -154 -131 -255 -172 -399 -161 -844 61 -957 477 -28 103 -23 264 10 365 78 236 274 414 520 470 89 21 262 13 352 -15z" ] []
+            , Svg.path [ Svg.Attributes.d "M5108 2320 c-288 -46 -512 -238 -578 -496 -19 -74 -20 -114 -20 -891 l0 -813 220 0 220 0 2 803 3 802 22 41 c50 94 146 153 262 162 137 9 247 -38 306 -133 l30 -48 5 -811 5 -811 220 0 220 0 0 810 0 810 -23 75 c-71 229 -266 404 -534 480 -84 24 -269 34 -360 20z" ] []
+            , Svg.path [ Svg.Attributes.d "M7370 2304 c-153 -26 -235 -52 -355 -112 -129 -64 -218 -125 -313 -216 -238 -228 -344 -497 -329 -836 15 -335 180 -647 450 -851 141 -106 318 -182 489 -209 107 -17 379 -8 478 17 l75 18 3 553 2 552 -330 0 -330 0 0 -200 0 -200 100 0 100 0 0 -166 0 -167 -51 7 c-189 25 -394 209 -486 436 -74 183 -65 348 26 535 81 165 226 292 401 351 161 54 340 54 487 -1 36 -14 69 -25 74 -25 5 0 9 104 9 230 l0 230 -27 11 c-73 28 -159 40 -298 44 -82 2 -161 2 -175 -1z" ] []
+            , Svg.path [ Svg.Attributes.d "M122 1203 l3 -1088 215 0 215 0 3 406 2 406 173 6 c195 6 251 17 372 76 176 87 310 249 360 437 25 92 30 235 12 332 -36 188 -156 346 -327 429 -154 75 -155 76 -618 80 l-412 5 2 -1089z m783 686 c55 -15 137 -100 158 -164 46 -134 -14 -285 -143 -362 l-54 -33 -148 0 -148 0 0 278 c0 153 3 282 7 285 11 11 285 8 328 -4z" ] []
+            ]
+        ]
+
+
+viewGame : Model -> Html Msg
+viewGame model =
     Html.section [ Html.Attributes.class "flex justify-center my-4" ]
         [ Html.div [ Html.Attributes.class "flex-shrink-0" ]
             [ viewSvg Pong.Window.globalWindow model ]
@@ -469,29 +488,37 @@ viewSvg window model =
             , window.width
             , window.height
             ]
-                |> List.map String.fromInt
+                |> List.map String.fromFloat
                 |> String.join " "
     in
     Svg.svg
         [ Svg.Attributes.viewBox viewBoxString
-        , Svg.Attributes.width <| String.fromInt window.width
-        , Svg.Attributes.height <| String.fromInt window.height
+        , Svg.Attributes.width <| String.fromFloat window.width
+        , Svg.Attributes.height <| String.fromFloat window.height
         ]
         [ Pong.Window.viewGameWindow window
         , Pong.Window.viewNet window
-        , Pong.Paddle.viewPaddleScore model.leftPaddle.score window -200
-        , Pong.Paddle.viewPaddleScore model.rightPaddle.score window 150
+        , Pong.Paddle.viewPaddleScore model.leftPaddle.score window -200.0
+        , Pong.Paddle.viewPaddleScore model.rightPaddle.score window 150.0
         , Pong.Paddle.viewPaddle model.leftPaddle
         , Pong.Paddle.viewPaddle model.rightPaddle
         , Pong.Ball.viewBall model.ball
-        , Pong.Fps.viewFps model.showFps model.deltaTimes
         , Pong.Ball.viewBallPath model.showBallPath model.ballPath |> Svg.g []
-
-        -- , Svg.path
-        --     [ Svg.Attributes.d "M50,0 h700 q50,0 50,50 v450 q0,50 -50,50 h-700 q-50,0 -50,-50 v-450 q0,-50 50,-50 z"
-        --     , Svg.Attributes.fill "#fefcbf" ]
-        --     []
+        , Util.Fps.viewFps model.showFps model.deltaTimes
         ]
+
+
+viewInformation : Model -> Html Msg
+viewInformation model =
+    Html.section []
+        [ viewWinner model.gameState model.winner
+        , viewInstructions
+        , viewOptions model.showBallPath model.showFps model.winningScore
+        ]
+
+
+
+-- WINNER
 
 
 viewWinner : State -> Maybe Paddle -> Html msg
@@ -526,13 +553,8 @@ viewWinnerPaddle maybePaddle =
             Html.span [] []
 
 
-viewInformation : Model -> Html Msg
-viewInformation model =
-    Html.section []
-        [ viewWinner model.gameState model.winner
-        , viewInstructions
-        , viewOptions model.showBallPath model.showFps model.winningScore
-        ]
+
+-- INSTRUCTIONS
 
 
 viewInstructions : Html msg
@@ -546,6 +568,10 @@ viewInstructions =
             , Html.li [] [ Html.text "🏆 Avoid missing ball for high score." ]
             ]
         ]
+
+
+
+-- OPTIONS
 
 
 viewOptions : ShowBallPath -> ShowFps -> WinningScore -> Html Msg
@@ -578,8 +604,8 @@ viewShowFpsOptions showFps_ =
     Html.fieldset [ Html.Attributes.class "inline" ]
         [ Html.span [ Html.Attributes.class "mr-3" ]
             [ Html.text "Show FPS meter:" ]
-        , viewRadioButton Pong.Fps.Off showFps_ Pong.Fps.showFpsToString PlayerClickedShowFpsRadioButton
-        , viewRadioButton Pong.Fps.On showFps_ Pong.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        , viewRadioButton Util.Fps.Off showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        , viewRadioButton Util.Fps.On showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
         ]
 
 

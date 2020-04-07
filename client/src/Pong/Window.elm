@@ -20,10 +20,10 @@ import Svg.Attributes
 
 type alias Window =
     { backgroundColor : String
-    , x : Int
-    , y : Int
-    , width : Int
-    , height : Int
+    , x : Float
+    , y : Float
+    , width : Float
+    , height : Float
     }
 
 
@@ -41,10 +41,10 @@ type WindowEdge
 globalWindow : Window
 globalWindow =
     { backgroundColor = "black"
-    , x = 0
-    , y = 0
-    , width = 800
-    , height = 600
+    , x = 0.0
+    , y = 0.0
+    , width = 800.0
+    , height = 600.0
     }
 
 
@@ -78,10 +78,10 @@ viewGameWindow : Window -> Svg.Svg msg
 viewGameWindow window =
     Svg.rect
         [ Svg.Attributes.fill window.backgroundColor
-        , Svg.Attributes.x <| String.fromInt window.x
-        , Svg.Attributes.y <| String.fromInt window.y
-        , Svg.Attributes.width <| String.fromInt window.width
-        , Svg.Attributes.height <| String.fromInt window.height
+        , Svg.Attributes.x <| String.fromFloat window.x
+        , Svg.Attributes.y <| String.fromFloat window.y
+        , Svg.Attributes.width <| String.fromFloat window.width
+        , Svg.Attributes.height <| String.fromFloat window.height
         ]
         []
 
@@ -92,9 +92,9 @@ viewNet window =
         [ Svg.Attributes.stroke "white"
         , Svg.Attributes.strokeDasharray "14, 14"
         , Svg.Attributes.strokeWidth "4"
-        , Svg.Attributes.x1 <| String.fromInt <| (window.width // 2)
-        , Svg.Attributes.x2 <| String.fromInt <| (window.width // 2)
-        , Svg.Attributes.y1 <| String.fromInt window.y
-        , Svg.Attributes.y2 <| String.fromInt window.height
+        , Svg.Attributes.x1 <| String.fromFloat <| (window.width / 2)
+        , Svg.Attributes.x2 <| String.fromFloat <| (window.width / 2)
+        , Svg.Attributes.y1 <| String.fromFloat window.y
+        , Svg.Attributes.y2 <| String.fromFloat window.height
         ]
         []

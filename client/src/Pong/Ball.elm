@@ -12,7 +12,7 @@ module Pong.Ball exposing
 
 -- IMPORTS
 
-import Svg
+import Svg exposing (Svg)
 import Svg.Attributes
 
 
@@ -22,12 +22,12 @@ import Svg.Attributes
 
 type alias Ball =
     { color : String
-    , x : Int
-    , y : Int
+    , x : Float
+    , y : Float
     , vx : Float
     , vy : Float
-    , width : Int
-    , height : Int
+    , width : Float
+    , height : Float
     }
 
 
@@ -47,12 +47,12 @@ type ShowBallPath
 initialBall : Ball
 initialBall =
     { color = "white"
-    , x = 395
-    , y = 310
+    , x = 395.0
+    , y = 310.0
     , vx = 350.0
     , vy = 350.0
-    , width = 10
-    , height = 10
+    , width = 10.0
+    , height = 10.0
     }
 
 
@@ -84,19 +84,19 @@ showBallPathToString showBallPath =
 -- VIEW
 
 
-viewBall : Ball -> Svg.Svg msg
+viewBall : Ball -> Svg msg
 viewBall ball =
     Svg.rect
         [ Svg.Attributes.fill ball.color
-        , Svg.Attributes.x <| String.fromInt ball.x
-        , Svg.Attributes.y <| String.fromInt ball.y
-        , Svg.Attributes.width <| String.fromInt ball.width
-        , Svg.Attributes.height <| String.fromInt ball.height
+        , Svg.Attributes.x <| String.fromFloat ball.x
+        , Svg.Attributes.y <| String.fromFloat ball.y
+        , Svg.Attributes.width <| String.fromFloat ball.width
+        , Svg.Attributes.height <| String.fromFloat ball.height
         ]
         []
 
 
-viewBallPath : ShowBallPath -> List Ball -> List (Svg.Svg msg)
+viewBallPath : ShowBallPath -> List Ball -> List (Svg msg)
 viewBallPath showBallPath ballPath =
     case showBallPath of
         On ->
@@ -106,14 +106,14 @@ viewBallPath showBallPath ballPath =
             []
 
 
-viewBallPathSegment : Int -> Ball -> Svg.Svg msg
+viewBallPathSegment : Int -> Ball -> Svg msg
 viewBallPathSegment index ball =
     Svg.rect
         [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (80 - index)
         , Svg.Attributes.fill "darkorange"
-        , Svg.Attributes.x <| String.fromInt ball.x
-        , Svg.Attributes.y <| String.fromInt ball.y
-        , Svg.Attributes.width <| String.fromInt ball.width
-        , Svg.Attributes.height <| String.fromInt ball.height
+        , Svg.Attributes.x <| String.fromFloat ball.x
+        , Svg.Attributes.y <| String.fromFloat ball.y
+        , Svg.Attributes.width <| String.fromFloat ball.width
+        , Svg.Attributes.height <| String.fromFloat ball.height
         ]
         []

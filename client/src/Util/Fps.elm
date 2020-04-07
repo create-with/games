@@ -1,6 +1,6 @@
-module Pong.Fps exposing
-    ( DeltaTimes
-    , ShowFps(..)
+module Util.Fps exposing
+    ( ShowFps(..)
+    , Time
     , initialDeltaTimes
     , initialShowFps
     , showFpsToString
@@ -16,9 +16,8 @@ import Svg.Attributes
 
 -- MODEL
 
-
-type alias DeltaTimes =
-    List Float
+type alias Time =
+    Float
 
 
 type ShowFps
@@ -30,7 +29,7 @@ type ShowFps
 -- INIT
 
 
-initialDeltaTimes : DeltaTimes
+initialDeltaTimes : List Time
 initialDeltaTimes =
     []
 
@@ -44,7 +43,7 @@ initialShowFps =
 -- VIEW
 
 
-viewFps : ShowFps -> DeltaTimes -> Svg.Svg msg
+viewFps : ShowFps -> List Time -> Svg.Svg msg
 viewFps showFps deltaTimes =
     let
         average currentWeight sumOfWeights weightedSum list =

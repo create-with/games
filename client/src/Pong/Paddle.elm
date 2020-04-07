@@ -18,13 +18,12 @@ module Pong.Paddle exposing
 
 -- IMPORTS
 
-import Keyboard
 import Pong.Ball
 import Pong.Window
 import Set
 import Svg
 import Svg.Attributes
-
+import Util.Keyboard
 
 
 -- MODEL
@@ -39,11 +38,11 @@ type alias Paddle =
     { color : String
     , id : PaddleId
     , score : Int
-    , x : Int
-    , y : Int
+    , x : Float
+    , y : Float
     , vy : Float
-    , width : Int
-    , height : Int
+    , width : Float
+    , height : Float
     }
 
 
@@ -61,11 +60,11 @@ initialLeftPaddle =
     { color = "lightblue"
     , id = Left
     , score = 0
-    , x = 48
-    , y = 200
+    , x = 48.0
+    , y = 200.0
     , vy = 600.0
-    , width = 10
-    , height = 60
+    , width = 10.0
+    , height = 60.0
     }
 
 
@@ -74,11 +73,11 @@ initialRightPaddle =
     { color = "lightpink"
     , id = Right
     , score = 0
-    , x = 740
-    , y = 300
+    , x = 740.0
+    , y = 300.0
     , vy = 475.0
-    , width = 10
-    , height = 60
+    , width = 10.0
+    , height = 60.0
     }
 
 
@@ -95,10 +94,10 @@ updateLeftPaddle : Maybe Direction -> Pong.Ball.Ball -> Float -> Paddle -> Paddl
 updateLeftPaddle direction _ deltaTime paddle =
     case direction of
         Just Down ->
-            { paddle | y = round <| toFloat paddle.y + paddle.vy * deltaTime }
+            { paddle | y = paddle.y + paddle.vy * deltaTime }
 
         Just Up ->
-            { paddle | y = round <| toFloat paddle.y - paddle.vy * deltaTime }
+            { paddle | y = paddle.y - paddle.vy * deltaTime }
 
         Nothing ->
             paddle
@@ -107,10 +106,10 @@ updateLeftPaddle direction _ deltaTime paddle =
 updateRightPaddle : Pong.Ball.Ball -> Float -> Paddle -> Paddle
 updateRightPaddle ball deltaTime paddle =
     if ball.y > paddle.y then
-        { paddle | y = round <| toFloat paddle.y + paddle.vy * deltaTime }
+        { paddle | y = paddle.y + paddle.vy * deltaTime }
 
     else if ball.y < paddle.y then
-        { paddle | y = round <| toFloat paddle.y - paddle.vy * deltaTime }
+        { paddle | y = paddle.y - paddle.vy * deltaTime }
 
     else
         paddle
@@ -163,17 +162,17 @@ getPaddleHitByBall ball leftPaddle rightPaddle =
         Nothing
 
 
-getPaddleHitByBallDistanceFromCenter : Pong.Ball.Ball -> Maybe Paddle -> Maybe Int
+getPaddleHitByBallDistanceFromCenter : Pong.Ball.Ball -> Maybe Paddle -> Maybe Float
 getPaddleHitByBallDistanceFromCenter ball maybePaddle =
     case maybePaddle of
         Just paddle ->
             if ballHitPaddle ball paddle then
                 let
                     paddleCenter =
-                        paddle.height // 2
+                        paddle.height / 2
                 in
                 -- Top -100, Center 0, Bottom 100
-                Just <| (ball.y - paddle.y - paddleCenter) * 100 // paddleCenter
+                Just <| (ball.y - paddle.y - paddleCenter) * 100 / paddleCenter
 
             else
                 Nothing
@@ -188,10 +187,10 @@ getPaddleHitByBallDistanceFromCenter ball maybePaddle =
 
 playerKeyPressToDirection : Set.Set String -> Maybe Direction
 playerKeyPressToDirection playerKeyPress =
-    if Keyboard.playerPressedArrowUpKey playerKeyPress then
+    if Util.Keyboard.playerPressedArrowUpKey playerKeyPress then
         Just Up
 
-    else if Keyboard.playerPressedArrowDownKey playerKeyPress then
+    else if Util.Keyboard.playerPressedArrowDownKey playerKeyPress then
         Just Down
 
     else
@@ -216,22 +215,22 @@ viewPaddle : Paddle -> Svg.Svg msg
 viewPaddle paddle =
     Svg.rect
         [ Svg.Attributes.fill paddle.color
-        , Svg.Attributes.x <| String.fromInt paddle.x
-        , Svg.Attributes.y <| String.fromInt paddle.y
-        , Svg.Attributes.width <| String.fromInt paddle.width
-        , Svg.Attributes.height <| String.fromInt paddle.height
+        , Svg.Attributes.x <| String.fromFloat paddle.x
+        , Svg.Attributes.y <| String.fromFloat paddle.y
+        , Svg.Attributes.width <| String.fromFloat paddle.width
+        , Svg.Attributes.height <| String.fromFloat paddle.height
         ]
         []
 
 
-viewPaddleScore : Int -> Pong.Window.Window -> Int -> Svg.Svg msg
+viewPaddleScore : Int -> Pong.Window.Window -> Float -> Svg.Svg msg
 viewPaddleScore score window positionOffset =
     Svg.text_
         [ Svg.Attributes.fill "white"
         , Svg.Attributes.fontFamily "monospace"
         , Svg.Attributes.fontSize "80"
         , Svg.Attributes.fontWeight "bold"
-        , Svg.Attributes.x <| String.fromInt <| (window.width // 2) + positionOffset
+        , Svg.Attributes.x <| String.fromFloat <| (window.width / 2) + positionOffset
         , Svg.Attributes.y "100"
         ]
         [ Svg.text <| String.fromInt score ]
