@@ -12,7 +12,7 @@ module Pong.Game exposing
 
 -- IMPORTS
 
-import Pong.Paddle
+import Pong.Paddle exposing (Paddle)
 
 
 
@@ -26,7 +26,7 @@ type State
 
 
 type alias Winner =
-    Maybe Pong.Paddle.Paddle
+    Maybe Paddle
 
 
 type WinningScore
@@ -57,7 +57,7 @@ initialWinningScore =
 -- GET
 
 
-getWinner : Pong.Paddle.Paddle -> Pong.Paddle.Paddle -> WinningScore -> Maybe Pong.Paddle.Paddle
+getWinner : Paddle -> Paddle -> WinningScore -> Maybe Paddle
 getWinner leftPaddle rightPaddle winningScore =
     if leftPaddle.score == winningScoreToInt winningScore then
         Just leftPaddle

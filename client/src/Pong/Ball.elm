@@ -87,7 +87,7 @@ showBallPathToString showBallPath =
 viewBall : Ball -> Svg msg
 viewBall ball =
     Svg.rect
-        [ Svg.Attributes.fill ball.color
+        [ Svg.Attributes.fill <| ball.color
         , Svg.Attributes.x <| String.fromFloat ball.x
         , Svg.Attributes.y <| String.fromFloat ball.y
         , Svg.Attributes.width <| String.fromFloat ball.width
@@ -96,7 +96,7 @@ viewBall ball =
         []
 
 
-viewBallPath : ShowBallPath -> List Ball -> List (Svg msg)
+viewBallPath : ShowBallPath -> BallPath -> List (Svg msg)
 viewBallPath showBallPath ballPath =
     case showBallPath of
         On ->
@@ -110,7 +110,7 @@ viewBallPathSegment : Int -> Ball -> Svg msg
 viewBallPathSegment index ball =
     Svg.rect
         [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (80 - index)
-        , Svg.Attributes.fill "darkorange"
+        , Svg.Attributes.fill <| "darkorange"
         , Svg.Attributes.x <| String.fromFloat ball.x
         , Svg.Attributes.y <| String.fromFloat ball.y
         , Svg.Attributes.width <| String.fromFloat ball.width

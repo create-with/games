@@ -18,10 +18,10 @@ module Pong.Paddle exposing
 
 -- IMPORTS
 
-import Pong.Ball
-import Pong.Window
-import Set
-import Svg
+import Pong.Ball exposing (Ball)
+import Pong.Window exposing (Window)
+import Set exposing (Set)
+import Svg exposing (Svg)
 import Svg.Attributes
 import Util.Keyboard
 
@@ -90,7 +90,7 @@ updateScore paddle =
     { paddle | score = paddle.score + 1 }
 
 
-updateLeftPaddle : Maybe Direction -> Pong.Ball.Ball -> Float -> Paddle -> Paddle
+updateLeftPaddle : Maybe Direction -> Ball -> Float -> Paddle -> Paddle
 updateLeftPaddle direction _ deltaTime paddle =
     case direction of
         Just Down ->
@@ -103,7 +103,7 @@ updateLeftPaddle direction _ deltaTime paddle =
             paddle
 
 
-updateRightPaddle : Pong.Ball.Ball -> Float -> Paddle -> Paddle
+updateRightPaddle : Ball -> Float -> Paddle -> Paddle
 updateRightPaddle ball deltaTime paddle =
     if ball.y > paddle.y then
         { paddle | y = paddle.y + paddle.vy * deltaTime }
@@ -115,7 +115,7 @@ updateRightPaddle ball deltaTime paddle =
         paddle
 
 
-updateYWithinWindow : Pong.Window.Window -> Paddle -> Paddle
+updateYWithinWindow : Window -> Paddle -> Paddle
 updateYWithinWindow window paddle =
     let
         topEdge =
@@ -131,26 +131,26 @@ updateYWithinWindow window paddle =
 -- COLLISIONS
 
 
-ballHitPaddle : Pong.Ball.Ball -> Paddle -> Bool
+ballHitPaddle : Ball -> Paddle -> Bool
 ballHitPaddle ball paddle =
     ballHitLeftPaddle ball paddle || ballHitRightPaddle ball paddle
 
 
-ballHitLeftPaddle : Pong.Ball.Ball -> Paddle -> Bool
+ballHitLeftPaddle : Ball -> Paddle -> Bool
 ballHitLeftPaddle ball paddle =
     (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
         && (paddle.x <= ball.x && ball.x <= paddle.x + paddle.width)
         && (ball.vx < 0)
 
 
-ballHitRightPaddle : Pong.Ball.Ball -> Paddle -> Bool
+ballHitRightPaddle : Ball -> Paddle -> Bool
 ballHitRightPaddle ball paddle =
     (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
         && (paddle.x <= ball.x + ball.width && ball.x <= paddle.x + paddle.width)
         && (ball.vx > 0)
 
 
-getPaddleHitByBall : Pong.Ball.Ball -> Paddle -> Paddle -> Maybe Paddle
+getPaddleHitByBall : Ball -> Paddle -> Paddle -> Maybe Paddle
 getPaddleHitByBall ball leftPaddle rightPaddle =
     if ballHitLeftPaddle ball leftPaddle then
         Just leftPaddle
@@ -162,7 +162,7 @@ getPaddleHitByBall ball leftPaddle rightPaddle =
         Nothing
 
 
-getPaddleHitByBallDistanceFromCenter : Pong.Ball.Ball -> Maybe Paddle -> Maybe Float
+getPaddleHitByBallDistanceFromCenter : Ball -> Maybe Paddle -> Maybe Float
 getPaddleHitByBallDistanceFromCenter ball maybePaddle =
     case maybePaddle of
         Just paddle ->
@@ -171,7 +171,9 @@ getPaddleHitByBallDistanceFromCenter ball maybePaddle =
                     paddleCenter =
                         paddle.height / 2
                 in
-                -- Top -100, Center 0, Bottom 100
+                -- -100 for Paddle Top
+                --    0 for Paddle Center
+                --  100 for Paddle Bottom
                 Just <| (ball.y - paddle.y - paddleCenter) * 100 / paddleCenter
 
             else
@@ -185,7 +187,7 @@ getPaddleHitByBallDistanceFromCenter ball maybePaddle =
 -- HELPERS
 
 
-playerKeyPressToDirection : Set.Set String -> Maybe Direction
+playerKeyPressToDirection : Set String -> Maybe Direction
 playerKeyPressToDirection playerKeyPress =
     if Util.Keyboard.playerPressedArrowUpKey playerKeyPress then
         Just Up
@@ -211,10 +213,10 @@ paddleIdToString paddleId =
 -- VIEW
 
 
-viewPaddle : Paddle -> Svg.Svg msg
+viewPaddle : Paddle -> Svg msg
 viewPaddle paddle =
     Svg.rect
-        [ Svg.Attributes.fill paddle.color
+        [ Svg.Attributes.fill <| paddle.color
         , Svg.Attributes.x <| String.fromFloat paddle.x
         , Svg.Attributes.y <| String.fromFloat paddle.y
         , Svg.Attributes.width <| String.fromFloat paddle.width
@@ -223,7 +225,7 @@ viewPaddle paddle =
         []
 
 
-viewPaddleScore : Int -> Pong.Window.Window -> Float -> Svg.Svg msg
+viewPaddleScore : Int -> Window -> Float -> Svg msg
 viewPaddleScore score window positionOffset =
     Svg.text_
         [ Svg.Attributes.fill "white"

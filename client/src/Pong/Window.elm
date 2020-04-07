@@ -9,8 +9,8 @@ module Pong.Window exposing
 
 -- IMPORTS
 
-import Pong.Ball
-import Svg
+import Pong.Ball exposing (Ball)
+import Svg exposing (Svg)
 import Svg.Attributes
 
 
@@ -52,7 +52,7 @@ globalWindow =
 -- COLLISIONS
 
 
-getWindowEdgeHitByBall : Pong.Ball.Ball -> Window -> Maybe WindowEdge
+getWindowEdgeHitByBall : Ball -> Window -> Maybe WindowEdge
 getWindowEdgeHitByBall ball window =
     if (ball.y + ball.height) >= window.height then
         Just Bottom
@@ -74,10 +74,10 @@ getWindowEdgeHitByBall ball window =
 -- VIEW
 
 
-viewGameWindow : Window -> Svg.Svg msg
+viewGameWindow : Window -> Svg msg
 viewGameWindow window =
     Svg.rect
-        [ Svg.Attributes.fill window.backgroundColor
+        [ Svg.Attributes.fill <| window.backgroundColor
         , Svg.Attributes.x <| String.fromFloat window.x
         , Svg.Attributes.y <| String.fromFloat window.y
         , Svg.Attributes.width <| String.fromFloat window.width
@@ -86,7 +86,7 @@ viewGameWindow window =
         []
 
 
-viewNet : Window -> Svg.Svg msg
+viewNet : Window -> Svg msg
 viewNet window =
     Svg.line
         [ Svg.Attributes.stroke "white"
@@ -94,7 +94,7 @@ viewNet window =
         , Svg.Attributes.strokeWidth "4"
         , Svg.Attributes.x1 <| String.fromFloat <| (window.width / 2)
         , Svg.Attributes.x2 <| String.fromFloat <| (window.width / 2)
-        , Svg.Attributes.y1 <| String.fromFloat window.y
-        , Svg.Attributes.y2 <| String.fromFloat window.height
+        , Svg.Attributes.y1 <| String.fromFloat <| window.y
+        , Svg.Attributes.y2 <| String.fromFloat <| window.height
         ]
         []
