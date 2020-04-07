@@ -12,7 +12,7 @@ import Pong
 
 main : Program () Pong.Model Pong.Msg
 main =
-    Browser.element
+    Browser.document
         { init = Pong.init
         , update = Pong.update
         , subscriptions = Pong.subscriptions

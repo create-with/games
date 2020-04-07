@@ -9,6 +9,7 @@ module Pong exposing
 
 -- IMPORTS
 
+import Browser exposing (Document)
 import Browser.Events
 import Html exposing (Html)
 import Html.Attributes
@@ -431,9 +432,16 @@ keyUpSubscription =
 -- VIEW
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-    Html.main_ [ Html.Attributes.class "bg-yellow-200 p-6" ]
+    { title = "\u{1F3D3} Pong"
+    , body = [ viewMain model ]
+    }
+
+
+viewMain : Model -> Html Msg
+viewMain model =
+    Html.main_ [ Html.Attributes.class "bg-yellow-200 h-full p-8" ]
         [ viewHeader
         , viewGame model
         , viewInformation model
@@ -536,8 +544,8 @@ viewWinner gameState maybePaddle =
             Html.span [] []
 
         Pong.Game.EndingScreen ->
-            Html.div [ Html.Attributes.class "pt-2" ]
-                [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-center text-xl" ]
+            Html.div [ Html.Attributes.class "pt-4 text-center" ]
+                [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
                     [ Html.text "Winner!" ]
                 , viewWinnerPaddle maybePaddle
                 ]
@@ -547,7 +555,7 @@ viewWinnerPaddle : Maybe Paddle -> Html msg
 viewWinnerPaddle maybePaddle =
     case maybePaddle of
         Just paddle ->
-            Html.div [ Html.Attributes.class "flex justify-center" ]
+            Html.div []
                 [ Html.p []
                     [ Html.text <| "\u{1F947} " ++ Pong.Paddle.paddleIdToString paddle.id ++ " paddle wins!" ]
                 , Html.p []
@@ -564,11 +572,11 @@ viewWinnerPaddle maybePaddle =
 
 viewInstructions : Html msg
 viewInstructions =
-    Html.div [ Html.Attributes.class "pt-2" ]
-        [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-center text-xl" ]
+    Html.div [ Html.Attributes.class "pt-4" ]
+        [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-center text-xl" ]
             [ Html.text "Instructions" ]
         , Html.div [ Html.Attributes.class "flex justify-center" ]
-            [ Html.ul [ Html.Attributes.class "list-disc list-inside mx-3" ]
+            [ Html.ul [ Html.Attributes.class "leading-relaxed list-disc list-inside mx-3" ]
                 [ Html.li [] [ Html.text "\u{1F3D3} Press the SPACEBAR key to serve the ball." ]
                 , Html.li [] [ Html.text "⌨️ Use the arrow keys to move the left paddle." ]
                 , Html.li [] [ Html.text "🏆 Avoid missing ball for high score." ]
@@ -583,11 +591,11 @@ viewInstructions =
 
 viewOptions : ShowBallPath -> ShowFps -> WinningScore -> Html Msg
 viewOptions showBallPath_ showFps winningScore =
-    Html.div [ Html.Attributes.class "pt-2" ]
-        [ Html.h2 [ Html.Attributes.class "font-bold font-gray-800 pb-1 text-center text-xl" ]
+    Html.div [ Html.Attributes.class "pt-4" ]
+        [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-center text-xl" ]
             [ Html.text "Options" ]
         , Html.form [ Html.Attributes.class "flex justify-center" ]
-            [ Html.ul [ Html.Attributes.class "list-disc list-inside mx-3" ]
+            [ Html.ul [ Html.Attributes.class "leading-relaxed list-disc list-inside mx-3" ]
                 [ Html.li [] [ viewShowBallPathOptions showBallPath_ ]
                 , Html.li [] [ viewShowFpsOptions showFps ]
                 , Html.li [] [ viewWinningScoreOptions winningScore ]

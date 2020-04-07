@@ -10701,7 +10701,7 @@ var $elm$core$Basics$never = function (_v0) {
 		continue never;
 	}
 };
-var $elm$browser$Browser$element = _Browser_element;
+var $elm$browser$Browser$document = _Browser_document;
 var $author$project$Pong$initialCommand = $elm$core$Platform$Cmd$none;
 var $author$project$Pong$Ball$initialBall = {color: 'white', height: 10.0, vx: 350.0, vy: 350.0, width: 10.0, x: 395.0, y: 310.0};
 var $author$project$Pong$Ball$initialBallPath = _List_Nil;
@@ -12181,7 +12181,7 @@ var $author$project$Pong$viewInstructions = A2(
 	$elm$html$Html$div,
 	_List_fromArray(
 		[
-			$elm$html$Html$Attributes$class('pt-2')
+			$elm$html$Html$Attributes$class('pt-4')
 		]),
 	_List_fromArray(
 		[
@@ -12189,7 +12189,7 @@ var $author$project$Pong$viewInstructions = A2(
 			$elm$html$Html$h2,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('font-bold font-gray-800 pb-1 text-center text-xl')
+					$elm$html$Html$Attributes$class('font-extrabold font-gray-800 pb-1 text-center text-xl')
 				]),
 			_List_fromArray(
 				[
@@ -12207,7 +12207,7 @@ var $author$project$Pong$viewInstructions = A2(
 					$elm$html$Html$ul,
 					_List_fromArray(
 						[
-							$elm$html$Html$Attributes$class('list-disc list-inside mx-3')
+							$elm$html$Html$Attributes$class('leading-relaxed list-disc list-inside mx-3')
 						]),
 					_List_fromArray(
 						[
@@ -12386,7 +12386,7 @@ var $author$project$Pong$viewOptions = F3(
 			$elm$html$Html$div,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('pt-2')
+					$elm$html$Html$Attributes$class('pt-4')
 				]),
 			_List_fromArray(
 				[
@@ -12394,7 +12394,7 @@ var $author$project$Pong$viewOptions = F3(
 					$elm$html$Html$h2,
 					_List_fromArray(
 						[
-							$elm$html$Html$Attributes$class('font-bold font-gray-800 pb-1 text-center text-xl')
+							$elm$html$Html$Attributes$class('font-extrabold font-gray-800 pb-1 text-center text-xl')
 						]),
 					_List_fromArray(
 						[
@@ -12412,7 +12412,7 @@ var $author$project$Pong$viewOptions = F3(
 							$elm$html$Html$ul,
 							_List_fromArray(
 								[
-									$elm$html$Html$Attributes$class('list-disc list-inside mx-3')
+									$elm$html$Html$Attributes$class('leading-relaxed list-disc list-inside mx-3')
 								]),
 							_List_fromArray(
 								[
@@ -12488,7 +12488,7 @@ var $author$project$Pong$viewWinner = F2(
 					$elm$html$Html$div,
 					_List_fromArray(
 						[
-							$elm$html$Html$Attributes$class('pt-2')
+							$elm$html$Html$Attributes$class('pt-4 text-center')
 						]),
 					_List_fromArray(
 						[
@@ -12517,12 +12517,12 @@ var $author$project$Pong$viewInformation = function (model) {
 				A3($author$project$Pong$viewOptions, model.showBallPath, model.showFps, model.winningScore)
 			]));
 };
-var $author$project$Pong$view = function (model) {
+var $author$project$Pong$viewMain = function (model) {
 	return A2(
 		$elm$html$Html$main_,
 		_List_fromArray(
 			[
-				$elm$html$Html$Attributes$class('bg-yellow-200 p-6')
+				$elm$html$Html$Attributes$class('bg-yellow-200 h-full p-8')
 			]),
 		_List_fromArray(
 			[
@@ -12531,7 +12531,16 @@ var $author$project$Pong$view = function (model) {
 				$author$project$Pong$viewInformation(model)
 			]));
 };
-var $author$project$Main$main = $elm$browser$Browser$element(
+var $author$project$Pong$view = function (model) {
+	return {
+		body: _List_fromArray(
+			[
+				$author$project$Pong$viewMain(model)
+			]),
+		title: '\uD83C\uDFD3 Pong'
+	};
+};
+var $author$project$Main$main = $elm$browser$Browser$document(
 	{init: $author$project$Pong$init, subscriptions: $author$project$Pong$subscriptions, update: $author$project$Pong$update, view: $author$project$Pong$view});
 _Platform_export({'Main':{'init':$author$project$Main$main(
 	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Pong.Msg","aliases":{"Util.Fps.Time":{"args":[],"type":"Basics.Float"}},"unions":{"Pong.Msg":{"args":[],"tags":{"BrowserAdvancedAnimationFrame":["Util.Fps.Time"],"CollisionGeneratedRandomBallYPositionAndYVelocity":["( Basics.Float, Basics.Float )"],"PlayerClickedShowBallPathRadioButton":["Pong.Ball.ShowBallPath"],"PlayerClickedShowFpsRadioButton":["Util.Fps.ShowFps"],"PlayerClickedWinningScoreRadioButton":["Pong.Game.WinningScore"],"PlayerPressedKeyDown":["String.String"],"PlayerReleasedKey":["String.String"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}},"Pong.Ball.ShowBallPath":{"args":[],"tags":{"Off":[],"On":[]}},"Util.Fps.ShowFps":{"args":[],"tags":{"Off":[],"On":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Pong.Game.WinningScore":{"args":[],"tags":{"Eleven":[],"Fifteen":[]}}}}})}});
@@ -16295,7 +16304,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62518" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63093" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
