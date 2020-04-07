@@ -96,28 +96,28 @@ update msg model =
     case msg of
         BrowserAdvancedAnimationFrame deltaTime ->
             let
-                getWindowEdgeHitByBall =
+                windowEdgeHitByBall =
                     Pong.Window.getWindowEdgeHitByBall model.ball Pong.Window.globalWindow
 
-                getPaddleHitByBall =
+                paddleHitByBall =
                     Pong.Paddle.getPaddleHitByBall model.ball model.leftPaddle model.rightPaddle
 
-                getWinner =
+                winner =
                     Pong.Game.getWinner model.leftPaddle model.rightPaddle model.winningScore
 
                 leftPaddleDirection =
                     Pong.Paddle.playerKeyPressToDirection model.playerKeyPress
             in
             model
-                |> updateBall model.ball getPaddleHitByBall getWindowEdgeHitByBall deltaTime
-                |> updateBallPath model.ball model.ballPath getWindowEdgeHitByBall
+                |> updateBall model.ball paddleHitByBall windowEdgeHitByBall deltaTime
+                |> updateBallPath model.ball model.ballPath windowEdgeHitByBall
                 |> updateDeltaTimes model.showFps deltaTime
                 |> updatePaddle model.leftPaddle leftPaddleDirection model.ball Pong.Window.globalWindow deltaTime
                 |> updatePaddle model.rightPaddle Nothing model.ball Pong.Window.globalWindow deltaTime
-                |> updatePaddleScores getWindowEdgeHitByBall
-                |> updateWinner getWinner
-                |> updateGameState model.gameState getWinner
-                |> addCommand getPaddleHitByBall getWindowEdgeHitByBall
+                |> updatePaddleScores windowEdgeHitByBall
+                |> updateWinner winner
+                |> updateGameState model.gameState winner
+                |> addCommand paddleHitByBall windowEdgeHitByBall
 
         CollisionGeneratedRandomBallYPositionAndYVelocity ( randomYPosition, randomYVelocity ) ->
             ( { model | ball = updateBallWithRandomness randomYPosition randomYVelocity model.ball }, Cmd.none )
@@ -163,19 +163,14 @@ updateBall ball maybePaddle maybeWindowEdge deltaTime model =
 updateBallWithCollisions : Ball -> Maybe Paddle -> Maybe WindowEdge -> Time -> Ball
 updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
     let
-        ( vxMin, vxMax ) =
-            ( -650, 650 )
-
-        vxChangeAfterCollision =
+        ballSpeedChangeAfterCollision =
             50
 
-        vyAfterCollision =
-            case Pong.Paddle.getPaddleHitByBallDistanceFromCenter ball maybePaddle of
-                Just distance ->
-                    distance * 6
+        ballAngleChangeMultiplier =
+            6
 
-                Nothing ->
-                    0
+        limitBallSpeedChange =
+            clamp -650 650
     in
     case ( maybePaddle, maybeWindowEdge ) of
         ( Just paddle, Nothing ) ->
@@ -183,15 +178,15 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                 Pong.Paddle.Left ->
                     { ball
                         | x = ball.x + ball.width
-                        , vx = clamp vxMin vxMax <| negate <| ball.vx - vxChangeAfterCollision
-                        , vy = vyAfterCollision
+                        , vx = limitBallSpeedChange <| negate <| ball.vx - ballSpeedChangeAfterCollision
+                        , vy = ballAngleChangeMultiplier * Pong.Paddle.getPaddleHitByBallDistanceFromCenter ball paddle
                     }
 
                 Pong.Paddle.Right ->
                     { ball
                         | x = ball.x - ball.width
-                        , vx = clamp vxMin vxMax <| negate <| ball.vx + vxChangeAfterCollision
-                        , vy = vyAfterCollision
+                        , vx = limitBallSpeedChange <| negate <| ball.vx + ballSpeedChangeAfterCollision
+                        , vy = ballAngleChangeMultiplier * Pong.Paddle.getPaddleHitByBallDistanceFromCenter ball paddle
                     }
 
         ( Nothing, Just edge ) ->
@@ -227,13 +222,13 @@ updateBallWithCollisions ball maybePaddle maybeWindowEdge deltaTime =
                 Pong.Paddle.Left ->
                     { ball
                         | x = ball.x + ball.width
-                        , vx = clamp vxMin vxMax <| negate <| ball.vx - vxChangeAfterCollision
+                        , vx = limitBallSpeedChange <| negate <| ball.vx - ballSpeedChangeAfterCollision
                     }
 
                 Pong.Paddle.Right ->
                     { ball
                         | x = ball.x - ball.width
-                        , vx = clamp vxMin vxMax <| negate <| ball.vx + vxChangeAfterCollision
+                        , vx = limitBallSpeedChange <| negate <| ball.vx + ballSpeedChangeAfterCollision
                     }
 
         ( Nothing, Nothing ) ->
@@ -367,13 +362,13 @@ addCommand maybePaddle maybeWindowEdge model =
 randomBallYPositionGenerator : Generator Float
 randomBallYPositionGenerator =
     Random.float
-        (Pong.Window.globalWindow.y + 100)
-        (Pong.Window.globalWindow.height - 100)
+        (Pong.Window.globalWindow.y + 100.0)
+        (Pong.Window.globalWindow.height - 100.0)
 
 
 randomBallYVelocityGenerator : Generator Float
 randomBallYVelocityGenerator =
-    Random.float -350.0 350.0
+    Random.float (negate Pong.Ball.initialBall.vy) Pong.Ball.initialBall.vy
 
 
 randomBallPositionAndVelocity : Generator ( Float, Float )
@@ -482,6 +477,12 @@ viewGame model =
 viewSvg : Window -> Model -> Svg msg
 viewSvg window model =
     let
+        leftPaddleScoreOffset =
+            -200.0
+
+        rightPaddleScoreOffset =
+            150.0
+
         viewBoxString =
             [ window.x
             , window.y
@@ -498,8 +499,8 @@ viewSvg window model =
         ]
         [ Pong.Window.viewGameWindow window
         , Pong.Window.viewNet window
-        , Pong.Paddle.viewPaddleScore model.leftPaddle.score window -200.0
-        , Pong.Paddle.viewPaddleScore model.rightPaddle.score window 150.0
+        , Pong.Paddle.viewPaddleScore model.leftPaddle.score window leftPaddleScoreOffset
+        , Pong.Paddle.viewPaddleScore model.rightPaddle.score window rightPaddleScoreOffset
         , Pong.Paddle.viewPaddle model.leftPaddle
         , Pong.Paddle.viewPaddle model.rightPaddle
         , Pong.Ball.viewBall model.ball

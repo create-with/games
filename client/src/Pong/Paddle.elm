@@ -26,6 +26,7 @@ import Svg.Attributes
 import Util.Keyboard
 
 
+
 -- MODEL
 
 
@@ -124,7 +125,7 @@ updateYWithinWindow window paddle =
         bottomEdge =
             window.height - paddle.height
     in
-    { paddle | y = Basics.clamp topEdge bottomEdge paddle.y }
+    { paddle | y = clamp topEdge bottomEdge paddle.y }
 
 
 
@@ -162,25 +163,20 @@ getPaddleHitByBall ball leftPaddle rightPaddle =
         Nothing
 
 
-getPaddleHitByBallDistanceFromCenter : Ball -> Maybe Paddle -> Maybe Float
-getPaddleHitByBallDistanceFromCenter ball maybePaddle =
-    case maybePaddle of
-        Just paddle ->
-            if ballHitPaddle ball paddle then
-                let
-                    paddleCenter =
-                        paddle.height / 2
-                in
-                -- -100 for Paddle Top
-                --    0 for Paddle Center
-                --  100 for Paddle Bottom
-                Just <| (ball.y - paddle.y - paddleCenter) * 100 / paddleCenter
+getPaddleHitByBallDistanceFromCenter : Ball -> Paddle -> Float
+getPaddleHitByBallDistanceFromCenter ball paddle =
+    if ballHitPaddle ball paddle then
+        let
+            paddleCenter =
+                paddle.height / 2
+        in
+        -- -100 for Paddle Top
+        --    0 for Paddle Center
+        --  100 for Paddle Bottom
+        (ball.y - paddle.y - paddleCenter) * 100 / paddleCenter
 
-            else
-                Nothing
-
-        Nothing ->
-            Just 0
+    else
+        0
 
 
 
