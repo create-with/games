@@ -1,7 +1,8 @@
 module Breakout.Window exposing
     ( Window
-    , WindowEdge(..)
-    -- , getWindowEdgeHitByBall
+    ,  WindowEdge(..)
+       -- , getWindowEdgeHitByBall
+
     , globalWindow
     , viewGameWindow
     )
@@ -48,27 +49,18 @@ globalWindow =
 
 
 -- COLLISIONS
-
-
 -- getWindowEdgeHitByBall : Ball -> Window -> Maybe WindowEdge
 -- getWindowEdgeHitByBall ball window =
 --     if (ball.y + ball.height) >= window.height then
 --         Just Bottom
-
 --     else if (ball.x - ball.width) <= window.x then
 --         Just Left
-
 --     else if (ball.x + ball.width) >= window.width then
 --         Just Right
-
 --     else if (ball.y - ball.height) <= window.x then
 --         Just Top
-
 --     else
 --         Nothing
-
-
-
 -- VIEW
 
 
@@ -82,4 +74,3 @@ viewGameWindow window =
         , Svg.Attributes.height <| String.fromFloat window.height
         ]
         []
-

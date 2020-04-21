@@ -9,13 +9,13 @@ module Breakout exposing
 
 -- IMPORTS
 
+import Breakout.Paddle exposing (Paddle)
+import Breakout.Window exposing (Window)
 import Browser exposing (Document)
 import Browser.Events
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode
-import Breakout.Paddle exposing (Paddle)
-import Breakout.Window exposing (Window)
 import Set
 import Svg exposing (Svg)
 import Svg.Attributes
@@ -31,6 +31,7 @@ type GameState
     = StartingScreen
     | PlayingScreen
     | EndingScreen
+
 
 type alias Model =
     { deltaTimes : List Time
@@ -86,7 +87,9 @@ update msg model =
             ( { model | playerKeyPress = Set.empty }, Cmd.none )
 
 
+
 -- UPDATES
+
 
 updateKeyPress : String -> Model -> Model
 updateKeyPress key model =
@@ -95,6 +98,8 @@ updateKeyPress key model =
 
     else
         model
+
+
 
 -- SUBSCRIPTIONS
 
@@ -142,7 +147,7 @@ keyUpSubscription =
 
 view : Model -> Document Msg
 view model =
-    { title = "🛸 Breakout"
+    { title = "\u{1F6F8} Breakout"
     , body = [ viewMain model ]
     }
 
@@ -158,7 +163,7 @@ viewMain model =
 viewHeader : Html msg
 viewHeader =
     Html.header [ Html.Attributes.class "flex justify-center" ]
-        [ Html.h1 [] [Html.text "Breakout"]  ]
+        [ Html.h1 [] [ Html.text "Breakout" ] ]
 
 
 viewGame : Model -> Html Msg

@@ -3,7 +3,7 @@ module Breakout.Paddle exposing
     , Paddle
     , initialPaddle
     , keepPaddleWithinWindow
-    , playerKeyPressToDirection
+    ,  playerKeyPressToDirection
        -- , updatePaddle
 
     , updateScore
@@ -12,7 +12,6 @@ module Breakout.Paddle exposing
     )
 
 -- IMPORTS
-
 
 import Breakout.Window exposing (Window)
 import Set exposing (Set)
