@@ -9,7 +9,7 @@ module Breakout exposing
 
 -- IMPORTS
 
-import Breakout.Paddle exposing (Paddle)
+import Breakout.Paddle exposing (Direction, Paddle)
 import Breakout.Window exposing (Window)
 import Browser exposing (Document)
 import Browser.Events
@@ -77,8 +77,12 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        BrowserAdvancedAnimationFrame _ ->
-            ( model, Cmd.none )
+        BrowserAdvancedAnimationFrame time ->
+            let
+                paddleDirection =
+                    Breakout.Paddle.playerKeyPressToDirection model.playerKeyPress
+            in
+            updatePaddle model.paddle paddleDirection Breakout.Window.globalWindow time model
 
         PlayerPressedKeyDown key ->
             ( updateKeyPress key model, Cmd.none )
@@ -100,6 +104,18 @@ updateKeyPress key model =
         model
 
 
+updatePaddle : Paddle -> Maybe Direction -> Window -> Time -> Model -> ( Model, Cmd Msg )
+updatePaddle paddle maybeDirection window deltaTime model =
+    ( { model
+        | paddle =
+            paddle
+                |> Breakout.Paddle.updatePaddle maybeDirection deltaTime
+                |> Breakout.Paddle.keepPaddleWithinWindow window
+      }
+    , Cmd.none
+    )
+
+
 
 -- SUBSCRIPTIONS
 
@@ -117,13 +133,13 @@ browserAnimationSubscription : GameState -> Sub Msg
 browserAnimationSubscription gameState =
     case gameState of
         StartingScreen ->
-            Sub.none
+            Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
 
         PlayingScreen ->
             Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
 
         EndingScreen ->
-            Sub.none
+            Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
 
 
 handleAnimationFrames : Time -> Msg

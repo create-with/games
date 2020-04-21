@@ -3,9 +3,8 @@ module Breakout.Paddle exposing
     , Paddle
     , initialPaddle
     , keepPaddleWithinWindow
-    ,  playerKeyPressToDirection
-       -- , updatePaddle
-
+    , playerKeyPressToDirection
+    , updatePaddle
     , updateScore
     , viewPaddle
     , viewPaddleScore
@@ -13,6 +12,7 @@ module Breakout.Paddle exposing
 
 -- IMPORTS
 
+import Breakout.Vector exposing (Vector)
 import Breakout.Window exposing (Window)
 import Set exposing (Set)
 import Svg exposing (Svg)
@@ -32,8 +32,7 @@ type Direction
 type alias Paddle =
     { color : String
     , score : Int
-    , x : Float
-    , y : Float
+    , position : Vector
     , vx : Float
     , width : Float
     , height : Float
@@ -48,8 +47,7 @@ initialPaddle : Paddle
 initialPaddle =
     { color = "lightblue"
     , score = 0
-    , x = 380.0
-    , y = 550.0
+    , position = ( 380.0, 550.0 )
     , vx = 600.0
     , width = 60.0
     , height = 10.0
@@ -69,16 +67,36 @@ updateScore paddle =
 -- updatePaddle : Paddle -> Paddle
 
 
+updatePaddle : Maybe Direction -> Float -> Paddle -> Paddle
+updatePaddle maybeDirection deltaTime paddle =
+    let
+        ( x, y ) =
+            paddle.position
+    in
+    case maybeDirection of
+        Just Left ->
+            { paddle | position = ( x - paddle.vx * deltaTime, y ) }
+
+        Just Right ->
+            { paddle | position = ( x + paddle.vx * deltaTime, y ) }
+
+        Nothing ->
+            paddle
+
+
 keepPaddleWithinWindow : Window -> Paddle -> Paddle
 keepPaddleWithinWindow window paddle =
     let
+        ( x, y ) =
+            paddle.position
+
         leftEdge =
             0
 
         rightEdge =
             window.width - paddle.width
     in
-    { paddle | x = clamp leftEdge rightEdge paddle.x }
+    { paddle | position = ( clamp leftEdge rightEdge x, y ) }
 
 
 
@@ -109,10 +127,14 @@ playerKeyPressToDirection playerKeyPress =
 
 viewPaddle : Paddle -> Svg msg
 viewPaddle paddle =
+    let
+        ( x, y ) =
+            paddle.position
+    in
     Svg.rect
         [ Svg.Attributes.fill <| paddle.color
-        , Svg.Attributes.x <| String.fromFloat paddle.x
-        , Svg.Attributes.y <| String.fromFloat paddle.y
+        , Svg.Attributes.x <| String.fromFloat x
+        , Svg.Attributes.y <| String.fromFloat y
         , Svg.Attributes.width <| String.fromFloat paddle.width
         , Svg.Attributes.height <| String.fromFloat paddle.height
         ]
