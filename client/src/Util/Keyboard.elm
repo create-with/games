@@ -3,6 +3,8 @@ module Util.Keyboard exposing
     , initialKeys
     , keyDecoder
     , playerPressedArrowDownKey
+    , playerPressedArrowLeftKey
+    , playerPressedArrowRightKey
     , playerPressedArrowUpKey
     , playerPressedKey
     , playerPressedSpacebarKey
@@ -48,8 +50,10 @@ keyDecoder =
 validKeys : Set String
 validKeys =
     Set.empty
-        |> Set.insert "ArrowUp"
         |> Set.insert "ArrowDown"
+        |> Set.insert "ArrowLeft"
+        |> Set.insert "ArrowRight"
+        |> Set.insert "ArrowUp"
         |> Set.insert " "
 
 
@@ -67,11 +71,21 @@ playerPressedSpacebarKey =
     Set.member " "
 
 
-playerPressedArrowUpKey : Set String -> Bool
-playerPressedArrowUpKey =
-    Set.member "ArrowUp"
-
-
 playerPressedArrowDownKey : Set String -> Bool
 playerPressedArrowDownKey =
     Set.member "ArrowDown"
+
+
+playerPressedArrowLeftKey : Set String -> Bool
+playerPressedArrowLeftKey =
+    Set.member "ArrowLeft"
+
+
+playerPressedArrowRightKey : Set String -> Bool
+playerPressedArrowRightKey =
+    Set.member "ArrowRight"
+
+
+playerPressedArrowUpKey : Set String -> Bool
+playerPressedArrowUpKey =
+    Set.member "ArrowUp"

@@ -14,6 +14,7 @@ import Browser.Events
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode
+import Breakout.Paddle exposing (Paddle)
 import Breakout.Window exposing (Window)
 import Set
 import Svg exposing (Svg)
@@ -34,6 +35,7 @@ type GameState
 type alias Model =
     { deltaTimes : List Time
     , gameState : GameState
+    , paddle : Paddle
     , playerKeyPress : Controls
     }
 
@@ -46,6 +48,7 @@ initialModel : Model
 initialModel =
     { deltaTimes = Util.Fps.initialDeltaTimes
     , gameState = StartingScreen
+    , paddle = Breakout.Paddle.initialPaddle
     , playerKeyPress = Util.Keyboard.initialKeys
     }
 
@@ -139,14 +142,14 @@ keyUpSubscription =
 
 view : Model -> Document Msg
 view model =
-    { title = "🎆 Breakout"
+    { title = "🛸 Breakout"
     , body = [ viewMain model ]
     }
 
 
 viewMain : Model -> Html Msg
 viewMain model =
-    Html.main_ [ Html.Attributes.class "bg-black h-full p-8" ]
+    Html.main_ [ Html.Attributes.class "bg-blue-400 h-full p-8" ]
         [ viewHeader
         , viewGame model
         ]
@@ -184,5 +187,7 @@ viewSvg window model =
         , Svg.Attributes.height <| String.fromFloat window.height
         ]
         [ Breakout.Window.viewGameWindow window
+        , Breakout.Paddle.viewPaddle model.paddle
+        , Breakout.Paddle.viewPaddleScore model.paddle.score window 10
         , Util.Fps.viewFps Util.Fps.On model.deltaTimes
         ]
