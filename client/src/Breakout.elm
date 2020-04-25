@@ -10,6 +10,7 @@ module Breakout exposing
 -- IMPORTS
 
 import Breakout.Ball exposing (Ball, BallPath)
+import Breakout.Brick exposing (Brick, Bricks)
 import Breakout.Paddle exposing (Direction, Paddle)
 import Breakout.Vector
 import Breakout.Window exposing (Window, WindowEdge)
@@ -62,6 +63,7 @@ type Color
 type alias Model =
     { ball : Ball
     , ballPath : BallPath
+    , bricks : Bricks
     , deltaTimes : List Time
     , gameState : GameState
     , paddle : Paddle
@@ -79,6 +81,7 @@ initialModel : Model
 initialModel =
     { ball = Breakout.Ball.initialBall
     , ballPath = Breakout.Ball.initialBallPath
+    , bricks = Breakout.Brick.initialBricks
     , deltaTimes = Util.Fps.initialDeltaTimes
     , gameState = StartingScreen
     , paddle = Breakout.Paddle.initialPaddle
@@ -426,6 +429,7 @@ viewSvg window model =
         , Svg.Events.onClick PlayerClickedWindow
         ]
         [ Breakout.Window.viewGameWindow window
+        , Breakout.Brick.viewBricks model.bricks
         , Breakout.Paddle.viewPaddle model.paddle
         , Breakout.Paddle.viewPaddleScore model.paddle.score window 10
         , Breakout.Ball.viewBall model.ball

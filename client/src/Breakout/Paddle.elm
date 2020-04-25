@@ -146,9 +146,9 @@ viewPaddleScore score window positionOffset =
     Svg.text_
         [ Svg.Attributes.fill "white"
         , Svg.Attributes.fontFamily "monospace"
-        , Svg.Attributes.fontSize "80"
+        , Svg.Attributes.fontSize "18"
         , Svg.Attributes.fontWeight "bold"
-        , Svg.Attributes.x <| String.fromFloat <| (window.width / 2) + positionOffset
-        , Svg.Attributes.y "100"
+        , Svg.Attributes.x <| String.fromFloat <| (window.width / 2) - 40
+        , Svg.Attributes.y "18"
         ]
-        [ Svg.text <| String.fromInt score ]
+        [ Svg.text <| "POINTS " ++ String.fromInt score ]

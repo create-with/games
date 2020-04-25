@@ -1,14 +1,14 @@
 module Breakout.Window exposing
     ( Window
-    ,  WindowEdge(..)
-       -- , getWindowEdgeHitByBall
-
+    , WindowEdge(..)
+    , getWindowEdgeHitByBall
     , initialWindow
     , viewGameWindow
     )
 
 -- IMPORTS
 
+import Breakout.Ball exposing (Ball)
 import Svg exposing (Svg)
 import Svg.Attributes
 
@@ -49,18 +49,31 @@ initialWindow =
 
 
 -- COLLISIONS
--- getWindowEdgeHitByBall : Ball -> Window -> Maybe WindowEdge
--- getWindowEdgeHitByBall ball window =
---     if (ball.y + ball.height) >= window.height then
---         Just Bottom
---     else if (ball.x - ball.width) <= window.x then
---         Just Left
---     else if (ball.x + ball.width) >= window.width then
---         Just Right
---     else if (ball.y - ball.height) <= window.x then
---         Just Top
---     else
---         Nothing
+
+
+getWindowEdgeHitByBall : Ball -> Window -> Maybe WindowEdge
+getWindowEdgeHitByBall ball window =
+    let
+        ( x, y ) =
+            ball.position
+    in
+    if (y + ball.height) >= window.height then
+        Just Bottom
+
+    else if (x - ball.width) <= window.x then
+        Just Left
+
+    else if (x + ball.width) >= window.width then
+        Just Right
+
+    else if (y - ball.height) <= window.x then
+        Just Top
+
+    else
+        Nothing
+
+
+
 -- VIEW
 
 
