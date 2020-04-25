@@ -123,9 +123,12 @@ update msg model =
             let
                 paddleDirection =
                     Breakout.Paddle.playerKeyPressToDirection model.playerKeyPress
+
+                windowEdgeHitByBall =
+                    Breakout.Window.getWindowEdgeHitByBall model.ball model.window
             in
             ( { model
-                | ball = updateBall model.ball deltaTime
+                | ball = updateBall model.ball windowEdgeHitByBall deltaTime
                 , paddle = updatePaddle model.paddle paddleDirection model.window deltaTime
               }
             , Cmd.none
@@ -177,14 +180,59 @@ shakeWindow x y scale window =
     }
 
 
-updateBall : Ball -> Time -> Ball
-updateBall ball deltaTime =
-    { ball
-        | position =
+updateBall : Ball -> Maybe WindowEdge -> Time -> Ball
+updateBall ball maybeWindowEdge deltaTime =
+    let
+        ( x, y ) =
+            ball.position
+
+        ( vx, vy ) =
             ball.velocity
-                |> Breakout.Vector.scale deltaTime
-                |> Breakout.Vector.add ball.position
-    }
+
+        ( initialX, initialY ) =
+            Breakout.Ball.initialBall.position
+
+        ( initialVx, initialVy ) =
+            Breakout.Ball.initialBall.velocity
+    in
+    case maybeWindowEdge of
+        Just edge ->
+            case edge of
+                Breakout.Window.Bottom ->
+                    -- { ball
+                    --     | position = (initialX, initialY)
+                    --     , velocity = (initialVx, initialVy)
+                    -- }
+                    { ball
+                        | position = ( x, y - ball.height )
+                        , velocity = ( vx, negate vy )
+                    }
+
+                Breakout.Window.Left ->
+                    { ball
+                        | position = ( x + ball.width, y )
+                        , velocity = ( negate vx, vy )
+                    }
+
+                Breakout.Window.Right ->
+                    { ball
+                        | position = ( x - ball.width, y )
+                        , velocity = ( negate initialVx, vy )
+                    }
+
+                Breakout.Window.Top ->
+                    { ball
+                        | position = ( x, y + ball.height )
+                        , velocity = ( vx, negate vy )
+                    }
+
+        Nothing ->
+            { ball
+                | position =
+                    ball.velocity
+                        |> Breakout.Vector.scale deltaTime
+                        |> Breakout.Vector.add ball.position
+            }
 
 
 updateKeyPress : String -> Model -> Model
@@ -435,5 +483,6 @@ viewSvg window model =
         , Breakout.Ball.viewBall model.ball
         , Breakout.Ball.viewBallPath model.ballPath |> Svg.g []
         , Particle.System.view viewParticles [] model.particleSystem
+
         -- , Util.Fps.viewFps Util.Fps.On model.deltaTimes
         ]
