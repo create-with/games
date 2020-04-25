@@ -3,7 +3,7 @@ module Breakout.Window exposing
     ,  WindowEdge(..)
        -- , getWindowEdgeHitByBall
 
-    , globalWindow
+    , initialWindow
     , viewGameWindow
     )
 
@@ -34,11 +34,11 @@ type WindowEdge
 
 
 
--- GLOBAL
+-- INIT
 
 
-globalWindow : Window
-globalWindow =
+initialWindow : Window
+initialWindow =
     { backgroundColor = "black"
     , x = 0.0
     , y = 0.0
