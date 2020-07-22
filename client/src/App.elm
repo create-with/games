@@ -42,7 +42,7 @@ init flags url key =
     changedUrl url <|
         { flags = flags
         , key = key
-        , route = Route.NotFound
+        , route = Route.Landing
         , url = url
         }
 
@@ -134,11 +134,11 @@ view { route } =
         Route.Landing ->
             Landing.view
 
+        Route.NotFound ->
+            NotFound.view
+
         Route.Pong pongModel ->
             Pong.view ReceivedPongMsg pongModel
-
-        _ ->
-            NotFound.view
 
 
 
