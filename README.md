@@ -1,35 +1,20 @@
 # Games
 
-## Setup
+To start your Phoenix server:
 
-...
+  * Install dependencies with `mix deps.get`
+  * Create and migrate your database with `mix ecto.setup`
+  * Install Node.js dependencies with `npm install` inside the `assets` directory
+  * Start Phoenix endpoint with `mix phx.server`
 
-## Client
+Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
-- Elm
-- Parcel
+Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
 
-## Server
+## Learn more
 
-- Elixir
-- Phoenix
-
-## Scripts
-
-Allow files in the `scripts` folder to be executable:
-
-```sh
-$ chmod +x ./scripts/*
-```
-
-Run a local development server and open `http://localhost:1234`:
-
-```sh
-$ ./scripts/serve-client
-```
-
-Build production assets in the `./client/dist` folder and open to verify:
-
-```sh
-$ ./scripts/build-client
-```
+  * Official website: https://www.phoenixframework.org/
+  * Guides: https://hexdocs.pm/phoenix/overview.html
+  * Docs: https://hexdocs.pm/phoenix
+  * Forum: https://elixirforum.com/c/phoenix-forum
+  * Source: https://github.com/phoenixframework/phoenix
