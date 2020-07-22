@@ -2,32 +2,21 @@ module Main exposing (main)
 
 -- IMPORTS
 
--- import Breakout
+import App
 import Browser
-import Pong
 
 
 
 -- MAIN
 
 
-main : Program () Pong.Model Pong.Msg
+main : Program App.Flags App.Model App.Msg
 main =
-    Browser.document
-        { init = Pong.init
-        , update = Pong.update
-        , subscriptions = Pong.subscriptions
-        , view = Pong.view
+    Browser.application
+        { init = App.init
+        , onUrlChange = App.ChangedUrl
+        , onUrlRequest = App.ClickedUrl
+        , subscriptions = App.subscriptions
+        , update = App.update
+        , view = App.view
         }
-
-
-
--- BREAKOUT
--- main : Program () Breakout.Model Breakout.Msg
--- main =
---     Browser.document
---         { init = Breakout.init
---         , update = Breakout.update
---         , subscriptions = Breakout.subscriptions
---         , view = Breakout.view
---         }

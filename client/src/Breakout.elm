@@ -371,10 +371,10 @@ particleSystemSubscription particleSystem =
 -- VIEW
 
 
-view : Model -> Document Msg
-view model =
+view : (Msg -> msg) -> Model -> Document msg
+view msg model =
     { title = "\u{1F6F8} Breakout"
-    , body = [ viewMain model ]
+    , body = List.map (Html.map msg) [ viewMain model ]
     }
 
 

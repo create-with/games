@@ -432,10 +432,10 @@ keyUpSubscription =
 -- VIEW
 
 
-view : Model -> Document Msg
-view model =
+view : (Msg -> msg) -> Model -> Document msg
+view msg model =
     { title = "\u{1F3D3} Pong"
-    , body = [ viewMain model ]
+    , body = List.map (Html.map msg) [ viewMain model ]
     }
 
 
