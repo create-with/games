@@ -11692,6 +11692,7 @@ var $author$project$App$clickedUrl = F2(
 		}
 	});
 var $author$project$Breakout$Particles = {$: 'Particles'};
+var $author$project$Breakout$PlayingScreen = {$: 'PlayingScreen'};
 var $BrianHicks$elm_particle$Particle$System$burst = F2(
 	function (generator, _v0) {
 		var system = _v0.a;
@@ -12161,7 +12162,7 @@ var $author$project$Breakout$particleAt = F2(
 	function (x, y) {
 		return A2(
 			$BrianHicks$elm_particle$Particle$withDrag,
-			function (confetti) {
+			function (_v0) {
 				return {area: 1, coefficient: 1.15, density: 0.001226};
 			},
 			A2(
@@ -12304,12 +12305,8 @@ var $author$project$Breakout$updateBall = F3(
 		var _v1 = ball.velocity;
 		var vx = _v1.a;
 		var vy = _v1.b;
-		var _v2 = $author$project$Breakout$Ball$initialBall.position;
-		var initialX = _v2.a;
-		var initialY = _v2.b;
-		var _v3 = $author$project$Breakout$Ball$initialBall.velocity;
-		var initialVx = _v3.a;
-		var initialVy = _v3.b;
+		var _v2 = $author$project$Breakout$Ball$initialBall.velocity;
+		var initialVx = _v2.a;
 		if (maybeWindowEdge.$ === 'Just') {
 			var edge = maybeWindowEdge.a;
 			switch (edge.$) {
@@ -12352,6 +12349,12 @@ var $author$project$Breakout$updateBall = F3(
 						A2($author$project$Breakout$Vector$scale, deltaTime, ball.velocity))
 				});
 		}
+	});
+var $author$project$Breakout$updateGameState = F2(
+	function (gameState, model) {
+		return _Utils_update(
+			model,
+			{gameState: gameState});
 	});
 var $elm$core$Set$insert = F2(
 	function (key, _v0) {
@@ -12500,9 +12503,25 @@ var $author$project$Breakout$update = F2(
 							])));
 			case 'PlayerPressedKeyDown':
 				var key = msg.a;
-				return _Utils_Tuple2(
-					A2($author$project$Breakout$updateKeyPress, key, model),
-					$elm$core$Platform$Cmd$none);
+				if (key === ' ') {
+					var _v5 = model.gameState;
+					switch (_v5.$) {
+						case 'StartingScreen':
+							return _Utils_Tuple2(
+								A2($author$project$Breakout$updateGameState, $author$project$Breakout$PlayingScreen, model),
+								$elm$core$Platform$Cmd$none);
+						case 'PlayingScreen':
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						default:
+							return _Utils_Tuple2(
+								A2($author$project$Breakout$updateGameState, $author$project$Breakout$StartingScreen, $author$project$Breakout$initialModel),
+								$elm$core$Platform$Cmd$none);
+					}
+				} else {
+					return _Utils_Tuple2(
+						A2($author$project$Breakout$updateKeyPress, key, model),
+						$elm$core$Platform$Cmd$none);
+				}
 			case 'PlayerReleasedKey':
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -13322,7 +13341,7 @@ var $elm$svg$Svg$Attributes$fontWeight = _VirtualDom_attribute('font-weight');
 var $elm$svg$Svg$text = $elm$virtual_dom$VirtualDom$text;
 var $elm$svg$Svg$text_ = $elm$svg$Svg$trustedNode('text');
 var $author$project$Breakout$Paddle$viewPaddleScore = F3(
-	function (score, window, positionOffset) {
+	function (score, window, _v0) {
 		return A2(
 			$elm$svg$Svg$text_,
 			_List_fromArray(
@@ -18029,7 +18048,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52641" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52727" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

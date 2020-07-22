@@ -10,7 +10,7 @@ module Breakout exposing
 -- IMPORTS
 
 import Breakout.Ball exposing (Ball, BallPath)
-import Breakout.Brick exposing (Brick, Bricks)
+import Breakout.Brick exposing (Bricks)
 import Breakout.Paddle exposing (Direction, Paddle)
 import Breakout.Vector
 import Breakout.Window exposing (Window, WindowEdge)
@@ -159,13 +159,31 @@ update msg model =
             ( model, Cmd.batch [ generateRandomWindowShake, Process.sleep 0 |> Task.perform (\_ -> Particles) ] )
 
         PlayerPressedKeyDown key ->
-            ( updateKeyPress key model, Cmd.none )
+            case key of
+                " " ->
+                    case model.gameState of
+                        StartingScreen ->
+                            ( updateGameState PlayingScreen model, Cmd.none )
+
+                        PlayingScreen ->
+                            ( model, Cmd.none )
+
+                        EndingScreen ->
+                            ( updateGameState StartingScreen initialModel, Cmd.none )
+
+                _ ->
+                    ( updateKeyPress key model, Cmd.none )
 
         PlayerReleasedKey _ ->
             ( { model | playerKeyPress = Set.empty }, Cmd.none )
 
         ShakeCompleted ->
             ( { model | window = Breakout.Window.initialWindow }, Cmd.none )
+
+
+updateGameState : GameState -> Model -> Model
+updateGameState gameState model =
+    { model | gameState = gameState }
 
 
 
@@ -189,20 +207,13 @@ updateBall ball maybeWindowEdge deltaTime =
         ( vx, vy ) =
             ball.velocity
 
-        ( initialX, initialY ) =
-            Breakout.Ball.initialBall.position
-
-        ( initialVx, initialVy ) =
+        ( initialVx, _ ) =
             Breakout.Ball.initialBall.velocity
     in
     case maybeWindowEdge of
         Just edge ->
             case edge of
                 Breakout.Window.Bottom ->
-                    -- { ball
-                    --     | position = (initialX, initialY)
-                    --     , velocity = (initialVx, initialVy)
-                    -- }
                     { ball
                         | position = ( x, y - ball.height )
                         , velocity = ( vx, negate vy )
@@ -302,17 +313,11 @@ particleAt x y =
     Particle.init confettiGenerator
         |> Particle.withLifetime (Random.Float.normal 1.5 0.25)
         |> Particle.withLocation (Random.constant { x = x, y = y })
-        -- our direction is determined by the angle of the party popper cone
-        -- (about 47°) as well as it's width (about 60°). We use a normal
-        -- distribution here so that most of the confetti will come out in the
-        -- same place, with falloff to the sides. We want most of the confetti
-        -- to show up in the center 30°, so the standard deviation of the
-        -- distribution should be 15°.
         |> Particle.withDirection (Random.Float.normal (degrees 345) (degrees 15))
         |> Particle.withSpeed (Random.Float.normal 600 100)
         |> Particle.withGravity 980
         |> Particle.withDrag
-            (\confetti ->
+            (\_ ->
                 { density = 0.001226
                 , coefficient = 1.15
                 , area = 1
@@ -392,11 +397,6 @@ viewParticles particle =
         lifetime =
             Particle.lifetimePercent particle
 
-        -- turns out that opacity is pretty expensive for browsers to calculate,
-        -- and will slow down our framerate if we change it too much. So while
-        -- we *could* do this with, like, a bezier curve or something, we
-        -- actually want to just keep it as stable as possible until we actually
-        -- need to fade out at the end.
         opacity =
             if lifetime < 0.1 then
                 lifetime * 10

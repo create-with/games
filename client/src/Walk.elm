@@ -16,7 +16,7 @@ import Html.Attributes
 import Random exposing (Generator)
 import Svg exposing (Svg)
 import Svg.Attributes
-import Walk.Window exposing (Window, WindowEdge)
+import Walk.Window exposing (Window)
 
 
 

@@ -142,7 +142,7 @@ viewPaddle paddle =
 
 
 viewPaddleScore : Int -> Window -> Float -> Svg msg
-viewPaddleScore score window positionOffset =
+viewPaddleScore score window _ =
     Svg.text_
         [ Svg.Attributes.fill "white"
         , Svg.Attributes.fontFamily "monospace"
