@@ -1,8 +1,22 @@
 module Main exposing (main)
 
-import Html exposing (Html, text)
+-- IMPORTS
+
+import App
+import Browser
 
 
-main : Html msg
+
+-- MAIN
+
+
+main : Program App.Flags App.Model App.Msg
 main =
-    text "Hello from Elm!"
+    Browser.application
+        { init = App.init
+        , onUrlChange = App.ChangedUrl
+        , onUrlRequest = App.ClickedUrl
+        , subscriptions = App.subscriptions
+        , update = App.update
+        , view = App.view
+        }
