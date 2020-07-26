@@ -19,8 +19,7 @@ import Svg.Attributes
 
 
 type alias Ball =
-    { color : String
-    , position : Vector
+    { position : Vector
     , velocity : Vector
     , width : Float
     , height : Float
@@ -37,11 +36,10 @@ type alias BallPath =
 
 initialBall : Ball
 initialBall =
-    { color = "white"
-    , position = ( 395.0, 310.0 )
+    { position = ( 395.0, 310.0 )
     , velocity = ( 350.0, 350.0 )
-    , width = 10.0
-    , height = 10.0
+    , width = 16.0
+    , height = 16.0
     }
 
 
@@ -60,8 +58,8 @@ viewBall ball =
         ( x, y ) =
             ball.position
     in
-    Svg.rect
-        [ Svg.Attributes.fill <| ball.color
+    Svg.image
+        [ Svg.Attributes.xlinkHref "/images/pixel-ball.png"
         , Svg.Attributes.x <| String.fromFloat x
         , Svg.Attributes.y <| String.fromFloat y
         , Svg.Attributes.width <| String.fromFloat ball.width

@@ -30,8 +30,7 @@ type Direction
 
 
 type alias Paddle =
-    { color : String
-    , score : Int
+    { score : Int
     , position : Vector
     , vx : Float
     , width : Float
@@ -45,12 +44,11 @@ type alias Paddle =
 
 initialPaddle : Paddle
 initialPaddle =
-    { color = "lightblue"
-    , score = 0
+    { score = 0
     , position = ( 380.0, 550.0 )
     , vx = 600.0
-    , width = 60.0
-    , height = 10.0
+    , width = 120.0
+    , height = 20.0
     }
 
 
@@ -131,8 +129,8 @@ viewPaddle paddle =
         ( x, y ) =
             paddle.position
     in
-    Svg.rect
-        [ Svg.Attributes.fill <| paddle.color
+    Svg.image
+        [ Svg.Attributes.xlinkHref "/images/pixel-paddle.png"
         , Svg.Attributes.x <| String.fromFloat x
         , Svg.Attributes.y <| String.fromFloat y
         , Svg.Attributes.width <| String.fromFloat paddle.width
