@@ -66,6 +66,7 @@ type alias Model =
     , bricks : Bricks
     , deltaTimes : List Time
     , gameState : GameState
+    , lives : Int
     , paddle : Paddle
     , particleSystem : System Confetti
     , playerKeyPress : Controls
@@ -84,6 +85,7 @@ initialModel =
     , bricks = Breakout.Brick.initialBricks
     , deltaTimes = Util.Fps.initialDeltaTimes
     , gameState = StartingScreen
+    , lives = 3
     , paddle = Breakout.Paddle.initialPaddle
     , particleSystem = Particle.System.init (Random.initialSeed 0)
     , playerKeyPress = Util.Keyboard.initialKeys
@@ -129,6 +131,8 @@ update msg model =
             in
             ( { model
                 | ball = updateBall model.ball windowEdgeHitByBall deltaTime
+                , gameState = updateGameState model.gameState model
+                , lives = updateLives model.lives windowEdgeHitByBall
                 , paddle = updatePaddle model.paddle paddleDirection model.window deltaTime
               }
             , Cmd.none
@@ -163,13 +167,13 @@ update msg model =
                 " " ->
                     case model.gameState of
                         StartingScreen ->
-                            ( updateGameState PlayingScreen model, Cmd.none )
+                            ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
 
                         PlayingScreen ->
                             ( model, Cmd.none )
 
                         EndingScreen ->
-                            ( updateGameState StartingScreen initialModel, Cmd.none )
+                            ( { model | gameState = updateGameState StartingScreen initialModel }, Cmd.none )
 
                 _ ->
                     ( updateKeyPress key model, Cmd.none )
@@ -179,11 +183,6 @@ update msg model =
 
         ShakeCompleted ->
             ( { model | window = Breakout.Window.initialWindow }, Cmd.none )
-
-
-updateGameState : GameState -> Model -> Model
-updateGameState gameState model =
-    { model | gameState = gameState }
 
 
 
@@ -246,6 +245,15 @@ updateBall ball maybeWindowEdge deltaTime =
             }
 
 
+updateGameState : GameState -> Model -> GameState
+updateGameState gameState model =
+    if gameState == PlayingScreen && model.lives == 0 then
+        EndingScreen
+
+    else
+        gameState
+
+
 updateKeyPress : String -> Model -> Model
 updateKeyPress key model =
     if Set.member key Util.Keyboard.validKeys then
@@ -253,6 +261,16 @@ updateKeyPress key model =
 
     else
         model
+
+
+updateLives : Int -> Maybe WindowEdge -> Int
+updateLives lives maybeWindowEdge =
+    case maybeWindowEdge of
+        Just Breakout.Window.Bottom ->
+            clamp 0 lives <| lives - 1
+
+        _ ->
+            lives
 
 
 updatePaddle : Paddle -> Maybe Direction -> Window -> Time -> Paddle
@@ -343,13 +361,13 @@ browserAnimationSubscription : GameState -> Sub Msg
 browserAnimationSubscription gameState =
     case gameState of
         StartingScreen ->
-            Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
+            Sub.none
 
         PlayingScreen ->
             Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
 
         EndingScreen ->
-            Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
+            Sub.none
 
 
 handleAnimationFrames : Time -> Msg
@@ -458,6 +476,31 @@ viewGame model =
         ]
 
 
+viewLives : Int -> Svg msg
+viewLives lives =
+    let
+        ( width, height ) =
+            ( 60, 10 )
+
+        offset =
+            44
+    in
+    (lives - 1)
+        |> List.range 0
+        |> List.map
+            (\index ->
+                Svg.image
+                    [ Svg.Attributes.xlinkHref "/images/pixel-paddle.png"
+                    , Svg.Attributes.x <| String.fromInt <| index * offset
+                    , Svg.Attributes.y <| String.fromFloat <| Breakout.Window.initialWindow.height - 20
+                    , Svg.Attributes.width <| String.fromInt width
+                    , Svg.Attributes.height <| String.fromInt height
+                    ]
+                    []
+            )
+        |> Svg.g []
+
+
 viewSvg : Window -> Model -> Svg Msg
 viewSvg window model =
     let
@@ -480,6 +523,7 @@ viewSvg window model =
         , Breakout.Brick.viewBricks model.bricks
         , Breakout.Paddle.viewPaddle model.paddle
         , Breakout.Paddle.viewPaddleScore model.paddle.score window 10
+        , viewLives model.lives
         , Breakout.Ball.viewBall model.ball
         , Breakout.Ball.viewBallPath model.ballPath |> Svg.g []
         , Particle.System.view viewParticles [] model.particleSystem

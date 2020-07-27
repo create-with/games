@@ -71,7 +71,7 @@ row color verticalPosition =
     , Brick color initialBrick.height ( initialBrick.width * 1, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 2, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 3, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 4, verticalPosition ) On initialBrick.width
+    , Brick color initialBrick.height ( initialBrick.width * 4, verticalPosition ) Off initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 5, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 6, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 7, verticalPosition ) On initialBrick.width
@@ -86,8 +86,10 @@ row color verticalPosition =
 
 viewBricks : List Brick -> Svg a
 viewBricks bricks =
-    Svg.g []
-        (List.map viewBrick bricks)
+    bricks
+        |> List.filter (\brick -> brick.state == On)
+        |> List.map viewBrick
+        |> Svg.g []
 
 
 viewBrick : Brick -> Svg a
@@ -98,7 +100,7 @@ viewBrick brick =
     in
     Svg.rect
         [ Svg.Attributes.fill <| brick.color
-        , Svg.Attributes.fillOpacity "0.9"
+        , Svg.Attributes.fillOpacity "1"
         , Svg.Attributes.x <| String.fromFloat x
         , Svg.Attributes.y <| String.fromFloat y
         , Svg.Attributes.width <| "80"
