@@ -1,12 +1,16 @@
 module Breakout.Brick exposing
     ( Brick
     , Bricks
+    , State(..)
+    , getBrickHitByBall
+    , hideBrickHitByBall
     , initialBricks
     , viewBricks
     )
 
 -- IMPORTS
 
+import Breakout.Ball exposing (Ball)
 import Breakout.Vector exposing (Vector)
 import Svg exposing (Svg)
 import Svg.Attributes
@@ -78,6 +82,41 @@ row color verticalPosition =
     , Brick color initialBrick.height ( initialBrick.width * 8, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 9, verticalPosition ) On initialBrick.width
     ]
+
+
+
+-- COLLISIONS
+
+
+ballHitBrick : Ball -> Brick -> Bool
+ballHitBrick ball brick =
+    let
+        ( ballX, ballY ) =
+            ball.position
+
+        ( brickX, brickY ) =
+            brick.position
+    in
+    (brickX <= ballX && ballX <= brickX + brick.width)
+        && (brickY <= ballY && ballY <= brickY + brick.height)
+
+
+getBrickHitByBall : Ball -> Brick -> Maybe Brick
+getBrickHitByBall ball brick =
+    if ballHitBrick ball brick then
+        Just brick
+
+    else
+        Nothing
+
+
+hideBrickHitByBall : List Brick -> Brick -> Brick
+hideBrickHitByBall bricksHitByBall brick =
+    if List.member brick bricksHitByBall then
+        { brick | state = Off }
+
+    else
+        brick
 
 
 

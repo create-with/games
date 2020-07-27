@@ -10,7 +10,7 @@ module Breakout exposing
 -- IMPORTS
 
 import Breakout.Ball exposing (Ball, BallPath)
-import Breakout.Brick exposing (Bricks)
+import Breakout.Brick exposing (Brick, Bricks, State)
 import Breakout.Paddle exposing (Direction, Paddle)
 import Breakout.Vector
 import Breakout.Window exposing (Window, WindowEdge)
@@ -123,6 +123,10 @@ update msg model =
     case msg of
         BrowserAdvancedAnimationFrame deltaTime ->
             let
+                bricksHitByBall : List Brick
+                bricksHitByBall =
+                    List.filterMap (Breakout.Brick.getBrickHitByBall model.ball) model.bricks
+
                 paddleDirection =
                     Breakout.Paddle.playerKeyPressToDirection model.playerKeyPress
 
@@ -134,6 +138,7 @@ update msg model =
             in
             ( { model
                 | ball = updateBall model.ball paddleHitByBall windowEdgeHitByBall deltaTime
+                , bricks = updateBricks bricksHitByBall model.bricks
                 , gameState = updateGameState model.gameState model
                 , lives = updateLives model.lives windowEdgeHitByBall
                 , paddle = updatePaddle model.paddle paddleDirection model.window deltaTime
@@ -260,6 +265,11 @@ updateBall ball paddleHit maybeWindowEdge deltaTime =
                         |> Breakout.Vector.scale deltaTime
                         |> Breakout.Vector.add ball.position
             }
+
+
+updateBricks : List Brick -> List Brick -> List Brick
+updateBricks bricksHitByBall bricks =
+    List.map (Breakout.Brick.hideBrickHitByBall bricksHitByBall) bricks
 
 
 updateGameState : GameState -> Model -> GameState
