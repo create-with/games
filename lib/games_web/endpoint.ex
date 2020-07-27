@@ -5,6 +5,7 @@ defmodule GamesWeb.Endpoint do
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
   @session_options [
+    same_site: "Strict",
     store: :cookie,
     key: "_games_key",
     signing_salt: "Icp+g5gL"

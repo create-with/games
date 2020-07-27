@@ -1,6 +1,7 @@
 module Breakout.Paddle exposing
     ( Direction(..)
     , Paddle
+    , ballHitPaddle
     , initialPaddle
     , keepPaddleWithinWindow
     , playerKeyPressToDirection
@@ -12,6 +13,7 @@ module Breakout.Paddle exposing
 
 -- IMPORTS
 
+import Breakout.Ball exposing (Ball)
 import Breakout.Vector exposing (Vector)
 import Breakout.Window exposing (Window)
 import Set exposing (Set)
@@ -99,11 +101,26 @@ keepPaddleWithinWindow window paddle =
 
 
 -- COLLISIONS
--- ballHitPaddle : Ball -> Paddle -> Bool
--- ballHitPaddle ball paddle =
---     (paddle.y <= ball.y && ball.y <= paddle.y + paddle.height)
---         && (paddle.x <= ball.x && ball.x <= paddle.x + paddle.width)
---         && (ball.vx < 0)
+
+
+ballHitPaddle : Ball -> Paddle -> Bool
+ballHitPaddle ball paddle =
+    let
+        ( ballX, ballY ) =
+            ball.position
+
+        ( _, ballVy ) =
+            ball.velocity
+
+        ( paddleX, paddleY ) =
+            paddle.position
+    in
+    (paddleY <= ballY + ball.height)
+        && (paddleX <= ballX && ballX <= paddleX + paddle.width)
+        && (ballVy > 0)
+
+
+
 -- HELPERS
 
 

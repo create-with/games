@@ -126,11 +126,14 @@ update msg model =
                 paddleDirection =
                     Breakout.Paddle.playerKeyPressToDirection model.playerKeyPress
 
+                paddleHitByBall =
+                    Breakout.Paddle.ballHitPaddle model.ball model.paddle
+
                 windowEdgeHitByBall =
                     Breakout.Window.getWindowEdgeHitByBall model.ball model.window
             in
             ( { model
-                | ball = updateBall model.ball windowEdgeHitByBall deltaTime
+                | ball = updateBall model.ball paddleHitByBall windowEdgeHitByBall deltaTime
                 , gameState = updateGameState model.gameState model
                 , lives = updateLives model.lives windowEdgeHitByBall
                 , paddle = updatePaddle model.paddle paddleDirection model.window deltaTime
@@ -197,8 +200,8 @@ shakeWindow x y scale window =
     }
 
 
-updateBall : Ball -> Maybe WindowEdge -> Time -> Ball
-updateBall ball maybeWindowEdge deltaTime =
+updateBall : Ball -> Bool -> Maybe WindowEdge -> Time -> Ball
+updateBall ball paddleHit maybeWindowEdge deltaTime =
     let
         ( x, y ) =
             ball.position
@@ -209,14 +212,28 @@ updateBall ball maybeWindowEdge deltaTime =
         ( initialVx, _ ) =
             Breakout.Ball.initialBall.velocity
     in
-    case maybeWindowEdge of
-        Just edge ->
+    case ( paddleHit, maybeWindowEdge ) of
+        ( True, _ ) ->
+            { ball | velocity = ( vx, negate vy ) }
+
+        ( False, Just edge ) ->
             case edge of
                 Breakout.Window.Bottom ->
-                    { ball
-                        | position = ( x, y - ball.height )
-                        , velocity = ( vx, negate vy )
-                    }
+                    case compare 0 vx of
+                        LT ->
+                            { ball
+                                | position = ( x + ball.width / 2, y - ball.height / 2 )
+                                , velocity = ( vx, negate vy )
+                            }
+
+                        GT ->
+                            { ball
+                                | position = ( x - ball.width / 2, y - ball.height / 2 )
+                                , velocity = ( vx, negate vy )
+                            }
+
+                        EQ ->
+                            ball
 
                 Breakout.Window.Left ->
                     { ball
@@ -236,7 +253,7 @@ updateBall ball maybeWindowEdge deltaTime =
                         , velocity = ( vx, negate vy )
                     }
 
-        Nothing ->
+        ( _, Nothing ) ->
             { ball
                 | position =
                     ball.velocity
@@ -315,6 +332,7 @@ dotGenerator =
             [ ( 1 / 5, Pink )
             , ( 1 / 5, Yellow )
             , ( 2 / 5, Green )
+            , ( 2 / 5, Blue )
             ]
         )
         (Random.Float.normal 1 1)
