@@ -49,7 +49,7 @@ initialPaddle =
     { score = 0
     , position = ( 380.0, 550.0 )
     , vx = 600.0
-    , width = 120.0
+    , width = 80.0
     , height = 20.0
     }
 
