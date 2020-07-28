@@ -178,7 +178,11 @@ update msg model =
                             ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
 
                         PlayingScreen ->
-                            ( model, Cmd.none )
+                            let
+                                setBallInMotion ball =
+                                    { ball | velocity = initialModel.ball.velocity }
+                            in
+                            ( { model | ball = setBallInMotion model.ball }, Cmd.none )
 
                         EndingScreen ->
                             ( { model | gameState = updateGameState StartingScreen initialModel }, Cmd.none )
@@ -224,21 +228,10 @@ updateBall ball paddleHit maybeWindowEdge deltaTime =
         ( False, Just edge ) ->
             case edge of
                 Breakout.Window.Bottom ->
-                    case compare 0 vx of
-                        LT ->
-                            { ball
-                                | position = ( x + ball.width / 2, y - ball.height / 2 )
-                                , velocity = ( vx, negate vy )
-                            }
-
-                        GT ->
-                            { ball
-                                | position = ( x - ball.width / 2, y - ball.height / 2 )
-                                , velocity = ( vx, negate vy )
-                            }
-
-                        EQ ->
-                            ball
+                    { ball
+                        | position = initialModel.ball.position
+                        , velocity = ( 0, 0 )
+                    }
 
                 Breakout.Window.Left ->
                     case compare 0 vy of
