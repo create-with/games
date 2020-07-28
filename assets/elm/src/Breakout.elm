@@ -241,22 +241,55 @@ updateBall ball paddleHit maybeWindowEdge deltaTime =
                             ball
 
                 Breakout.Window.Left ->
-                    { ball
-                        | position = ( x + ball.width, y )
-                        , velocity = ( negate vx, vy )
-                    }
+                    case compare 0 vy of
+                        LT ->
+                            { ball
+                                | position = ( x + ball.width / 2, y + ball.height / 2 )
+                                , velocity = ( negate vx, vy )
+                            }
+
+                        GT ->
+                            { ball
+                                | position = ( x + ball.width / 2, y - ball.height / 2 )
+                                , velocity = ( negate vx, vy )
+                            }
+
+                        EQ ->
+                            ball
 
                 Breakout.Window.Right ->
-                    { ball
-                        | position = ( x - ball.width, y )
-                        , velocity = ( negate initialVx, vy )
-                    }
+                    case compare 0 vy of
+                        LT ->
+                            { ball
+                                | position = ( x - ball.width / 2, y )
+                                , velocity = ( negate vx, vy )
+                            }
+
+                        GT ->
+                            { ball
+                                | position = ( x - ball.width / 2, y )
+                                , velocity = ( negate vx, vy )
+                            }
+
+                        EQ ->
+                            ball
 
                 Breakout.Window.Top ->
-                    { ball
-                        | position = ( x, y + ball.height )
-                        , velocity = ( vx, negate vy )
-                    }
+                    case compare 0 vx of
+                        LT ->
+                            { ball
+                                | position = ( x + ball.width / 2, y + ball.height / 2 )
+                                , velocity = ( vx, negate vy )
+                            }
+
+                        GT ->
+                            { ball
+                                | position = ( x - ball.width / 2, y + ball.height / 2 )
+                                , velocity = ( vx, negate vy )
+                            }
+
+                        EQ ->
+                            ball
 
         ( _, Nothing ) ->
             { ball
