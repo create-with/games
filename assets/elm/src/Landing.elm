@@ -12,10 +12,26 @@ import Html.Attributes
 
 
 type alias Game =
-    { emoji : String
+    { color : String
+    , emoji : String
     , slug : String
     , title : String
     }
+
+
+allGames : List Game
+allGames =
+    [ { color = "yellow"
+      , emoji = "\u{1F3D3}"
+      , slug = "pong"
+      , title = "Pong"
+      }
+    , { color = "blue"
+      , emoji = "\u{1F6F8}"
+      , slug = "breakout"
+      , title = "Breakout"
+      }
+    ]
 
 
 
@@ -24,25 +40,42 @@ type alias Game =
 
 view : Browser.Document msg
 view =
-    { title = "🕹 Elm Games"
+    { title = "🕹 Games"
     , body =
         [ Html.main_ [ Html.Attributes.class "p-12" ]
-            [ Html.ul []
-                [ viewGame <| Game "\u{1F3D3}" "pong" "Pong"
-                , viewGame <| Game "\u{1F9F1}" "breakout" "Breakout"
-                ]
-            ]
+            [ viewGames allGames ]
         ]
     }
 
 
+viewGames : List Game -> Html msg
+viewGames games =
+    games
+        |> List.map viewGame
+        |> Html.ul []
+
+
 viewGame : Game -> Html msg
-viewGame { emoji, slug, title } =
-    Html.li [ Html.Attributes.class "my-2" ]
-        [ Html.a [ Html.Attributes.href slug ]
-            [ Html.span [ Html.Attributes.class "mr-1" ]
+viewGame { color, emoji, slug, title } =
+    Html.a [ Html.Attributes.href slug ]
+        [ Html.li
+            [ Html.Attributes.class <| colorToBorderClass color
+            , Html.Attributes.class <| colorToColorClass color
+            , Html.Attributes.class "hover:shadow-lg max-w-sm my-4 px-6 py-3 rounded-md shadow"
+            ]
+            [ Html.span [ Html.Attributes.class "mr-2" ]
                 [ Html.text emoji ]
             , Html.strong []
                 [ Html.text title ]
             ]
         ]
+
+
+colorToBorderClass : String -> String
+colorToBorderClass color =
+    "border-b-2 border-solid border-" ++ color ++ "-700"
+
+
+colorToColorClass : String -> String
+colorToColorClass color =
+    "bg-" ++ color ++ "-200"
