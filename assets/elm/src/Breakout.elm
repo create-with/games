@@ -19,6 +19,7 @@ import Browser.Events
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode
+import Json.Encode
 import Particle exposing (Particle)
 import Particle.System exposing (System)
 import Process
@@ -32,6 +33,7 @@ import Svg.Events
 import Task
 import Util.Fps exposing (Time)
 import Util.Keyboard exposing (Controls)
+import Util.Ports
 
 
 
@@ -95,7 +97,7 @@ initialModel =
 
 initialCommand : Cmd Msg
 initialCommand =
-    Cmd.none
+    playMusicCommand "music.wav"
 
 
 init : () -> ( Model, Cmd Msg )
@@ -395,6 +397,11 @@ particleAt x y =
                 , area = 1
                 }
             )
+
+
+playMusicCommand : String -> Cmd Msg
+playMusicCommand soundFile =
+    Util.Ports.playMusic <| Json.Encode.string soundFile
 
 
 

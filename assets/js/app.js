@@ -39,6 +39,18 @@ hooks.elm = {
       sound.play();
     });
 
+    app.ports.playMusic.subscribe(data => {
+      const soundPath = "/sounds/" + data;
+      const sound = new Howl({
+        src: [soundPath],
+        autoplay: true,
+        loop: true,
+        volume: 0.5
+      });
+
+      sound.play();
+    });
+
     // Prevent Default Keyboard Behavior
 
     const gameKeys = {

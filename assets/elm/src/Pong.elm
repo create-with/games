@@ -19,7 +19,6 @@ import Json.Encode
 import Pong.Ball exposing (Ball, BallPath, ShowBallPath)
 import Pong.Game exposing (State, Winner, WinningScore)
 import Pong.Paddle exposing (Direction, Paddle)
-import Pong.Ports
 import Pong.Window exposing (Window, WindowEdge)
 import Random exposing (Generator)
 import Set
@@ -27,6 +26,7 @@ import Svg exposing (Svg)
 import Svg.Attributes
 import Util.Fps exposing (ShowFps, Time)
 import Util.Keyboard exposing (Controls)
+import Util.Ports
 
 
 
@@ -384,7 +384,7 @@ generateRandomBallPosition =
 
 playSoundCommand : String -> Cmd Msg
 playSoundCommand soundFile =
-    Pong.Ports.playSound <| Json.Encode.string soundFile
+    Util.Ports.playSound <| Json.Encode.string soundFile
 
 
 
