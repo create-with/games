@@ -75,7 +75,7 @@ row color verticalPosition =
     , Brick color initialBrick.height ( initialBrick.width * 1, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 2, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 3, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 4, verticalPosition ) Off initialBrick.width
+    , Brick color initialBrick.height ( initialBrick.width * 4, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 5, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 6, verticalPosition ) On initialBrick.width
     , Brick color initialBrick.height ( initialBrick.width * 7, verticalPosition ) On initialBrick.width
@@ -145,7 +145,7 @@ viewBrick brick =
         , Svg.Attributes.width <| "80"
         , Svg.Attributes.height <| "16"
         , Svg.Attributes.stroke "white"
-        , Svg.Attributes.strokeWidth "1"
+        , Svg.Attributes.strokeWidth "2"
         , Svg.Attributes.strokeOpacity "0.5"
         ]
         []

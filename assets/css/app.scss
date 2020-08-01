@@ -2,6 +2,11 @@
 // @import "./phoenix.css";
 @import "../node_modules/nprogress/nprogress.css";
 
+/* Fonts */
+.font-retro {
+  font-family: 'Press Start 2P', cursive;
+}
+
 /* LiveView specific classes for your customizations */
 .phx-no-feedback.invalid-feedback,
 .phx-no-feedback .invalid-feedback {

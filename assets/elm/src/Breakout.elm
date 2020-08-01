@@ -10,7 +10,7 @@ module Breakout exposing
 -- IMPORTS
 
 import Breakout.Ball exposing (Ball, BallPath)
-import Breakout.Brick exposing (Brick, Bricks, State)
+import Breakout.Brick exposing (Brick, Bricks)
 import Breakout.Paddle exposing (Direction, Paddle)
 import Breakout.Vector
 import Breakout.Window exposing (Window, WindowEdge)
@@ -219,9 +219,6 @@ updateBall ball paddleHit maybeWindowEdge deltaTime =
 
         ( vx, vy ) =
             ball.velocity
-
-        ( initialVx, _ ) =
-            Breakout.Ball.initialBall.velocity
     in
     case ( paddleHit, maybeWindowEdge ) of
         ( True, _ ) ->
@@ -526,7 +523,9 @@ fill color =
 viewHeader : Html msg
 viewHeader =
     Html.header [ Html.Attributes.class "flex justify-center" ]
-        [ Html.h1 [] [ Html.text "Breakout" ] ]
+        [ Html.h1 [ Html.Attributes.class "font-retro text-3xl" ]
+            [ Html.text "Breakout" ]
+        ]
 
 
 viewGame : Model -> Html Msg

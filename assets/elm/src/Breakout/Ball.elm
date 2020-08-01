@@ -36,8 +36,8 @@ type alias BallPath =
 
 initialBall : Ball
 initialBall =
-    { position = ( 395.0, 310.0 )
-    , velocity = ( 375.0, 375.0 )
+    { position = ( 250.0, 250.0 )
+    , velocity = ( 380.0, 380.0 )
     , width = 16.0
     , height = 16.0
     }
