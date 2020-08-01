@@ -142,14 +142,10 @@ playerKeyPressToDirection playerKeyPress =
 
 viewPaddle : Paddle -> Svg msg
 viewPaddle paddle =
-    let
-        ( x, y ) =
-            paddle.position
-    in
     Svg.image
         [ Svg.Attributes.xlinkHref "/images/pixel-paddle.png"
-        , Svg.Attributes.x <| String.fromFloat x
-        , Svg.Attributes.y <| String.fromFloat y
+        , Svg.Attributes.x <| String.fromFloat <| Util.Vector.getX paddle.position
+        , Svg.Attributes.y <| String.fromFloat <| Util.Vector.getY paddle.position
         , Svg.Attributes.width <| String.fromFloat paddle.width
         , Svg.Attributes.height <| String.fromFloat paddle.height
         ]

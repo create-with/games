@@ -9,7 +9,7 @@ module Breakout exposing
 
 -- IMPORTS
 
-import Breakout.Ball exposing (Ball, BallPath)
+import Breakout.Ball exposing (Ball, BallPath, ShowBallPath)
 import Breakout.Brick exposing (Brick, Bricks)
 import Breakout.Paddle exposing (Direction, Paddle)
 import Breakout.Window exposing (Window, WindowEdge)
@@ -72,6 +72,7 @@ type alias Model =
     , paddle : Paddle
     , particleSystem : System Confetti
     , playerKeyPress : Controls
+    , showBallPath : ShowBallPath
     , window : Window
     }
 
@@ -91,6 +92,7 @@ initialModel =
     , paddle = Breakout.Paddle.initialPaddle
     , particleSystem = Particle.System.init (Random.initialSeed 0)
     , playerKeyPress = Util.Keyboard.initialKeys
+    , showBallPath = Breakout.Ball.initialShowBallPath
     , window = Breakout.Window.initialWindow
     }
 
@@ -140,6 +142,7 @@ update msg model =
             in
             ( { model
                 | ball = updateBall model.ball paddleHitByBall windowEdgeHitByBall deltaTime
+                , ballPath = updateBallPath model.ball model.ballPath windowEdgeHitByBall model
                 , bricks = updateBricks bricksHitByBall model.bricks
                 , gameState = updateGameState model.gameState model
                 , lives = updateLives model.lives windowEdgeHitByBall
@@ -290,6 +293,24 @@ updateBall ball paddleHit maybeWindowEdge deltaTime =
                         |> Util.Vector.scale deltaTime
                         |> Util.Vector.add ball.position
             }
+
+
+updateBallPath : Ball -> BallPath -> Maybe WindowEdge -> Model -> BallPath
+updateBallPath ball ballPath maybeWindowEdge { showBallPath } =
+    case showBallPath of
+        Breakout.Ball.Off ->
+            []
+
+        Breakout.Ball.On ->
+            case maybeWindowEdge of
+                Just Breakout.Window.Left ->
+                    []
+
+                Just Breakout.Window.Right ->
+                    []
+
+                _ ->
+                    List.take 40 <| ball :: ballPath
 
 
 updateBricks : List Brick -> List Brick -> List Brick

@@ -1,8 +1,11 @@
 module Breakout.Ball exposing
     ( Ball
     , BallPath
+    , ShowBallPath(..)
     , initialBall
     , initialBallPath
+    , initialShowBallPath
+    , showBallPathToString
     , viewBall
     , viewBallPath
     )
@@ -30,6 +33,11 @@ type alias BallPath =
     List Ball
 
 
+type ShowBallPath
+    = Off
+    | On
+
+
 
 -- INIT
 
@@ -48,20 +56,35 @@ initialBallPath =
     []
 
 
+initialShowBallPath : ShowBallPath
+initialShowBallPath =
+    On
+
+
+
+-- HELPERS
+
+
+showBallPathToString : ShowBallPath -> String
+showBallPathToString showBallPath =
+    case showBallPath of
+        On ->
+            "On"
+
+        Off ->
+            "Off"
+
+
 
 -- VIEW
 
 
 viewBall : Ball -> Svg msg
 viewBall ball =
-    let
-        ( x, y ) =
-            ball.position
-    in
     Svg.image
         [ Svg.Attributes.xlinkHref "/images/pixel-ball.png"
-        , Svg.Attributes.x <| String.fromFloat x
-        , Svg.Attributes.y <| String.fromFloat y
+        , Svg.Attributes.x <| String.fromFloat <| Util.Vector.getX ball.position
+        , Svg.Attributes.y <| String.fromFloat <| Util.Vector.getY ball.position
         , Svg.Attributes.width <| String.fromFloat ball.width
         , Svg.Attributes.height <| String.fromFloat ball.height
         ]
@@ -76,8 +99,8 @@ viewBallPath ballPath =
 viewBallPathSegment : Int -> Ball -> Svg msg
 viewBallPathSegment index ball =
     Svg.rect
-        [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (80 - index)
-        , Svg.Attributes.fill <| "lightblue"
+        [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (25 - index)
+        , Svg.Attributes.fill <| "lightyellow"
         , Svg.Attributes.x <| String.fromFloat <| Util.Vector.getX ball.position
         , Svg.Attributes.y <| String.fromFloat <| Util.Vector.getY ball.position
         , Svg.Attributes.width <| String.fromFloat ball.width

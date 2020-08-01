@@ -63,7 +63,7 @@ initialBallPath =
 
 initialShowBallPath : ShowBallPath
 initialShowBallPath =
-    Off
+    On
 
 
 

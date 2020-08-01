@@ -43,7 +43,7 @@ hooks.elm = {
       const soundPath = "/sounds/" + data;
       const sound = new Howl({
         src: [soundPath],
-        // autoplay: true,
+        autoplay: true,
         loop: true,
         volume: 0.5
       });
