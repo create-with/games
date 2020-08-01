@@ -523,7 +523,7 @@ fill color =
 viewHeader : Html msg
 viewHeader =
     Html.header [ Html.Attributes.class "flex justify-center" ]
-        [ Html.h1 [ Html.Attributes.class "font-retro text-3xl" ]
+        [ Html.h1 [ Html.Attributes.class "font-black text-5xl" ]
             [ Html.text "Breakout" ]
         ]
 
@@ -582,7 +582,7 @@ viewSvg window model =
         [ Breakout.Window.viewGameWindow window
         , Breakout.Brick.viewBricks model.bricks
         , Breakout.Paddle.viewPaddle model.paddle
-        , Breakout.Paddle.viewPaddleScore model.paddle.score window 10
+        , Breakout.Paddle.viewPaddleScore model.paddle.score
         , viewLives model.lives
         , Breakout.Ball.viewBall model.ball
         , Breakout.Ball.viewBallPath model.ballPath |> Svg.g []

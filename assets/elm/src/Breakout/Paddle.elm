@@ -156,14 +156,15 @@ viewPaddle paddle =
         []
 
 
-viewPaddleScore : Int -> Window -> Float -> Svg msg
-viewPaddleScore score window _ =
+viewPaddleScore : Int -> Svg msg
+viewPaddleScore score =
     Svg.text_
-        [ Svg.Attributes.fill "white"
-        , Svg.Attributes.fontFamily "monospace"
-        , Svg.Attributes.fontSize "18"
+        [ Svg.Attributes.class "font-retro"
+        , Svg.Attributes.fill "white"
+        , Svg.Attributes.fontSize "12"
         , Svg.Attributes.fontWeight "bold"
-        , Svg.Attributes.x <| String.fromFloat <| (window.width / 2) - 40
-        , Svg.Attributes.y "18"
+        , Svg.Attributes.textAnchor "middle"
+        , Svg.Attributes.x "50%"
+        , Svg.Attributes.y "22"
         ]
-        [ Svg.text <| "POINTS " ++ String.fromInt score ]
+        [ Svg.text <| String.toUpper <| "Points " ++ String.fromInt score ]
