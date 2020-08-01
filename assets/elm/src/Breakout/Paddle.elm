@@ -14,12 +14,12 @@ module Breakout.Paddle exposing
 -- IMPORTS
 
 import Breakout.Ball exposing (Ball)
-import Breakout.Vector exposing (Vector)
 import Breakout.Window exposing (Window)
 import Set exposing (Set)
 import Svg exposing (Svg)
 import Svg.Attributes
 import Util.Keyboard
+import Util.Vector exposing (Vector)
 
 
 

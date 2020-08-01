@@ -12,7 +12,6 @@ module Breakout exposing
 import Breakout.Ball exposing (Ball, BallPath)
 import Breakout.Brick exposing (Brick, Bricks)
 import Breakout.Paddle exposing (Direction, Paddle)
-import Breakout.Vector
 import Breakout.Window exposing (Window, WindowEdge)
 import Browser exposing (Document)
 import Browser.Events
@@ -34,6 +33,7 @@ import Task
 import Util.Fps exposing (Time)
 import Util.Keyboard exposing (Controls)
 import Util.Ports
+import Util.Vector
 
 
 
@@ -287,8 +287,8 @@ updateBall ball paddleHit maybeWindowEdge deltaTime =
             { ball
                 | position =
                     ball.velocity
-                        |> Breakout.Vector.scale deltaTime
-                        |> Breakout.Vector.add ball.position
+                        |> Util.Vector.scale deltaTime
+                        |> Util.Vector.add ball.position
             }
 
 

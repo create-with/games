@@ -11,10 +11,10 @@ module Breakout.Brick exposing
 -- IMPORTS
 
 import Breakout.Ball exposing (Ball)
-import Breakout.Vector exposing (Vector)
 import Svg exposing (Svg)
 import Svg.Attributes
 import Util.List
+import Util.Vector exposing (Vector)
 
 
 

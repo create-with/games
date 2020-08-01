@@ -57,13 +57,13 @@ getWindowEdgeHitByBall ball window =
         ( x, y ) =
             ball.position
     in
-    if (y + ball.height) >= window.height then
+    if y + ball.height >= window.height then
         Just Bottom
 
     else if x <= window.x then
         Just Left
 
-    else if (x + ball.width) >= window.width then
+    else if x + ball.width >= window.width then
         Just Right
 
     else if y <= window.y then

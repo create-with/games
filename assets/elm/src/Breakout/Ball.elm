@@ -9,9 +9,9 @@ module Breakout.Ball exposing
 
 -- IMPORTS
 
-import Breakout.Vector exposing (Vector)
 import Svg exposing (Svg)
 import Svg.Attributes
+import Util.Vector exposing (Vector)
 
 
 
@@ -75,15 +75,11 @@ viewBallPath ballPath =
 
 viewBallPathSegment : Int -> Ball -> Svg msg
 viewBallPathSegment index ball =
-    let
-        ( x, y ) =
-            ball.position
-    in
     Svg.rect
         [ Svg.Attributes.fillOpacity <| String.fromFloat <| 0.01 * toFloat (80 - index)
-        , Svg.Attributes.fill <| "darkorange"
-        , Svg.Attributes.x <| String.fromFloat x
-        , Svg.Attributes.y <| String.fromFloat y
+        , Svg.Attributes.fill <| "lightblue"
+        , Svg.Attributes.x <| String.fromFloat <| Util.Vector.getX ball.position
+        , Svg.Attributes.y <| String.fromFloat <| Util.Vector.getY ball.position
         , Svg.Attributes.width <| String.fromFloat ball.width
         , Svg.Attributes.height <| String.fromFloat ball.height
         ]
