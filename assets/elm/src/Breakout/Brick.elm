@@ -10,7 +10,9 @@ module Breakout.Brick exposing
 
 -- IMPORTS
 
+import Array exposing (Array)
 import Breakout.Ball exposing (Ball)
+import Dict exposing (Dict)
 import Svg exposing (Svg)
 import Svg.Attributes
 import Util.List
@@ -29,6 +31,7 @@ type State
 type alias Brick =
     { color : String
     , height : Float
+    , id : Int
     , position : Vector
     , state : State
     , width : Float
@@ -36,17 +39,28 @@ type alias Brick =
 
 
 type alias Bricks =
-    List Brick
+    Dict RowNumber (List Brick)
+
+
+type alias RowNumber =
+    Int
+
+
+type alias RowData =
+    { color : String
+    , yPosition : Float
+    }
 
 
 
 -- INIT
 
 
-initialBrick : Brick
-initialBrick =
+defaultBrick : Brick
+defaultBrick =
     { color = "white"
     , height = 16
+    , id = 0
     , position = ( 0, 0 )
     , state = On
     , width = 80
@@ -55,33 +69,13 @@ initialBrick =
 
 initialBricks : Bricks
 initialBricks =
-    let
-        topOfFirstRow =
-            100
-    in
-    [ row "#F56565" (topOfFirstRow + (initialBrick.height * 0))
-    , row "#ED8936" (topOfFirstRow + (initialBrick.height * 1))
-    , row "#ECC94B" (topOfFirstRow + (initialBrick.height * 2))
-    , row "#48BB78" (topOfFirstRow + (initialBrick.height * 3))
-    , row "#4299E1" (topOfFirstRow + (initialBrick.height * 4))
-    , row "#667EEA" (topOfFirstRow + (initialBrick.height * 5))
-    ]
-        |> Util.List.flatten
-
-
-row : String -> Float -> Bricks
-row color verticalPosition =
-    [ Brick color initialBrick.height ( initialBrick.width * 0, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 1, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 2, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 3, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 4, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 5, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 6, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 7, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 8, verticalPosition ) On initialBrick.width
-    , Brick color initialBrick.height ( initialBrick.width * 9, verticalPosition ) On initialBrick.width
-    ]
+    Dict.empty
+        |> Dict.insert 1 (createRow 0 10 { color = "#F56565", yPosition = defaultBrick.height * 1 + 100 } setupBricks)
+        |> Dict.insert 2 (createRow 10 20 { color = "#ED8936", yPosition = defaultBrick.height * 2 + 100 } setupBricks)
+        |> Dict.insert 3 (createRow 20 30 { color = "#ECC94B", yPosition = defaultBrick.height * 3 + 100 } setupBricks)
+        |> Dict.insert 4 (createRow 30 40 { color = "#48BB78", yPosition = defaultBrick.height * 4 + 100 } setupBricks)
+        |> Dict.insert 5 (createRow 40 50 { color = "#4299E1", yPosition = defaultBrick.height * 5 + 100 } setupBricks)
+        |> Dict.insert 6 (createRow 50 60 { color = "#667EEA", yPosition = defaultBrick.height * 6 + 100 } setupBricks)
 
 
 
@@ -123,9 +117,11 @@ hideBrickHitByBall bricksHitByBall brick =
 -- VIEW
 
 
-viewBricks : List Brick -> Svg a
+viewBricks : Bricks -> Svg a
 viewBricks bricks =
     bricks
+        |> Dict.values
+        |> Util.List.flatten
         |> List.filter (\brick -> brick.state == On)
         |> List.map viewBrick
         |> Svg.g []
@@ -142,10 +138,43 @@ viewBrick brick =
         , Svg.Attributes.fillOpacity "1"
         , Svg.Attributes.x <| String.fromFloat x
         , Svg.Attributes.y <| String.fromFloat y
-        , Svg.Attributes.width <| "80"
-        , Svg.Attributes.height <| "16"
+        , Svg.Attributes.width <| String.fromFloat brick.width
+        , Svg.Attributes.height <| String.fromFloat brick.height
         , Svg.Attributes.stroke "white"
         , Svg.Attributes.strokeWidth "2"
         , Svg.Attributes.strokeOpacity "0.5"
         ]
         []
+
+
+
+-- REFACTOR
+
+
+setupBricks : Array ( Int, Brick )
+setupBricks =
+    Array.initialize 60 setBrickIds
+
+
+setBrickIds : Int -> ( Int, Brick )
+setBrickIds index =
+    ( index + 1, { defaultBrick | id = index + 1 } )
+
+
+createRow : Int -> Int -> RowData -> Array ( Int, Brick ) -> List Brick
+createRow start end rowData bricks =
+    bricks
+        |> Array.slice start end
+        |> Array.toList
+        |> List.map (setRowData rowData)
+
+
+setRowData : RowData -> ( Int, Brick ) -> Brick
+setRowData { color, yPosition } ( index, brick ) =
+    { brick
+        | color = color
+        , position =
+            ( defaultBrick.width * toFloat (remainderBy 10 (index - 1))
+            , yPosition
+            )
+    }
