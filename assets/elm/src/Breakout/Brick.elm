@@ -68,13 +68,39 @@ initialBricks =
 buildRow : Int -> String -> Bricks
 buildRow rowNumber color =
     List.range 1 10
-        |> List.foldr (\columnNumber -> Dict.insert ( rowNumber, columnNumber ) defaultBrick) Dict.empty
-        |> colorizeRow color
+        |> List.foldr (insertBrick rowNumber) Dict.empty
+        |> setRowColors color
+        |> setRowPosition
 
 
-colorizeRow : String -> Bricks -> Dict ( Int, Int ) Brick
-colorizeRow color row =
+insertBrick : Int -> Int -> (Bricks -> Bricks)
+insertBrick rowNumber columnNumber =
+    Dict.insert ( rowNumber, columnNumber ) defaultBrick
+
+
+setRowColors : String -> Bricks -> Bricks
+setRowColors color row =
     Dict.map (\_ brick -> { brick | color = color }) row
+
+
+offsetFromTopOfScreen : Float
+offsetFromTopOfScreen =
+    80
+
+
+setRowPosition : Bricks -> Bricks
+setRowPosition row =
+    Dict.map setBrickPosition row
+
+
+setBrickPosition : ( Int, Int ) -> Brick -> Brick
+setBrickPosition ( rowNumber, columnNumber ) brick =
+    { brick
+        | position =
+            ( toFloat (columnNumber - 1) * brick.width
+            , offsetFromTopOfScreen + toFloat rowNumber * brick.height
+            )
+    }
 
 
 
@@ -125,16 +151,13 @@ viewBricks bricks =
 
 
 viewBrick : ( Int, Int ) -> Brick -> Svg a
-viewBrick ( row, column ) brick =
-    let
-        offsetFromTopOfScreen =
-            80
-    in
+viewBrick ( _, _ ) brick =
     Svg.rect
-        [ Svg.Attributes.fill <| brick.color
+        [ Svg.Attributes.class "bounce-in-down"
+        , Svg.Attributes.fill <| brick.color
         , Svg.Attributes.fillOpacity "1"
-        , Svg.Attributes.x <| String.fromFloat (toFloat (column - 1) * brick.width)
-        , Svg.Attributes.y <| String.fromFloat (offsetFromTopOfScreen + toFloat row * brick.height)
+        , Svg.Attributes.x <| String.fromFloat <| Util.Vector.getX brick.position
+        , Svg.Attributes.y <| String.fromFloat <| Util.Vector.getY brick.position
         , Svg.Attributes.width <| String.fromFloat brick.width
         , Svg.Attributes.height <| String.fromFloat brick.height
         , Svg.Attributes.stroke "black"
