@@ -13,7 +13,6 @@ import Browser exposing (Document)
 import Browser.Events
 import Html exposing (Html)
 import Html.Attributes
-import Html.Events
 import Json.Decode
 import Json.Encode
 import Pong.Ball exposing (Ball, BallPath, ShowBallPath)
@@ -27,6 +26,7 @@ import Svg.Attributes
 import Util.Fps exposing (ShowFps, Time)
 import Util.Keyboard exposing (Controls)
 import Util.Ports
+import Util.View
 
 
 
@@ -609,8 +609,8 @@ viewShowBallPathOptions showBallPath_ =
     Html.fieldset [ Html.Attributes.class "inline" ]
         [ Html.span [ Html.Attributes.class "mr-3" ]
             [ Html.text "Show ball path history:" ]
-        , viewRadioButton Pong.Ball.Off showBallPath_ Pong.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
-        , viewRadioButton Pong.Ball.On showBallPath_ Pong.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
+        , Util.View.radioButton Pong.Ball.Off showBallPath_ Pong.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
+        , Util.View.radioButton Pong.Ball.On showBallPath_ Pong.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
         ]
 
 
@@ -619,8 +619,8 @@ viewShowFpsOptions showFps_ =
     Html.fieldset [ Html.Attributes.class "inline" ]
         [ Html.span [ Html.Attributes.class "mr-3" ]
             [ Html.text "Show FPS meter:" ]
-        , viewRadioButton Util.Fps.Off showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
-        , viewRadioButton Util.Fps.On showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        , Util.View.radioButton Util.Fps.Off showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        , Util.View.radioButton Util.Fps.On showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
         ]
 
 
@@ -629,24 +629,6 @@ viewWinningScoreOptions winningScore =
     Html.fieldset [ Html.Attributes.class "inline" ]
         [ Html.span [ Html.Attributes.class "mr-3" ]
             [ Html.text "Set winning score:" ]
-        , viewRadioButton Pong.Game.Eleven winningScore Pong.Game.winningScoreToString PlayerClickedWinningScoreRadioButton
-        , viewRadioButton Pong.Game.Fifteen winningScore Pong.Game.winningScoreToString PlayerClickedWinningScoreRadioButton
-        ]
-
-
-
--- VIEW HELPERS
-
-
-viewRadioButton : a -> a -> (a -> String) -> (a -> Msg) -> Html Msg
-viewRadioButton type_ current toString msg =
-    Html.label []
-        [ Html.input
-            [ Html.Attributes.checked <| current == type_
-            , Html.Attributes.type_ "radio"
-            , Html.Events.onClick <| msg type_
-            ]
-            []
-        , Html.span [ Html.Attributes.class "px-1 text-xs" ]
-            [ Html.text <| toString type_ ]
+        , Util.View.radioButton Pong.Game.Eleven winningScore Pong.Game.winningScoreToString PlayerClickedWinningScoreRadioButton
+        , Util.View.radioButton Pong.Game.Fifteen winningScore Pong.Game.winningScoreToString PlayerClickedWinningScoreRadioButton
         ]

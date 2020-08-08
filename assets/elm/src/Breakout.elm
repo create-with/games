@@ -31,10 +31,11 @@ import Svg exposing (Svg)
 import Svg.Attributes
 import Svg.Events
 import Task
-import Util.Fps exposing (Time)
+import Util.Fps exposing (ShowFps, Time)
 import Util.Keyboard exposing (Controls)
 import Util.Ports
 import Util.Vector
+import Util.View
 
 
 
@@ -74,6 +75,7 @@ type alias Model =
     , particleSystem : System Confetti
     , playerKeyPress : Controls
     , showBallPath : ShowBallPath
+    , showFps : ShowFps
     , window : Window
     }
 
@@ -94,6 +96,7 @@ initialModel =
     , particleSystem = Particle.System.init (Random.initialSeed 0)
     , playerKeyPress = Util.Keyboard.initialKeys
     , showBallPath = Breakout.Ball.initialShowBallPath
+    , showFps = Util.Fps.initialShowFps
     , window = Breakout.Window.initialWindow
     }
 
@@ -117,6 +120,8 @@ type Msg
     | CollisionGeneratedRandomWindowShakePositions ( Float, Float )
     | Particles
     | ParticleMsg (Particle.System.Msg Confetti)
+    | PlayerClickedShowBallPathRadioButton ShowBallPath
+    | PlayerClickedShowFpsRadioButton ShowFps
     | PlayerClickedWindow
     | PlayerPressedKeyDown String
     | PlayerReleasedKey String
@@ -141,6 +146,7 @@ update msg model =
                 | ball = updateBall model.ball paddleHitByBall windowEdgeHitByBall deltaTime
                 , ballPath = updateBallPath model.ball model.ballPath windowEdgeHitByBall model
                 , bricks = updateBricks model.ball model.bricks
+                , deltaTimes = updateDeltaTimes model.showFps deltaTime model.deltaTimes
                 , gameState = updateGameState model.gameState model
                 , lives = updateLives model.lives windowEdgeHitByBall
                 , paddle = updatePaddle model.paddle paddleDirection model.window deltaTime
@@ -168,6 +174,12 @@ update msg model =
             ( { model | particleSystem = Particle.System.update particleMsg model.particleSystem }
             , Cmd.none
             )
+
+        PlayerClickedShowBallPathRadioButton showBallPathValue ->
+            ( { model | showBallPath = showBallPathValue }, Cmd.none )
+
+        PlayerClickedShowFpsRadioButton showFpsValue ->
+            ( { model | showFps = showFpsValue }, Cmd.none )
 
         PlayerClickedWindow ->
             ( model, Cmd.batch [ generateRandomWindowShake, Process.sleep 0 |> Task.perform (\_ -> Particles) ] )
@@ -321,6 +333,16 @@ updateBricks ball bricks =
                 else
                     brick
             )
+
+
+updateDeltaTimes : ShowFps -> Time -> List Time -> List Time
+updateDeltaTimes showFps deltaTime deltaTimes =
+    case showFps of
+        Util.Fps.Off ->
+            deltaTimes
+
+        Util.Fps.On ->
+            List.take 50 (deltaTime :: deltaTimes)
 
 
 updateGameState : GameState -> Model -> GameState
@@ -490,6 +512,7 @@ viewMain model =
     Html.main_ [ Html.Attributes.class "bg-blue-400 h-full p-8" ]
         [ viewHeader
         , viewGame model
+        , viewInformation model
         ]
 
 
@@ -613,6 +636,95 @@ viewSvg window model =
         , Breakout.Ball.viewBall model.ball
         , Breakout.Ball.viewBallPath model.ballPath |> Svg.g []
         , Particle.System.view viewParticles [] model.particleSystem
+        , Util.Fps.viewFps Util.Fps.On model.deltaTimes
+        ]
 
-        -- , Util.Fps.viewFps Util.Fps.On model.deltaTimes
+
+
+-- VIEW INFO
+
+
+viewInformation : Model -> Html Msg
+viewInformation model =
+    Html.section []
+        [ viewWinner model.gameState
+        , viewInstructions
+        , viewOptions model.showBallPath model.showFps
+        ]
+
+
+
+-- WINNER
+
+
+viewWinner : GameState -> Html msg
+viewWinner gameState =
+    case gameState of
+        StartingScreen ->
+            Html.span [] []
+
+        PlayingScreen ->
+            Html.span [] []
+
+        EndingScreen ->
+            Html.div [ Html.Attributes.class "pt-4 text-center" ]
+                [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
+                    [ Html.text "Alas, you've won!" ]
+                ]
+
+
+
+-- INSTRUCTIONS
+
+
+viewInstructions : Html msg
+viewInstructions =
+    Html.div [ Html.Attributes.class "pt-4" ]
+        [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-center text-xl" ]
+            [ Html.text "Instructions" ]
+        , Html.div [ Html.Attributes.class "flex justify-center" ]
+            [ Html.ul [ Html.Attributes.class "leading-relaxed list-disc list-inside mx-3" ]
+                [ Html.li [] [ Html.text "\u{1F6F8} Press the SPACEBAR key to serve the ball." ]
+                , Html.li [] [ Html.text "⌨️ Use the arrow keys to move the left paddle." ]
+                , Html.li [] [ Html.text "🏆 Break all the bricks to win!" ]
+                ]
+            ]
+        ]
+
+
+
+-- OPTIONS
+
+
+viewOptions : ShowBallPath -> ShowFps -> Html Msg
+viewOptions showBallPath_ showFps =
+    Html.div [ Html.Attributes.class "pt-4" ]
+        [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-center text-xl" ]
+            [ Html.text "Options" ]
+        , Html.form [ Html.Attributes.class "flex justify-center" ]
+            [ Html.ul [ Html.Attributes.class "leading-relaxed list-disc list-inside mx-3" ]
+                [ Html.li [] [ viewShowBallPathOptions showBallPath_ ]
+                , Html.li [] [ viewShowFpsOptions showFps ]
+                ]
+            ]
+        ]
+
+
+viewShowBallPathOptions : ShowBallPath -> Html Msg
+viewShowBallPathOptions showBallPath_ =
+    Html.fieldset [ Html.Attributes.class "inline" ]
+        [ Html.span [ Html.Attributes.class "mr-3" ]
+            [ Html.text "Show ball path history:" ]
+        , Util.View.radioButton Breakout.Ball.Off showBallPath_ Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
+        , Util.View.radioButton Breakout.Ball.On showBallPath_ Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
+        ]
+
+
+viewShowFpsOptions : ShowFps -> Html Msg
+viewShowFpsOptions showFps_ =
+    Html.fieldset [ Html.Attributes.class "inline" ]
+        [ Html.span [ Html.Attributes.class "mr-3" ]
+            [ Html.text "Show FPS meter:" ]
+        , Util.View.radioButton Util.Fps.Off showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        , Util.View.radioButton Util.Fps.On showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
         ]

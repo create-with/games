@@ -37,7 +37,7 @@ initialDeltaTimes =
 
 initialShowFps : ShowFps
 initialShowFps =
-    Off
+    On
 
 
 
@@ -67,15 +67,19 @@ viewFps showFps deltaTimes =
             Svg.g [] []
 
         On ->
-            Svg.text_
-                [ Svg.Attributes.x <| String.fromInt 5
-                , Svg.Attributes.y <| String.fromInt 20
-                , Svg.Attributes.fill "white"
-                , Svg.Attributes.fontFamily "monospace"
-                , Svg.Attributes.fontWeight "bold"
-                , Svg.Attributes.fontSize "20"
-                ]
-                [ Svg.text <| fps ++ "fps" ]
+            case deltaTimes of
+                [] ->
+                    Svg.g [] []
+
+                _ ->
+                    Svg.text_
+                        [ Svg.Attributes.class "font-retro text-xs"
+                        , Svg.Attributes.x <| String.fromInt 5
+                        , Svg.Attributes.y <| String.fromInt 20
+                        , Svg.Attributes.fill "white"
+                        , Svg.Attributes.fontSize "20"
+                        ]
+                        [ Svg.text <| fps ++ "fps" ]
 
 
 
