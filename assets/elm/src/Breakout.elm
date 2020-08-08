@@ -10,7 +10,7 @@ module Breakout exposing
 -- IMPORTS
 
 import Breakout.Ball exposing (Ball, BallPath, ShowBallPath)
-import Breakout.Brick exposing (Bricks)
+import Breakout.Brick exposing (Brick, Bricks)
 import Breakout.Paddle exposing (Direction, Paddle)
 import Breakout.Window exposing (Window, WindowEdge)
 import Browser exposing (Document)
@@ -68,6 +68,7 @@ type alias Model =
     { ball : Ball
     , ballPath : BallPath
     , bricks : Bricks
+    , currentBrick : Maybe Brick
     , deltaTimes : List Time
     , gameState : GameState
     , lives : Int
@@ -89,6 +90,7 @@ initialModel =
     { ball = Breakout.Ball.initialBall
     , ballPath = Breakout.Ball.initialBallPath
     , bricks = Breakout.Brick.initialBricks
+    , currentBrick = Nothing
     , deltaTimes = Util.Fps.initialDeltaTimes
     , gameState = StartingScreen
     , lives = 3
@@ -133,6 +135,10 @@ update msg model =
     case msg of
         BrowserAdvancedAnimationFrame deltaTime ->
             let
+                currentBrick =
+                    model.bricks
+                        |> Dict.get ( 1, 1 )
+
                 paddleDirection =
                     Breakout.Paddle.playerKeyPressToDirection model.playerKeyPress
 
@@ -199,7 +205,7 @@ update msg model =
                             ( { model | ball = setBallInMotion model.ball }, Cmd.none )
 
                         EndingScreen ->
-                            ( { model | gameState = updateGameState StartingScreen initialModel }, Cmd.none )
+                            ( initialModel, Cmd.none )
 
                 _ ->
                     ( updateKeyPress key model, Cmd.none )
@@ -319,7 +325,11 @@ updateBallPath ball ballPath maybeWindowEdge { showBallPath } =
                     []
 
                 _ ->
-                    List.take 40 <| ball :: ballPath
+                    if ball.position /= Breakout.Ball.initialBall.position then
+                        List.take 40 <| ball :: ballPath
+
+                    else
+                        []
 
 
 updateBricks : Ball -> Bricks -> Bricks
@@ -369,7 +379,10 @@ updateLives lives maybeWindowEdge =
         Just Breakout.Window.Bottom ->
             clamp 0 lives <| lives - 1
 
-        _ ->
+        Just _ ->
+            lives
+
+        Nothing ->
             lives
 
 
@@ -647,7 +660,7 @@ viewSvg window model =
 viewInformation : Model -> Html Msg
 viewInformation model =
     Html.section []
-        [ viewWinner model.gameState
+        [ viewEndingScreen model.gameState model.bricks
         , viewInstructions
         , viewOptions model.showBallPath model.showFps
         ]
@@ -657,8 +670,8 @@ viewInformation model =
 -- WINNER
 
 
-viewWinner : GameState -> Html msg
-viewWinner gameState =
+viewEndingScreen : GameState -> Bricks -> Html msg
+viewEndingScreen gameState bricks =
     case gameState of
         StartingScreen ->
             Html.span [] []
@@ -669,7 +682,14 @@ viewWinner gameState =
         EndingScreen ->
             Html.div [ Html.Attributes.class "pt-4 text-center" ]
                 [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
-                    [ Html.text "Alas, you've won!" ]
+                    [ if Dict.isEmpty bricks then
+                        Html.text "Alas, you've won!"
+
+                      else
+                        Html.text "Game Over!"
+                    ]
+                , Html.p []
+                    [ Html.text "🆕 Press the SPACEBAR key to reset the game." ]
                 ]
 
 
