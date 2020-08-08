@@ -10,12 +10,10 @@ module Breakout.Brick exposing
 
 -- IMPORTS
 
-import Array exposing (Array)
 import Breakout.Ball exposing (Ball)
 import Dict exposing (Dict)
 import Svg exposing (Svg)
 import Svg.Attributes
-import Util.List
 import Util.Vector exposing (Vector)
 
 
@@ -39,17 +37,7 @@ type alias Brick =
 
 
 type alias Bricks =
-    Dict RowNumber (List Brick)
-
-
-type alias RowNumber =
-    Int
-
-
-type alias RowData =
-    { color : String
-    , yPosition : Float
-    }
+    Dict ( Int, Int ) Brick
 
 
 
@@ -69,13 +57,24 @@ defaultBrick =
 
 initialBricks : Bricks
 initialBricks =
-    Dict.empty
-        |> Dict.insert 1 (createRow 0 10 { color = "#F56565", yPosition = defaultBrick.height * 1 + 100 } setupBricks)
-        |> Dict.insert 2 (createRow 10 20 { color = "#ED8936", yPosition = defaultBrick.height * 2 + 100 } setupBricks)
-        |> Dict.insert 3 (createRow 20 30 { color = "#ECC94B", yPosition = defaultBrick.height * 3 + 100 } setupBricks)
-        |> Dict.insert 4 (createRow 30 40 { color = "#48BB78", yPosition = defaultBrick.height * 4 + 100 } setupBricks)
-        |> Dict.insert 5 (createRow 40 50 { color = "#4299E1", yPosition = defaultBrick.height * 5 + 100 } setupBricks)
-        |> Dict.insert 6 (createRow 50 60 { color = "#667EEA", yPosition = defaultBrick.height * 6 + 100 } setupBricks)
+    buildRow 1 "#f56565"
+        |> Dict.union (buildRow 2 "#ed8936")
+        |> Dict.union (buildRow 3 "#ecc94b")
+        |> Dict.union (buildRow 4 "#48bb78")
+        |> Dict.union (buildRow 5 "#4299e1")
+        |> Dict.union (buildRow 6 "#667eea")
+
+
+buildRow : Int -> String -> Bricks
+buildRow rowNumber color =
+    List.range 1 10
+        |> List.foldr (\columnNumber -> Dict.insert ( rowNumber, columnNumber ) defaultBrick) Dict.empty
+        |> colorizeRow color
+
+
+colorizeRow : String -> Bricks -> Dict ( Int, Int ) Brick
+colorizeRow color row =
+    Dict.map (\_ brick -> { brick | color = color }) row
 
 
 
@@ -120,61 +119,26 @@ hideBrickHitByBall bricksHitByBall brick =
 viewBricks : Bricks -> Svg a
 viewBricks bricks =
     bricks
+        |> Dict.map viewBrick
         |> Dict.values
-        |> Util.List.flatten
-        |> List.filter (\brick -> brick.state == On)
-        |> List.map viewBrick
         |> Svg.g []
 
 
-viewBrick : Brick -> Svg a
-viewBrick brick =
+viewBrick : ( Int, Int ) -> Brick -> Svg a
+viewBrick ( row, column ) brick =
     let
-        ( x, y ) =
-            brick.position
+        offsetFromTopOfScreen =
+            80
     in
     Svg.rect
         [ Svg.Attributes.fill <| brick.color
         , Svg.Attributes.fillOpacity "1"
-        , Svg.Attributes.x <| String.fromFloat x
-        , Svg.Attributes.y <| String.fromFloat y
+        , Svg.Attributes.x <| String.fromFloat (toFloat (column - 1) * brick.width)
+        , Svg.Attributes.y <| String.fromFloat (offsetFromTopOfScreen + toFloat row * brick.height)
         , Svg.Attributes.width <| String.fromFloat brick.width
         , Svg.Attributes.height <| String.fromFloat brick.height
-        , Svg.Attributes.stroke "white"
-        , Svg.Attributes.strokeWidth "2"
-        , Svg.Attributes.strokeOpacity "0.5"
+        , Svg.Attributes.stroke "black"
+        , Svg.Attributes.strokeWidth "1"
+        , Svg.Attributes.strokeOpacity "1"
         ]
         []
-
-
-
--- REFACTOR
-
-
-setupBricks : Array ( Int, Brick )
-setupBricks =
-    Array.initialize 60 setBrickIds
-
-
-setBrickIds : Int -> ( Int, Brick )
-setBrickIds index =
-    ( index + 1, { defaultBrick | id = index + 1 } )
-
-
-createRow : Int -> Int -> RowData -> Array ( Int, Brick ) -> List Brick
-createRow start end rowData bricks =
-    bricks
-        |> Array.slice start end
-        |> Array.toList
-        |> List.map (setRowData rowData)
-
-
-setRowData : RowData -> ( Int, Brick ) -> Brick
-setRowData { color, yPosition } ( index, brick ) =
-    { brick
-        | color = color
-        , position =
-            ( defaultBrick.width * toFloat (remainderBy 10 (index - 1))
-            , yPosition
-            )
-    }
