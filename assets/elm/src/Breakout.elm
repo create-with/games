@@ -15,6 +15,7 @@ import Breakout.Paddle exposing (Direction, Paddle)
 import Breakout.Window exposing (Window, WindowEdge)
 import Browser exposing (Document)
 import Browser.Events
+import Dict
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode
@@ -139,7 +140,7 @@ update msg model =
             ( { model
                 | ball = updateBall model.ball paddleHitByBall windowEdgeHitByBall deltaTime
                 , ballPath = updateBallPath model.ball model.ballPath windowEdgeHitByBall model
-                , bricks = updateBricks model.bricks
+                , bricks = updateBricks model.ball model.bricks
                 , gameState = updateGameState model.gameState model
                 , lives = updateLives model.lives windowEdgeHitByBall
                 , paddle = updatePaddle model.paddle paddleDirection model.window deltaTime
@@ -309,9 +310,17 @@ updateBallPath ball ballPath maybeWindowEdge { showBallPath } =
                     List.take 40 <| ball :: ballPath
 
 
-updateBricks : Bricks -> Bricks
-updateBricks bricks =
+updateBricks : Ball -> Bricks -> Bricks
+updateBricks ball bricks =
     bricks
+        |> Dict.map
+            (\( _, _ ) brick ->
+                if Breakout.Brick.ballHitBrick ball brick then
+                    { brick | hitCount = brick.hitCount + 1 }
+
+                else
+                    brick
+            )
 
 
 updateGameState : GameState -> Model -> GameState

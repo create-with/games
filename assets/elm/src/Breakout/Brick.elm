@@ -2,6 +2,7 @@ module Breakout.Brick exposing
     ( Brick
     , Bricks
     , State(..)
+    , ballHitBrick
     , getBrickHitByBall
     , hideBrickHitByBall
     , initialBricks
@@ -29,6 +30,8 @@ type State
 type alias Brick =
     { color : String
     , height : Float
+    , hitCount : Int
+    , hitThreshold : Int
     , id : Int
     , position : Vector
     , state : State
@@ -48,6 +51,8 @@ defaultBrick : Brick
 defaultBrick =
     { color = "white"
     , height = 16
+    , hitCount = 0
+    , hitThreshold = 1
     , id = 0
     , position = ( 0, 0 )
     , state = On
@@ -145,6 +150,7 @@ hideBrickHitByBall bricksHitByBall brick =
 viewBricks : Bricks -> Svg a
 viewBricks bricks =
     bricks
+        |> Dict.filter (\( _, _ ) brick -> brick.hitCount < brick.hitThreshold)
         |> Dict.map viewBrick
         |> Dict.values
         |> Svg.g []
