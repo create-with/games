@@ -1,0 +1,55 @@
+name: Test Phoenix
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+    
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        otp: [23.0.2]
+        elixir: [1.10.4]
+        node: [14.5.0]
+
+    services:
+      db:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: games_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Elixir
+      uses: actions/setup-elixir@v1
+      with:
+        otp-version: ${{ matrix.otp }}
+        elixir-version: ${{ matrix.elixir }}
+
+    - name: Set up Node
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node }}
+
+    - name: Install Dependencies
+      run: |
+        mix deps.get
+        npm install --prefix assets
+
+    - name: Run Tests
+      run: |
+        mix format --check-formatted
+        mix test
