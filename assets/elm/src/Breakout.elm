@@ -149,7 +149,7 @@ update msg model =
                     Breakout.Window.getWindowEdgeHitByBall model.ball model.window
             in
             ( { model
-                | ball = updateBall model.paddle model.ball paddleHitByBall windowEdgeHitByBall deltaTime
+                | ball = updateBall deltaTime paddleHitByBall windowEdgeHitByBall model.ball
                 , ballPath = updateBallPath model.ball model.ballPath windowEdgeHitByBall model
                 , bricks = updateBricks model.ball model.bricks
                 , deltaTimes = updateDeltaTimes model.showFps deltaTime model.deltaTimes
@@ -229,96 +229,115 @@ shakeWindow x y scale window =
     }
 
 
-updateBall : Paddle -> Ball -> Bool -> Maybe WindowEdge -> Time -> Ball
-updateBall paddle ball paddleHit maybeWindowEdge deltaTime =
+updateBall : Time -> Maybe Paddle -> Maybe WindowEdge -> Ball -> Ball
+updateBall deltaTime maybePaddle maybeWindowEdge ball =
+    ball
+        |> handlePaddleCollision maybePaddle
+        |> handleWindowCollision maybeWindowEdge
+        |> handleBallUpdate deltaTime
+
+
+handlePaddleCollision : Maybe Paddle -> Ball -> Ball
+handlePaddleCollision maybePaddle ball =
     let
-        ( x, y ) =
-            ball.position
-
-        ( vx, vy ) =
-            ball.velocity
-
         amountToChangeBallAngle =
             18.0
 
         amountToChangeBallSpeed =
             5.0
     in
-    case ( paddleHit, maybeWindowEdge ) of
-        ( True, _ ) ->
+    case maybePaddle of
+        Just paddle ->
             { ball
                 | velocity =
                     ( Breakout.Paddle.getPaddleHitByBallDistanceFromCenter amountToChangeBallAngle ball paddle
-                    , negate (vy + amountToChangeBallSpeed)
+                    , negate <| Util.Vector.getY ball.velocity + amountToChangeBallSpeed
                     )
             }
 
-        ( False, Just edge ) ->
-            case edge of
-                Breakout.Window.Bottom ->
+        Nothing ->
+            ball
+
+
+handleBallUpdate : Time -> Ball -> Ball
+handleBallUpdate deltaTime ball =
+    { ball
+        | position =
+            ball.velocity
+                |> Util.Vector.scale deltaTime
+                |> Util.Vector.add ball.position
+    }
+
+
+handleWindowCollision : Maybe WindowEdge -> Ball -> Ball
+handleWindowCollision maybeWindowEdge ball =
+    let
+        ( x, y ) =
+            ball.position
+
+        ( vx, vy ) =
+            ball.velocity
+    in
+    case maybeWindowEdge of
+        Just Breakout.Window.Bottom ->
+            { ball
+                | position = initialModel.ball.position
+                , velocity = ( 0, 0 )
+            }
+
+        Just Breakout.Window.Left ->
+            case compare 0 vy of
+                LT ->
                     { ball
-                        | position = initialModel.ball.position
-                        , velocity = ( 0, 0 )
+                        | position = ( x + ball.width / 2, y + ball.height / 2 )
+                        , velocity = ( negate vx, vy )
                     }
 
-                Breakout.Window.Left ->
-                    case compare 0 vy of
-                        LT ->
-                            { ball
-                                | position = ( x + ball.width / 2, y + ball.height / 2 )
-                                , velocity = ( negate vx, vy )
-                            }
+                GT ->
+                    { ball
+                        | position = ( x + ball.width / 2, y - ball.height / 2 )
+                        , velocity = ( negate vx, vy )
+                    }
 
-                        GT ->
-                            { ball
-                                | position = ( x + ball.width / 2, y - ball.height / 2 )
-                                , velocity = ( negate vx, vy )
-                            }
+                EQ ->
+                    ball
 
-                        EQ ->
-                            ball
+        Just Breakout.Window.Right ->
+            case compare 0 vy of
+                LT ->
+                    { ball
+                        | position = ( x - ball.width / 2, y )
+                        , velocity = ( negate vx, vy )
+                    }
 
-                Breakout.Window.Right ->
-                    case compare 0 vy of
-                        LT ->
-                            { ball
-                                | position = ( x - ball.width / 2, y )
-                                , velocity = ( negate vx, vy )
-                            }
+                GT ->
+                    { ball
+                        | position = ( x - ball.width / 2, y )
+                        , velocity = ( negate vx, vy )
+                    }
 
-                        GT ->
-                            { ball
-                                | position = ( x - ball.width / 2, y )
-                                , velocity = ( negate vx, vy )
-                            }
+                EQ ->
+                    ball
 
-                        EQ ->
-                            ball
+        Just Breakout.Window.Top ->
+            case compare 0 vx of
+                LT ->
+                    { ball
+                        | position = ( x + ball.width / 2, y + ball.height / 2 )
+                        , velocity = ( vx, negate vy )
+                    }
 
-                Breakout.Window.Top ->
-                    case compare 0 vx of
-                        LT ->
-                            { ball
-                                | position = ( x + ball.width / 2, y + ball.height / 2 )
-                                , velocity = ( vx, negate vy )
-                            }
+                GT ->
+                    { ball
+                        | position = ( x - ball.width / 2, y + ball.height / 2 )
+                        , velocity = ( vx, negate vy )
+                    }
 
-                        GT ->
-                            { ball
-                                | position = ( x - ball.width / 2, y + ball.height / 2 )
-                                , velocity = ( vx, negate vy )
-                            }
+                EQ ->
+                    ball
 
-                        EQ ->
-                            ball
-
-        ( _, Nothing ) ->
-            { ball
-                | position =
-                    ball.velocity
-                        |> Util.Vector.scale deltaTime
-                        |> Util.Vector.add ball.position
-            }
+        Nothing ->
+            ball
 
 
 updateBallPath : Ball -> BallPath -> Maybe WindowEdge -> Model -> BallPath

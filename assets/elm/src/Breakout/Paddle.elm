@@ -100,7 +100,7 @@ keepPaddleWithinWindow window paddle =
 -- COLLISIONS
 
 
-ballHitPaddle : Ball -> Paddle -> Bool
+ballHitPaddle : Ball -> Paddle -> Maybe Paddle
 ballHitPaddle ball paddle =
     let
         ( ballX, ballY ) =
@@ -111,26 +111,34 @@ ballHitPaddle ball paddle =
 
         ( paddleX, paddleY ) =
             paddle.position
+
+        ballCollidedWithPaddle =
+            (paddleY <= ballY + ball.height)
+                && (paddleX <= ballX && ballX <= paddleX + paddle.width)
+                && (ballVy > 0)
     in
-    (paddleY <= ballY + ball.height)
-        && (paddleX <= ballX && ballX <= paddleX + paddle.width)
-        && (ballVy > 0)
+    if ballCollidedWithPaddle then
+        Just paddle
+
+    else
+        Nothing
 
 
 getPaddleHitByBallDistanceFromCenter : Float -> Ball -> Paddle -> Float
 getPaddleHitByBallDistanceFromCenter scale ball paddle =
-    if ballHitPaddle ball paddle then
-        let
-            ballCenter =
-                Util.Vector.getX ball.position + ball.width / 2
+    case ballHitPaddle ball paddle of
+        Just paddle_ ->
+            let
+                ballCenter =
+                    Util.Vector.getX ball.position + ball.width / 2
 
-            paddleCenter =
-                Util.Vector.getX paddle.position + paddle.width / 2
-        in
-        (ballCenter - paddleCenter) * scale
+                paddleCenter =
+                    Util.Vector.getX paddle.position + paddle_.width / 2
+            in
+            (ballCenter - paddleCenter) * scale
 
-    else
-        0
+        Nothing ->
+            0
 
 
 
