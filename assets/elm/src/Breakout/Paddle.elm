@@ -2,6 +2,7 @@ module Breakout.Paddle exposing
     ( Direction(..)
     , Paddle
     , ballHitPaddle
+    , getPaddleHitByBallDistanceFromCenter
     , initialPaddle
     , keepPaddleWithinWindow
     , playerKeyPressToDirection
@@ -63,10 +64,6 @@ updateScore paddle =
     { paddle | score = paddle.score + 1 }
 
 
-
--- updatePaddle : Paddle -> Paddle
-
-
 updatePaddle : Maybe Direction -> Float -> Paddle -> Paddle
 updatePaddle maybeDirection deltaTime paddle =
     let
@@ -118,6 +115,22 @@ ballHitPaddle ball paddle =
     (paddleY <= ballY + ball.height)
         && (paddleX <= ballX && ballX <= paddleX + paddle.width)
         && (ballVy > 0)
+
+
+getPaddleHitByBallDistanceFromCenter : Float -> Ball -> Paddle -> Float
+getPaddleHitByBallDistanceFromCenter scale ball paddle =
+    if ballHitPaddle ball paddle then
+        let
+            ballCenter =
+                Util.Vector.getX ball.position + ball.width / 2
+
+            paddleCenter =
+                Util.Vector.getX paddle.position + paddle.width / 2
+        in
+        (ballCenter - paddleCenter) * scale
+
+    else
+        0
 
 
 

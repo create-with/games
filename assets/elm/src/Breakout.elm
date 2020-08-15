@@ -149,7 +149,7 @@ update msg model =
                     Breakout.Window.getWindowEdgeHitByBall model.ball model.window
             in
             ( { model
-                | ball = updateBall model.ball paddleHitByBall windowEdgeHitByBall deltaTime
+                | ball = updateBall model.paddle model.ball paddleHitByBall windowEdgeHitByBall deltaTime
                 , ballPath = updateBallPath model.ball model.ballPath windowEdgeHitByBall model
                 , bricks = updateBricks model.ball model.bricks
                 , deltaTimes = updateDeltaTimes model.showFps deltaTime model.deltaTimes
@@ -229,18 +229,29 @@ shakeWindow x y scale window =
     }
 
 
-updateBall : Ball -> Bool -> Maybe WindowEdge -> Time -> Ball
-updateBall ball paddleHit maybeWindowEdge deltaTime =
+updateBall : Paddle -> Ball -> Bool -> Maybe WindowEdge -> Time -> Ball
+updateBall paddle ball paddleHit maybeWindowEdge deltaTime =
     let
         ( x, y ) =
             ball.position
 
         ( vx, vy ) =
             ball.velocity
+
+        amountToChangeBallAngle =
+            18.0
+
+        amountToChangeBallSpeed =
+            5.0
     in
     case ( paddleHit, maybeWindowEdge ) of
         ( True, _ ) ->
-            { ball | velocity = ( vx, negate vy ) }
+            { ball
+                | velocity =
+                    ( Breakout.Paddle.getPaddleHitByBallDistanceFromCenter amountToChangeBallAngle ball paddle
+                    , negate (vy + amountToChangeBallSpeed)
+                    )
+            }
 
         ( False, Just edge ) ->
             case edge of
