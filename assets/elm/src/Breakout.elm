@@ -380,6 +380,7 @@ updateBallPath ball ballPath maybeWindowEdge { showBallPath } =
 updateBricks : Ball -> Bricks -> Bricks
 updateBricks ball bricks =
     bricks
+        |> Breakout.Brick.filterDestroyedBricks
         |> Dict.map (Breakout.Brick.incrementBrickHitCount ball)
 
 

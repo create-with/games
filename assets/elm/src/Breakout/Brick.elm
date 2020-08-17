@@ -1,8 +1,8 @@
 module Breakout.Brick exposing
     ( Brick
     , Bricks
-    , State(..)
     , ballHitBrick
+    , filterDestroyedBricks
     , getBrickHitByBall
     , incrementBrickHitCount
     , initialBricks
@@ -22,11 +22,6 @@ import Util.Vector exposing (Vector)
 -- MODEL
 
 
-type State
-    = On
-    | Off
-
-
 type alias Brick =
     { color : String
     , height : Float
@@ -34,7 +29,6 @@ type alias Brick =
     , hitThreshold : Int
     , id : Int
     , position : Vector
-    , state : State
     , width : Float
     }
 
@@ -52,10 +46,9 @@ defaultBrick =
     { color = "white"
     , height = 16
     , hitCount = 0
-    , hitThreshold = 2
+    , hitThreshold = 1
     , id = 0
     , position = ( 0, 0 )
-    , state = On
     , width = 80
     }
 
@@ -90,7 +83,7 @@ setRowColors color row =
 
 offsetFromTopOfScreen : Float
 offsetFromTopOfScreen =
-    80
+    80.0
 
 
 setRowPosition : Bricks -> Bricks
@@ -134,17 +127,22 @@ getBrickHitByBall ball bricks =
 
 
 brickHitCountPassedThreshold : ( Int, Int ) -> Brick -> Bool
-brickHitCountPassedThreshold ( _, _ ) brick =
+brickHitCountPassedThreshold _ brick =
     brick.hitCount < brick.hitThreshold
 
 
 incrementBrickHitCount : Ball -> ( Int, Int ) -> Brick -> Brick
-incrementBrickHitCount ball ( _, _ ) brick =
+incrementBrickHitCount ball _ brick =
     if ballHitBrick ball brick then
         { brick | hitCount = brick.hitCount + 1 }
 
     else
         brick
+
+
+filterDestroyedBricks : Bricks -> Bricks
+filterDestroyedBricks bricks =
+    Dict.filter brickHitCountPassedThreshold bricks
 
 
 
@@ -154,14 +152,13 @@ incrementBrickHitCount ball ( _, _ ) brick =
 viewBricks : Bricks -> Svg a
 viewBricks bricks =
     bricks
-        |> Dict.filter brickHitCountPassedThreshold
         |> Dict.map viewBrick
         |> Dict.values
         |> Svg.g []
 
 
 viewBrick : ( Int, Int ) -> Brick -> Svg a
-viewBrick ( _, _ ) brick =
+viewBrick _ brick =
     Svg.rect
         [ Svg.Attributes.class "bounce-in-down"
         , Svg.Attributes.fill <| brick.color
