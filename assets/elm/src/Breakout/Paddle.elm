@@ -15,6 +15,7 @@ module Breakout.Paddle exposing
 -- IMPORTS
 
 import Breakout.Ball exposing (Ball)
+import Breakout.Brick exposing (Brick)
 import Breakout.Window exposing (Window)
 import Set exposing (Set)
 import Svg exposing (Svg)
@@ -59,9 +60,14 @@ initialPaddle =
 -- UPDATE
 
 
-updateScore : Paddle -> Paddle
-updateScore paddle =
-    { paddle | score = paddle.score + 1 }
+updateScore : Maybe Brick -> Paddle -> Paddle
+updateScore maybeBrick paddle =
+    case maybeBrick of
+        Just _ ->
+            { paddle | score = paddle.score + 100 }
+
+        Nothing ->
+            paddle
 
 
 updatePaddle : Maybe Direction -> Float -> Paddle -> Paddle

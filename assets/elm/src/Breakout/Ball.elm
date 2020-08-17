@@ -45,7 +45,7 @@ type ShowBallPath
 initialBall : Ball
 initialBall =
     { position = ( 250.0, 250.0 )
-    , velocity = ( 380.0, 380.0 )
+    , velocity = ( 400.0, 400.0 )
     , width = 16.0
     , height = 16.0
     }

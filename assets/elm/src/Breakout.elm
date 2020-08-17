@@ -154,9 +154,14 @@ update msg model =
                 , deltaTimes = updateDeltaTimes model.showFps deltaTime model.deltaTimes
                 , gameState = updateGameState model.gameState model
                 , lives = updateLives model.lives windowEdgeHitByBall
-                , paddle = updatePaddle model.paddle paddleDirection model.window deltaTime
+                , paddle = updatePaddle model.paddle paddleDirection brickHitByBall model.window deltaTime
               }
-            , Cmd.none
+            , case brickHitByBall of
+                Just _ ->
+                    Cmd.batch [ generateRandomWindowShake, Process.sleep 0 |> Task.perform (\_ -> Particles) ]
+
+                Nothing ->
+                    Cmd.none
             )
 
         CollisionGeneratedRandomWindowShakePositions ( randomX, randomY ) ->
@@ -171,7 +176,7 @@ update msg model =
                 ( x, y ) =
                     model.ball.position
             in
-            ( { model | particleSystem = Particle.System.burst (Random.list 25 (particleAt x y)) model.particleSystem }
+            ( { model | particleSystem = Particle.System.burst (Random.list 12 (particleAt x y)) model.particleSystem }
             , Cmd.none
             )
 
@@ -240,7 +245,8 @@ updateBall deltaTime maybeBrick maybePaddle maybeWindowEdge ball =
 handleBrickCollision : Maybe Brick -> Ball -> Ball
 handleBrickCollision maybeBrick ball =
     case maybeBrick of
-        Just brick ->
+        Just _ ->
+            -- NAIVE VELOCITY CHANGE
             { ball
                 | velocity =
                     ( Util.Vector.getX ball.velocity
@@ -425,11 +431,12 @@ updateLives lives maybeWindowEdge =
             lives
 
 
-updatePaddle : Paddle -> Maybe Direction -> Window -> Time -> Paddle
-updatePaddle paddle maybeDirection window deltaTime =
+updatePaddle : Paddle -> Maybe Direction -> Maybe Brick -> Window -> Time -> Paddle
+updatePaddle paddle maybeDirection maybeBrick window deltaTime =
     paddle
         |> Breakout.Paddle.updatePaddle maybeDirection deltaTime
         |> Breakout.Paddle.keepPaddleWithinWindow window
+        |> Breakout.Paddle.updateScore maybeBrick
 
 
 

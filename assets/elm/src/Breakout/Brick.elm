@@ -27,8 +27,8 @@ type alias Brick =
     , height : Float
     , hitCount : Int
     , hitThreshold : Int
-    , id : Int
     , position : Vector
+    , strokeColor : String
     , width : Float
     }
 
@@ -47,27 +47,28 @@ defaultBrick =
     , height = 16
     , hitCount = 0
     , hitThreshold = 1
-    , id = 0
     , position = ( 0, 0 )
+    , strokeColor = "black"
     , width = 80
     }
 
 
 initialBricks : Bricks
 initialBricks =
-    buildRow 1 "#f56565"
-        |> Dict.union (buildRow 2 "#ed8936")
-        |> Dict.union (buildRow 3 "#ecc94b")
-        |> Dict.union (buildRow 4 "#48bb78")
-        |> Dict.union (buildRow 5 "#4299e1")
-        |> Dict.union (buildRow 6 "#667eea")
+    buildRow 1 "#f56565" "white"
+        |> Dict.union (buildRow 2 "#ed8936" "black")
+        |> Dict.union (buildRow 3 "#ecc94b" "black")
+        |> Dict.union (buildRow 4 "#48bb78" "black")
+        |> Dict.union (buildRow 5 "#4299e1" "black")
+        |> Dict.union (buildRow 6 "#667eea" "black")
+        |> setHardRow 1
 
 
-buildRow : Int -> String -> Bricks
-buildRow rowNumber color =
+buildRow : Int -> String -> String -> Bricks
+buildRow rowNumber color strokeColor =
     List.range 1 10
         |> List.foldr (insertBrick rowNumber) Dict.empty
-        |> setRowColors color
+        |> setRowColors color strokeColor
         |> setRowPosition
 
 
@@ -76,14 +77,9 @@ insertBrick rowNumber columnNumber =
     Dict.insert ( rowNumber, columnNumber ) defaultBrick
 
 
-setRowColors : String -> Bricks -> Bricks
-setRowColors color row =
-    Dict.map (\_ brick -> { brick | color = color }) row
-
-
-offsetFromTopOfScreen : Float
-offsetFromTopOfScreen =
-    80.0
+setRowColors : String -> String -> Bricks -> Bricks
+setRowColors color strokeColor row =
+    Dict.map (\_ brick -> { brick | color = color, strokeColor = strokeColor }) row
 
 
 setRowPosition : Bricks -> Bricks
@@ -93,12 +89,44 @@ setRowPosition row =
 
 setBrickPosition : ( Int, Int ) -> Brick -> Brick
 setBrickPosition ( rowNumber, columnNumber ) brick =
+    let
+        rowHeight =
+            toFloat rowNumber * brick.height
+
+        paddingForStroke =
+            case rowNumber of
+                1 ->
+                    0
+
+                _ ->
+                    2
+
+        offsetHorizontalColumn =
+            toFloat (columnNumber - 1)
+
+        paddingFromTopOfWindow =
+            toFloat 80
+    in
     { brick
         | position =
-            ( toFloat (columnNumber - 1) * brick.width
-            , offsetFromTopOfScreen + toFloat rowNumber * brick.height
+            ( offsetHorizontalColumn * brick.width
+            , paddingFromTopOfWindow + rowHeight + paddingForStroke
             )
     }
+
+
+setHardRow : Int -> Bricks -> Bricks
+setHardRow rowNumber bricks =
+    Dict.map (setHardBrick rowNumber) bricks
+
+
+setHardBrick : Int -> ( Int, Int ) -> Brick -> Brick
+setHardBrick targetRowNumber ( rowNumber, _ ) brick =
+    if targetRowNumber == rowNumber then
+        { brick | hitThreshold = 2 }
+
+    else
+        brick
 
 
 
@@ -120,6 +148,7 @@ ballHitBrick ball brick =
 
 getBrickHitByBall : Ball -> Bricks -> Maybe Brick
 getBrickHitByBall ball bricks =
+    -- REFACTOR
     bricks
         |> Dict.filter (\_ brick -> ballHitBrick ball brick)
         |> Dict.values
@@ -167,8 +196,13 @@ viewBrick _ brick =
         , Svg.Attributes.y <| String.fromFloat <| Util.Vector.getY brick.position
         , Svg.Attributes.width <| String.fromFloat brick.width
         , Svg.Attributes.height <| String.fromFloat brick.height
-        , Svg.Attributes.stroke "black"
-        , Svg.Attributes.strokeWidth "1"
-        , Svg.Attributes.strokeOpacity "1"
+        , Svg.Attributes.stroke <| brick.strokeColor
+        , Svg.Attributes.strokeWidth "2"
+        , Svg.Attributes.strokeOpacity <| String.fromFloat <| brickStrokeOpacity brick
         ]
         []
+
+
+brickStrokeOpacity : Brick -> Float
+brickStrokeOpacity brick =
+    toFloat (brick.hitThreshold - brick.hitCount) / toFloat brick.hitThreshold
