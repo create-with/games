@@ -135,9 +135,8 @@ update msg model =
     case msg of
         BrowserAdvancedAnimationFrame deltaTime ->
             let
-                currentBrick =
-                    model.bricks
-                        |> Dict.get ( 1, 1 )
+                brickHitByBall =
+                    Breakout.Brick.getBrickHitByBall model.ball model.bricks
 
                 paddleDirection =
                     Breakout.Paddle.playerKeyPressToDirection model.playerKeyPress
@@ -149,7 +148,7 @@ update msg model =
                     Breakout.Window.getWindowEdgeHitByBall model.ball model.window
             in
             ( { model
-                | ball = updateBall deltaTime paddleHitByBall windowEdgeHitByBall model.ball
+                | ball = updateBall deltaTime brickHitByBall paddleHitByBall windowEdgeHitByBall model.ball
                 , ballPath = updateBallPath model.ball model.ballPath windowEdgeHitByBall model
                 , bricks = updateBricks model.ball model.bricks
                 , deltaTimes = updateDeltaTimes model.showFps deltaTime model.deltaTimes
@@ -229,12 +228,28 @@ shakeWindow x y scale window =
     }
 
 
-updateBall : Time -> Maybe Paddle -> Maybe WindowEdge -> Ball -> Ball
-updateBall deltaTime maybePaddle maybeWindowEdge ball =
+updateBall : Time -> Maybe Brick -> Maybe Paddle -> Maybe WindowEdge -> Ball -> Ball
+updateBall deltaTime maybeBrick maybePaddle maybeWindowEdge ball =
     ball
+        |> handleBrickCollision maybeBrick
         |> handlePaddleCollision maybePaddle
         |> handleWindowCollision maybeWindowEdge
         |> handleBallUpdate deltaTime
+
+
+handleBrickCollision : Maybe Brick -> Ball -> Ball
+handleBrickCollision maybeBrick ball =
+    case maybeBrick of
+        Just brick ->
+            { ball
+                | velocity =
+                    ( Util.Vector.getX ball.velocity
+                    , negate <| Util.Vector.getY ball.velocity
+                    )
+            }
+
+        Nothing ->
+            ball
 
 
 handlePaddleCollision : Maybe Paddle -> Ball -> Ball
@@ -365,14 +380,7 @@ updateBallPath ball ballPath maybeWindowEdge { showBallPath } =
 updateBricks : Ball -> Bricks -> Bricks
 updateBricks ball bricks =
     bricks
-        |> Dict.map
-            (\( _, _ ) brick ->
-                if Breakout.Brick.ballHitBrick ball brick then
-                    { brick | hitCount = brick.hitCount + 1 }
-
-                else
-                    brick
-            )
+        |> Dict.map (Breakout.Brick.incrementBrickHitCount ball)
 
 
 updateDeltaTimes : ShowFps -> Time -> List Time -> List Time

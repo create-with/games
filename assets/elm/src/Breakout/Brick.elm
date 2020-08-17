@@ -4,7 +4,7 @@ module Breakout.Brick exposing
     , State(..)
     , ballHitBrick
     , getBrickHitByBall
-    , hideBrickHitByBall
+    , incrementBrickHitCount
     , initialBricks
     , viewBricks
     )
@@ -52,7 +52,7 @@ defaultBrick =
     { color = "white"
     , height = 16
     , hitCount = 0
-    , hitThreshold = 1
+    , hitThreshold = 2
     , id = 0
     , position = ( 0, 0 )
     , state = On
@@ -125,19 +125,23 @@ ballHitBrick ball brick =
         && (brickY <= ballY && ballY <= brickY + brick.height)
 
 
-getBrickHitByBall : Ball -> Brick -> Maybe Brick
-getBrickHitByBall ball brick =
+getBrickHitByBall : Ball -> Bricks -> Maybe Brick
+getBrickHitByBall ball bricks =
+    bricks
+        |> Dict.filter (\_ brick -> ballHitBrick ball brick)
+        |> Dict.values
+        |> List.head
+
+
+brickHitCountPassedThreshold : ( Int, Int ) -> Brick -> Bool
+brickHitCountPassedThreshold ( _, _ ) brick =
+    brick.hitCount < brick.hitThreshold
+
+
+incrementBrickHitCount : Ball -> ( Int, Int ) -> Brick -> Brick
+incrementBrickHitCount ball ( _, _ ) brick =
     if ballHitBrick ball brick then
-        Just brick
-
-    else
-        Nothing
-
-
-hideBrickHitByBall : List Brick -> Brick -> Brick
-hideBrickHitByBall bricksHitByBall brick =
-    if List.member brick bricksHitByBall then
-        { brick | state = Off }
+        { brick | hitCount = brick.hitCount + 1 }
 
     else
         brick
@@ -150,7 +154,7 @@ hideBrickHitByBall bricksHitByBall brick =
 viewBricks : Bricks -> Svg a
 viewBricks bricks =
     bricks
-        |> Dict.filter (\( _, _ ) brick -> brick.hitCount < brick.hitThreshold)
+        |> Dict.filter brickHitCountPassedThreshold
         |> Dict.map viewBrick
         |> Dict.values
         |> Svg.g []
