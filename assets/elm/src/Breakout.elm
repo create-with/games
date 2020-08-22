@@ -73,7 +73,6 @@ type alias Model =
     , currentBrick : Maybe Brick
     , deltaTimes : List Time
     , gameState : GameState
-    , lives : Int
     , paddle : Paddle
     , particleSystem : System Confetti
     , playerKeyPress : Controls
@@ -96,7 +95,6 @@ initialModel =
     , currentBrick = Nothing
     , deltaTimes = Util.Fps.initialDeltaTimes
     , gameState = StartingScreen
-    , lives = 3
     , paddle = Breakout.Paddle.initialPaddle
     , particleSystem = Particle.System.init (Random.initialSeed 0)
     , playerKeyPress = Util.Keyboard.initialKeys
@@ -158,8 +156,7 @@ update msg model =
                 , bricks = updateBricks model.ball model.bricks
                 , deltaTimes = updateDeltaTimes model.showFps deltaTime model.deltaTimes
                 , gameState = updateGameState model.gameState model
-                , lives = updateLives model.lives windowEdgeHitByBall
-                , paddle = updatePaddle model.paddle paddleDirection brickHitByBall model.window deltaTime
+                , paddle = updatePaddle paddleDirection brickHitByBall windowEdgeHitByBall model.window deltaTime model.paddle
               }
             , case brickHitByBall of
                 Just _ ->
@@ -416,7 +413,7 @@ updateDeltaTimes showFps deltaTime deltaTimes =
 
 updateGameState : GameState -> Model -> GameState
 updateGameState gameState model =
-    if gameState == PlayingScreen && model.lives == 0 then
+    if (gameState == PlayingScreen && model.paddle.lives == 0) || Dict.isEmpty model.bricks then
         EndingScreen
 
     else
@@ -432,25 +429,13 @@ updateKeyPress key model =
         model
 
 
-updateLives : Int -> Maybe WindowEdge -> Int
-updateLives lives maybeWindowEdge =
-    case maybeWindowEdge of
-        Just Breakout.Window.Bottom ->
-            clamp 0 lives <| lives - 1
-
-        Just _ ->
-            lives
-
-        Nothing ->
-            lives
-
-
-updatePaddle : Paddle -> Maybe Direction -> Maybe Brick -> Window -> Time -> Paddle
-updatePaddle paddle maybeDirection maybeBrick window deltaTime =
+updatePaddle : Maybe Direction -> Maybe Brick -> Maybe WindowEdge -> Window -> Time -> Paddle -> Paddle
+updatePaddle maybeDirection maybeBrick maybeWindowEdge window deltaTime paddle =
     paddle
         |> Breakout.Paddle.updatePaddle maybeDirection deltaTime
         |> Breakout.Paddle.keepPaddleWithinWindow window
         |> Breakout.Paddle.updateScore maybeBrick
+        |> Breakout.Paddle.updateLives maybeWindowEdge
 
 
 
@@ -665,31 +650,6 @@ viewGame model =
         ]
 
 
-viewLives : Int -> Svg msg
-viewLives lives =
-    let
-        ( width, height ) =
-            ( 60, 10 )
-
-        offset =
-            44
-    in
-    (lives - 1)
-        |> List.range 0
-        |> List.map
-            (\index ->
-                Svg.image
-                    [ Svg.Attributes.xlinkHref "/images/pixel-paddle.png"
-                    , Svg.Attributes.x <| String.fromInt <| index * offset
-                    , Svg.Attributes.y <| String.fromFloat <| Breakout.Window.initialWindow.height - 20
-                    , Svg.Attributes.width <| String.fromInt width
-                    , Svg.Attributes.height <| String.fromInt height
-                    ]
-                    []
-            )
-        |> Svg.g []
-
-
 viewSvg : Window -> Model -> Svg Msg
 viewSvg window model =
     let
@@ -712,7 +672,7 @@ viewSvg window model =
         , Breakout.Brick.viewBricks model.bricks
         , Breakout.Paddle.viewPaddle model.paddle
         , Breakout.Paddle.viewPaddleScore model.paddle.score
-        , viewLives model.lives
+        , Breakout.Paddle.viewLives model.paddle.lives
         , Breakout.Ball.viewBall model.ball
         , Breakout.Ball.viewBallPath model.ballPath |> Svg.g []
         , Particle.System.view viewParticles [] model.particleSystem
