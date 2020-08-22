@@ -572,7 +572,7 @@ particleSystemSubscription particleSystem =
 view : (Msg -> msg) -> Model -> Document msg
 view msg model =
     { title = "\u{1F6F8} Breakout"
-    , body = List.map (Html.map msg) [ viewMain model ]
+    , body = List.map (Html.map msg) [ viewMain model, Util.View.footer ]
     }
 
 
