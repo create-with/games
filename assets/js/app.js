@@ -17,7 +17,7 @@ import { Socket } from "phoenix"
 import NProgress from "nprogress"
 import { LiveSocket } from "phoenix_live_view"
 import { Elm } from "../elm/src/Main.elm"
-import { Howl } from "howler"
+import { Howl, Howler } from "howler"
 
 let hooks = {}
 
@@ -40,16 +40,27 @@ hooks.elm = {
     });
 
     app.ports.playMusic.subscribe(data => {
-      const soundPath = "/sounds/" + data;
+      // data example: { play: true, soundFile: "music.wav" }
+
+      const soundPath = "/sounds/" + data.soundFile;
       const sound = new Howl({
         src: [soundPath],
         loop: true,
-        volume: 0.35
+        volume: 0.15
       });
 
-      const soundId = sound.play();
-      sound.rate(0.95, soundId);
-      sound.fade(0, 1, 2000, soundId);
+      const startPlaying = () => {
+        const soundId = sound.play();
+        sound.rate(0.95, soundId);
+        sound.fade(0, 1, 2000, soundId);
+      }
+
+      const stopPlaying = () => {
+        Howler.stop()
+      }
+
+      if (data.play) { startPlaying() }
+      if (!data.play) { stopPlaying() }
     });
 
     // Prevent Default Keyboard Behavior

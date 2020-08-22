@@ -34,6 +34,7 @@ import Task
 import Util.Fps exposing (ShowFps, Time)
 import Util.Keyboard exposing (Controls)
 import Util.Ports
+import Util.Sound exposing (PlayMusic)
 import Util.Vector
 import Util.View
 
@@ -76,6 +77,7 @@ type alias Model =
     , paddle : Paddle
     , particleSystem : System Confetti
     , playerKeyPress : Controls
+    , playMusic : PlayMusic
     , showBallPath : ShowBallPath
     , showFps : ShowFps
     , window : Window
@@ -98,6 +100,7 @@ initialModel =
     , paddle = Breakout.Paddle.initialPaddle
     , particleSystem = Particle.System.init (Random.initialSeed 0)
     , playerKeyPress = Util.Keyboard.initialKeys
+    , playMusic = Util.Sound.initialPlayMusic
     , showBallPath = Breakout.Ball.initialShowBallPath
     , showFps = Util.Fps.initialShowFps
     , window = Breakout.Window.initialWindow
@@ -106,7 +109,7 @@ initialModel =
 
 initialCommand : Cmd Msg
 initialCommand =
-    playMusicCommand "music.wav"
+    playMusicCommand Util.Sound.initialPlayMusic "music.wav"
 
 
 init : () -> ( Model, Cmd Msg )
@@ -123,6 +126,7 @@ type Msg
     | CollisionGeneratedRandomWindowShakePositions ( Float, Float )
     | Particles
     | ParticleMsg (Particle.System.Msg Confetti)
+    | PlayerClickedPlayMusicRadioButton PlayMusic
     | PlayerClickedShowBallPathRadioButton ShowBallPath
     | PlayerClickedShowFpsRadioButton ShowFps
     | PlayerClickedWindow
@@ -185,6 +189,9 @@ update msg model =
             ( { model | particleSystem = Particle.System.update particleMsg model.particleSystem }
             , Cmd.none
             )
+
+        PlayerClickedPlayMusicRadioButton playMusicValue ->
+            ( { model | playMusic = playMusicValue }, playMusicCommand playMusicValue "music.wav" )
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             ( { model | showBallPath = showBallPathValue }, Cmd.none )
@@ -510,9 +517,13 @@ particleAt x y =
             )
 
 
-playMusicCommand : String -> Cmd Msg
-playMusicCommand soundFile =
-    Util.Ports.playMusic <| Json.Encode.string soundFile
+playMusicCommand : PlayMusic -> String -> Cmd Msg
+playMusicCommand playMusic soundFile =
+    Util.Ports.playMusic <|
+        Json.Encode.object
+            [ ( "play", Json.Encode.bool <| Util.Sound.playMusicToBool playMusic )
+            , ( "soundFile", Json.Encode.string soundFile )
+            ]
 
 
 
@@ -719,7 +730,7 @@ viewInformation model =
         [ viewEndingScreen model.gameState model.bricks
         , viewPauseScreen model.gameState
         , viewInstructions
-        , viewOptions model.showBallPath model.showFps
+        , viewOptions model.showBallPath model.showFps model.playMusic
         ]
 
 
@@ -786,35 +797,46 @@ viewInstructions =
 -- OPTIONS
 
 
-viewOptions : ShowBallPath -> ShowFps -> Html Msg
-viewOptions showBallPath_ showFps =
+viewOptions : ShowBallPath -> ShowFps -> PlayMusic -> Html Msg
+viewOptions showBallPath showFps playMusic =
     Html.div [ Html.Attributes.class "pt-4" ]
         [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-center text-xl" ]
             [ Html.text "Options" ]
         , Html.form [ Html.Attributes.class "flex justify-center" ]
             [ Html.ul [ Html.Attributes.class "leading-relaxed list-disc list-inside mx-3" ]
-                [ Html.li [] [ viewShowBallPathOptions showBallPath_ ]
+                [ Html.li [] [ viewShowBallPathOptions showBallPath ]
                 , Html.li [] [ viewShowFpsOptions showFps ]
+                , Html.li [] [ viewPlayMusicOptions playMusic ]
                 ]
             ]
         ]
 
 
 viewShowBallPathOptions : ShowBallPath -> Html Msg
-viewShowBallPathOptions showBallPath_ =
+viewShowBallPathOptions showBallPath =
     Html.fieldset [ Html.Attributes.class "inline" ]
         [ Html.span [ Html.Attributes.class "mr-3" ]
             [ Html.text "Show ball path history:" ]
-        , Util.View.radioButton Breakout.Ball.Off showBallPath_ Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
-        , Util.View.radioButton Breakout.Ball.On showBallPath_ Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
+        , Util.View.radioButton Breakout.Ball.Off showBallPath Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
+        , Util.View.radioButton Breakout.Ball.On showBallPath Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
         ]
 
 
 viewShowFpsOptions : ShowFps -> Html Msg
-viewShowFpsOptions showFps_ =
+viewShowFpsOptions showFps =
     Html.fieldset [ Html.Attributes.class "inline" ]
         [ Html.span [ Html.Attributes.class "mr-3" ]
             [ Html.text "Show FPS meter:" ]
-        , Util.View.radioButton Util.Fps.Off showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
-        , Util.View.radioButton Util.Fps.On showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        , Util.View.radioButton Util.Fps.Off showFps Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        , Util.View.radioButton Util.Fps.On showFps Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        ]
+
+
+viewPlayMusicOptions : PlayMusic -> Html Msg
+viewPlayMusicOptions playMusic =
+    Html.fieldset [ Html.Attributes.class "inline" ]
+        [ Html.span [ Html.Attributes.class "mr-3" ]
+            [ Html.text "Play Music:" ]
+        , Util.View.radioButton Util.Sound.Off playMusic Util.Sound.playMusicToString PlayerClickedPlayMusicRadioButton
+        , Util.View.radioButton Util.Sound.On playMusic Util.Sound.playMusicToString PlayerClickedPlayMusicRadioButton
         ]
