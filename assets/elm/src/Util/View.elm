@@ -8,6 +8,7 @@ module Util.View exposing
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import Svg exposing (Svg)
 import Util.Icon
 
 
@@ -19,21 +20,24 @@ footer : Html a
 footer =
     Html.footer [ Html.Attributes.class "bg-black font-semibold px-24 py-12 text-sm text-white w-full" ]
         [ Html.ul [ Html.Attributes.class "flex justify-evenly" ]
-            [ Html.a
-                [ Html.Attributes.class ""
-                , Html.Attributes.href "https://github.com/create-with/games"
-                , Html.Attributes.target "_blank"
-                ]
-                [ Html.li [ Html.Attributes.class "flex" ]
-                    [ Html.span [ Html.Attributes.class "self-center" ]
-                        [ Util.Icon.github ]
-                    , Html.span [ Html.Attributes.class "self-center" ]
-                        [ Html.text "GitHub" ]
-                    ]
-                ]
-            , Html.li [ Html.Attributes.class "" ] [ Html.text "Blog Posts" ]
-            , Html.li [ Html.Attributes.class "" ] [ Html.text "Credits" ]
-            , Html.li [ Html.Attributes.class "" ] [ Html.text "Follow" ]
+            [ footerItem "Home" "/" Util.Icon.home "pink"
+            , footerItem "GitHub" "https://github.com/create-with/games" Util.Icon.github "purple"
+            , footerItem "Twitter" "https://twitter.com/bijanbwb" Util.Icon.twitter "blue"
+            , footerItem "Blog Posts" "https://dev.to/bijanbwb/" Util.Icon.dev "yellow"
+            , footerItem "Credits" "https://github.com/create-with/games/blob/master/CREDITS.md" Util.Icon.thumbsUp "teal"
+            ]
+        ]
+
+
+footerItem : String -> String -> Svg a -> String -> Html a
+footerItem title url icon color =
+    Html.a
+        [ Html.Attributes.href url
+        , Html.Attributes.target "_blank"
+        ]
+        [ Html.li [ Html.Attributes.class <| "flex hover:text-" ++ color ++ "-300 self-center" ]
+            [ Html.span [ Html.Attributes.class "self-center" ] [ icon ]
+            , Html.span [ Html.Attributes.class "self-center" ] [ Html.text title ]
             ]
         ]
 
