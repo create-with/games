@@ -152,7 +152,7 @@ update msg model =
             in
             ( { model
                 | ball = updateBall deltaTime brickHitByBall paddleHitByBall windowEdgeHitByBall model.ball
-                , ballPath = updateBallPath model.ball model.ballPath windowEdgeHitByBall model
+                , ballPath = updateBallPath model.showBallPath windowEdgeHitByBall model.ball model.ballPath
                 , bricks = updateBricks model.ball model.bricks
                 , deltaTimes = updateDeltaTimes model.showFps deltaTime model.deltaTimes
                 , gameState = updateGameState model.gameState model
@@ -372,8 +372,8 @@ handleWindowCollision maybeWindowEdge ball =
             ball
 
 
-updateBallPath : Ball -> BallPath -> Maybe WindowEdge -> Model -> BallPath
-updateBallPath ball ballPath maybeWindowEdge { showBallPath } =
+updateBallPath : ShowBallPath -> Maybe WindowEdge -> Ball -> BallPath -> BallPath
+updateBallPath showBallPath maybeWindowEdge ball ballPath =
     case showBallPath of
         Breakout.Ball.Off ->
             []
@@ -720,7 +720,7 @@ viewEndingScreen gameState bricks =
             Html.div [ Html.Attributes.class "pt-4 text-center" ]
                 [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
                     [ if Dict.isEmpty bricks then
-                        Html.text "Alas, you've won!"
+                        Html.text "🎉 Congrats ! You beat the game!"
 
                       else
                         Html.text "Game Over!"

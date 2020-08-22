@@ -55,7 +55,7 @@ initialPaddle =
     , lives = 3
     , position = ( 380.0, 550.0 )
     , score = 0
-    , vx = 600.0
+    , vx = 700.0
     , width = 80.0
     }
 
