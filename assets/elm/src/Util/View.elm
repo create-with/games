@@ -18,7 +18,7 @@ import Util.Icon
 
 footer : Html a
 footer =
-    Html.footer [ Html.Attributes.class "bg-black font-semibold px-24 py-12 text-sm text-white w-full" ]
+    Html.footer [ Html.Attributes.class "bg-black bottom-0 font-semibold px-24 py-12 relative text-sm text-white w-full" ]
         [ Html.ul [ Html.Attributes.class "flex justify-evenly" ]
             [ footerItem "Home" "/" Util.Icon.home "pink"
             , footerItem "GitHub" "https://github.com/create-with/games" Util.Icon.github "purple"
