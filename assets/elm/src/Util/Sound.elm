@@ -3,7 +3,15 @@ module Util.Sound exposing
     , initialPlayMusic
     , playMusicToBool
     , playMusicToString
+    , stopMusic
     )
+
+-- IMPORTS
+
+import Json.Encode
+import Util.Ports
+
+
 
 -- MODEL
 
@@ -44,3 +52,8 @@ playMusicToString playMusic =
 
         Off ->
             "Off"
+
+
+stopMusic : Cmd a
+stopMusic =
+    Util.Ports.playMusic <| Json.Encode.object [ ( "play", Json.Encode.bool False ) ]
