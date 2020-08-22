@@ -45,6 +45,7 @@ import Util.View
 type GameState
     = StartingScreen
     | PlayingScreen
+    | PauseScreen
     | EndingScreen
 
 
@@ -208,8 +209,14 @@ update msg model =
                             in
                             ( { model | ball = setBallInMotion model.ball }, Cmd.none )
 
+                        PauseScreen ->
+                            ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
+
                         EndingScreen ->
                             ( initialModel, Cmd.none )
+
+                "Escape" ->
+                    ( { model | gameState = updateGameState PauseScreen model }, Cmd.none )
 
                 _ ->
                     ( updateKeyPress key model, Cmd.none )
@@ -531,6 +538,9 @@ browserAnimationSubscription gameState =
         PlayingScreen ->
             Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
 
+        PauseScreen ->
+            Sub.none
+
         EndingScreen ->
             Sub.none
 
@@ -707,9 +717,25 @@ viewInformation : Model -> Html Msg
 viewInformation model =
     Html.section []
         [ viewEndingScreen model.gameState model.bricks
+        , viewPauseScreen model.gameState
         , viewInstructions
         , viewOptions model.showBallPath model.showFps
         ]
+
+
+viewPauseScreen : GameState -> Html msg
+viewPauseScreen gameState =
+    case gameState of
+        PauseScreen ->
+            Html.div [ Html.Attributes.class "pt-4 text-center" ]
+                [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
+                    [ Html.text "Game Paused" ]
+                , Html.p []
+                    [ Html.text "⏯ Press the SPACEBAR key to continue the game." ]
+                ]
+
+        _ ->
+            Html.span [] []
 
 
 
@@ -719,12 +745,6 @@ viewInformation model =
 viewEndingScreen : GameState -> Bricks -> Html msg
 viewEndingScreen gameState bricks =
     case gameState of
-        StartingScreen ->
-            Html.span [] []
-
-        PlayingScreen ->
-            Html.span [] []
-
         EndingScreen ->
             Html.div [ Html.Attributes.class "pt-4 text-center" ]
                 [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
@@ -735,8 +755,11 @@ viewEndingScreen gameState bricks =
                         Html.text "Game Over!"
                     ]
                 , Html.p []
-                    [ Html.text "🆕 Press the SPACEBAR key to reset the game." ]
+                    [ Html.text "🔁 Press the SPACEBAR key to reset the game." ]
                 ]
+
+        _ ->
+            Html.span [] []
 
 
 
@@ -751,7 +774,8 @@ viewInstructions =
         , Html.div [ Html.Attributes.class "flex justify-center" ]
             [ Html.ul [ Html.Attributes.class "leading-relaxed list-disc list-inside mx-3" ]
                 [ Html.li [] [ Html.text "\u{1F6F8} Press the SPACEBAR key to serve the ball." ]
-                , Html.li [] [ Html.text "⌨️ Use the arrow keys to move the left paddle." ]
+                , Html.li [] [ Html.text "⌨️ Use the arrow keys to move the paddle." ]
+                , Html.li [] [ Html.text "⏸ Press the ESCAPE key if you need to pause the game." ]
                 , Html.li [] [ Html.text "🏆 Break all the bricks to win!" ]
                 ]
             ]
