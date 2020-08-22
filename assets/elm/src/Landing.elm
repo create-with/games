@@ -5,6 +5,7 @@ module Landing exposing (view)
 import Browser
 import Html exposing (Html)
 import Html.Attributes
+import Util.View
 
 
 
@@ -42,17 +43,21 @@ view : Browser.Document msg
 view =
     { title = "🕹 Games"
     , body =
-        [ Html.main_ [ Html.Attributes.class "p-12" ]
-            [ viewGames allGames ]
+        [ Html.main_ [ Html.Attributes.class "flex flex-col min-h-screen" ]
+            [ viewGames allGames
+            , Util.View.footer
+            ]
         ]
     }
 
 
 viewGames : List Game -> Html msg
 viewGames games =
-    games
-        |> List.map viewGame
-        |> Html.ul []
+    Html.section [ Html.Attributes.class "flex-grow" ]
+        [ games
+            |> List.map viewGame
+            |> Html.ul [ Html.Attributes.class "px-16 py-8" ]
+        ]
 
 
 viewGame : Game -> Html msg

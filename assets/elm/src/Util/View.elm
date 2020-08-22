@@ -23,7 +23,7 @@ footer =
             [ footerItem "Home" "/" Util.Icon.home "pink"
             , footerItem "GitHub" "https://github.com/create-with/games" Util.Icon.github "purple"
             , footerItem "Twitter" "https://twitter.com/bijanbwb" Util.Icon.twitter "blue"
-            , footerItem "Blog Posts" "https://dev.to/bijanbwb/" Util.Icon.dev "yellow"
+            , footerItem "Articles" "https://dev.to/bijanbwb/" Util.Icon.dev "yellow"
             , footerItem "Credits" "https://github.com/create-with/games/blob/master/CREDITS.md" Util.Icon.thumbsUp "teal"
             ]
         ]
@@ -33,7 +33,11 @@ footerItem : String -> String -> Svg a -> String -> Html a
 footerItem title url icon color =
     Html.a
         [ Html.Attributes.href url
-        , Html.Attributes.target "_blank"
+        , if title /= "Home" then
+            Html.Attributes.target "_blank"
+
+          else
+            Html.Attributes.target "_self"
         ]
         [ Html.li [ Html.Attributes.class <| "flex hover:text-" ++ color ++ "-300 self-center" ]
             [ Html.span [ Html.Attributes.class "self-center" ] [ icon ]
