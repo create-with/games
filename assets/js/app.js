@@ -33,7 +33,7 @@ hooks.elm = {
       const soundPath = "/sounds/" + data;
       const sound = new Howl({
         src: [soundPath],
-        volume: 0.5
+        volume: 0.35
       });
 
       sound.play();
@@ -43,10 +43,13 @@ hooks.elm = {
       const soundPath = "/sounds/" + data;
       const sound = new Howl({
         src: [soundPath],
-        autoplay: true,
         loop: true,
-        volume: 0.5
+        volume: 0.35
       });
+
+      const soundId = sound.play();
+      sound.rate(0.95, soundId);
+      sound.fade(0, 1, 2000, soundId);
     });
 
     // Prevent Default Keyboard Behavior
