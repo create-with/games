@@ -162,7 +162,7 @@ update msg model =
             )
 
         CollisionGeneratedRandomWindowShakePositions ( randomX, randomY ) ->
-            ( { model | window = shakeWindow randomX randomY 1.0 model.window }, sleepShake )
+            ( { model | window = Breakout.Window.shake randomX randomY 1.0 model.window }, completeWindowShake )
 
         Particles ->
             ( { model | particleSystem = Particle.System.burst (particlesGenerator 10 model.ball.position) model.particleSystem }
@@ -195,7 +195,7 @@ update msg model =
 
 
 
--- UPDATES
+-- HANDLE KEYBOARD INPUT
 
 
 handlePlayerKeyPress : String -> Model -> ( Model, Cmd Msg )
@@ -207,7 +207,7 @@ handlePlayerKeyPress key model =
                     ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
 
                 PlayingScreen ->
-                    ( { model | ball = setInitialBallVelocity model.ball }, Cmd.none )
+                    ( { model | ball = resetBallVelocity model.ball }, Cmd.none )
 
                 PauseScreen ->
                     ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
@@ -222,36 +222,35 @@ handlePlayerKeyPress key model =
             ( updateKeyPress key model, Cmd.none )
 
 
-setInitialBallVelocity : Ball -> Ball
-setInitialBallVelocity ball =
+updateKeyPress : String -> Model -> Model
+updateKeyPress key model =
+    if Set.member key Util.Keyboard.validKeys then
+        { model | playerKeyPress = Set.insert key model.playerKeyPress }
+
+    else
+        model
+
+
+
+-- UPDATES
+
+
+resetBallVelocity : Ball -> Ball
+resetBallVelocity ball =
     { ball | velocity = initialModel.ball.velocity }
-
-
-particlesGenerator : Int -> ( Float, Float ) -> Generator (List (Particle Confetti))
-particlesGenerator numberOfParticles ( x, y ) =
-    Random.list numberOfParticles <|
-        particleAt x y
-
-
-shakeWindow : Float -> Float -> Float -> Window -> Window
-shakeWindow x y scale window =
-    { window
-        | x = x * scale
-        , y = y * scale
-    }
 
 
 updateBall : Time -> Maybe Brick -> Maybe Paddle -> Maybe WindowEdge -> Ball -> Ball
 updateBall deltaTime maybeBrick maybePaddle maybeWindowEdge ball =
     ball
-        |> handleBrickCollision maybeBrick
-        |> handlePaddleCollision maybePaddle
-        |> handleWindowCollision maybeWindowEdge
-        |> handleBallUpdate deltaTime
+        |> updateBallWithBrickCollision maybeBrick
+        |> updateBallWithPaddleCollision maybePaddle
+        |> updateBallWithWindowCollision maybeWindowEdge
+        |> updateBallPosition deltaTime
 
 
-handleBrickCollision : Maybe Brick -> Ball -> Ball
-handleBrickCollision maybeBrick ball =
+updateBallWithBrickCollision : Maybe Brick -> Ball -> Ball
+updateBallWithBrickCollision maybeBrick ball =
     case maybeBrick of
         Just _ ->
             -- NAIVE VELOCITY CHANGE
@@ -266,8 +265,8 @@ handleBrickCollision maybeBrick ball =
             ball
 
 
-handlePaddleCollision : Maybe Paddle -> Ball -> Ball
-handlePaddleCollision maybePaddle ball =
+updateBallWithPaddleCollision : Maybe Paddle -> Ball -> Ball
+updateBallWithPaddleCollision maybePaddle ball =
     let
         amountToChangeBallAngle =
             18.0
@@ -288,18 +287,8 @@ handlePaddleCollision maybePaddle ball =
             ball
 
 
-handleBallUpdate : Time -> Ball -> Ball
-handleBallUpdate deltaTime ball =
-    { ball
-        | position =
-            ball.velocity
-                |> Util.Vector.scale deltaTime
-                |> Util.Vector.add ball.position
-    }
-
-
-handleWindowCollision : Maybe WindowEdge -> Ball -> Ball
-handleWindowCollision maybeWindowEdge ball =
+updateBallWithWindowCollision : Maybe WindowEdge -> Ball -> Ball
+updateBallWithWindowCollision maybeWindowEdge ball =
     let
         ( x, y ) =
             ball.position
@@ -369,6 +358,16 @@ handleWindowCollision maybeWindowEdge ball =
             ball
 
 
+updateBallPosition : Time -> Ball -> Ball
+updateBallPosition deltaTime ball =
+    { ball
+        | position =
+            ball.velocity
+                |> Util.Vector.scale deltaTime
+                |> Util.Vector.add ball.position
+    }
+
+
 updateBallPath : ShowBallPath -> Maybe WindowEdge -> Ball -> BallPath -> BallPath
 updateBallPath showBallPath maybeWindowEdge ball ballPath =
     case showBallPath of
@@ -417,15 +416,6 @@ updateGameState gameState model =
         gameState
 
 
-updateKeyPress : String -> Model -> Model
-updateKeyPress key model =
-    if Set.member key Util.Keyboard.validKeys then
-        { model | playerKeyPress = Set.insert key model.playerKeyPress }
-
-    else
-        model
-
-
 updatePaddle : Maybe Direction -> Maybe Brick -> Maybe WindowEdge -> Window -> Time -> Paddle -> Paddle
 updatePaddle maybeDirection maybeBrick maybeWindowEdge window deltaTime paddle =
     paddle
@@ -449,15 +439,10 @@ commands brickHitByBall =
             Cmd.none
 
 
-randomWindowShakeGenerator : Generator ( Float, Float )
-randomWindowShakeGenerator =
-    let
-        values =
-            (List.range -12 -6 ++ List.range 6 12)
-                |> List.map toFloat
-                |> Random.uniform 6.0
-    in
-    Random.pair values values
+completeWindowShake : Cmd Msg
+completeWindowShake =
+    Process.sleep 10
+        |> Task.perform (\_ -> WindowShakeCompleted)
 
 
 generateRandomWindowShake : Cmd Msg
@@ -465,10 +450,22 @@ generateRandomWindowShake =
     Random.generate CollisionGeneratedRandomWindowShakePositions randomWindowShakeGenerator
 
 
-sleepShake : Cmd Msg
-sleepShake =
-    Process.sleep 10
-        |> Task.perform (\_ -> WindowShakeCompleted)
+playMusicCommand : PlayMusic -> String -> Cmd Msg
+playMusicCommand playMusic soundFile =
+    Util.Ports.playMusic <|
+        Json.Encode.object
+            [ ( "play", Json.Encode.bool <| Util.Sound.playMusicToBool playMusic )
+            , ( "soundFile", Json.Encode.string soundFile )
+            ]
+
+
+
+-- GENERATORS
+
+
+confettiGenerator : Generator Confetti
+confettiGenerator =
+    Random.Extra.frequency ( 5 / 8, dotGenerator ) []
 
 
 dotGenerator : Generator Confetti
@@ -493,11 +490,6 @@ dotGenerator =
         (Random.float 0 1)
 
 
-confettiGenerator : Generator Confetti
-confettiGenerator =
-    Random.Extra.frequency ( 5 / 8, dotGenerator ) []
-
-
 particleAt : Float -> Float -> Generator (Particle Confetti)
 particleAt x y =
     Particle.init confettiGenerator
@@ -515,13 +507,21 @@ particleAt x y =
             )
 
 
-playMusicCommand : PlayMusic -> String -> Cmd Msg
-playMusicCommand playMusic soundFile =
-    Util.Ports.playMusic <|
-        Json.Encode.object
-            [ ( "play", Json.Encode.bool <| Util.Sound.playMusicToBool playMusic )
-            , ( "soundFile", Json.Encode.string soundFile )
-            ]
+particlesGenerator : Int -> ( Float, Float ) -> Generator (List (Particle Confetti))
+particlesGenerator numberOfParticles ( x, y ) =
+    Random.list numberOfParticles <|
+        particleAt x y
+
+
+randomWindowShakeGenerator : Generator ( Float, Float )
+randomWindowShakeGenerator =
+    let
+        values =
+            (List.range -12 -6 ++ List.range 6 12)
+                |> List.map toFloat
+                |> Random.uniform 6.0
+    in
+    Random.pair values values
 
 
 
@@ -541,11 +541,11 @@ subscriptions model =
 browserAnimationSubscription : GameState -> Sub Msg
 browserAnimationSubscription gameState =
     case gameState of
-        StartingScreen ->
-            Sub.none
-
         PlayingScreen ->
             Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
+
+        StartingScreen ->
+            Sub.none
 
         PauseScreen ->
             Sub.none
@@ -707,6 +707,10 @@ viewInformation model =
         ]
 
 
+
+-- PAUSE SCREEN
+
+
 viewPauseScreen : GameState -> Html msg
 viewPauseScreen gameState =
     case gameState of
@@ -718,12 +722,18 @@ viewPauseScreen gameState =
                     [ Html.text "⏯ Press the SPACEBAR key to continue the game." ]
                 ]
 
-        _ ->
+        StartingScreen ->
+            Html.span [] []
+
+        PlayingScreen ->
+            Html.span [] []
+
+        EndingScreen ->
             Html.span [] []
 
 
 
--- WINNER
+-- ENDING SCREEN
 
 
 viewEndingScreen : GameState -> Bricks -> Html msg
@@ -742,7 +752,13 @@ viewEndingScreen gameState bricks =
                     [ Html.text "🔁 Press the SPACEBAR key to reset the game." ]
                 ]
 
-        _ ->
+        StartingScreen ->
+            Html.span [] []
+
+        PlayingScreen ->
+            Html.span [] []
+
+        PauseScreen ->
             Html.span [] []
 
 

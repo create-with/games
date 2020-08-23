@@ -3,6 +3,7 @@ module Breakout.Window exposing
     , WindowEdge(..)
     , getWindowEdgeHitByBall
     , initialWindow
+    , shake
     , viewGameWindow
     )
 
@@ -44,6 +45,18 @@ initialWindow =
     , y = 0.0
     , width = 800.0
     , height = 600.0
+    }
+
+
+
+-- UPDATE
+
+
+shake : Float -> Float -> Float -> Window -> Window
+shake x y scale window =
+    { window
+        | x = x * scale
+        , y = y * scale
     }
 
 
