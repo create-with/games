@@ -96,7 +96,7 @@ initialModel =
     , deltaTimes = Util.Fps.initialDeltaTimes
     , gameState = StartingScreen
     , paddle = Breakout.Paddle.initialPaddle
-    , particleSystem = Particle.System.init (Random.initialSeed 0)
+    , particleSystem = Particle.System.init <| Random.initialSeed 0
     , playerKeyPress = Util.Keyboard.initialKeys
     , playMusic = Util.Sound.initialPlayMusic
     , showBallPath = Breakout.Ball.initialShowBallPath
@@ -130,7 +130,7 @@ type Msg
     | PlayerClickedWindow
     | PlayerPressedKeyDown String
     | PlayerReleasedKey String
-    | ShakeCompleted
+    | WindowShakeCompleted
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -158,12 +158,7 @@ update msg model =
                 , gameState = updateGameState model.gameState model
                 , paddle = updatePaddle paddleDirection brickHitByBall windowEdgeHitByBall model.window deltaTime model.paddle
               }
-            , case brickHitByBall of
-                Just _ ->
-                    Cmd.batch [ generateRandomWindowShake, Process.sleep 0 |> Task.perform (\_ -> Particles) ]
-
-                Nothing ->
-                    Cmd.none
+            , commands brickHitByBall
             )
 
         CollisionGeneratedRandomWindowShakePositions ( randomX, randomY ) ->
@@ -175,11 +170,14 @@ update msg model =
 
         Particles ->
             let
-                ( x, y ) =
-                    model.ball.position
+                particleSpawnPosition =
+                    particleAt (Util.Vector.getX model.ball.position) (Util.Vector.getY model.ball.position)
+
+                particles =
+                    Random.list 12 particleSpawnPosition
             in
-            ( { model | particleSystem = Particle.System.burst (Random.list 12 (particleAt x y)) model.particleSystem }
-            , Cmd.none
+            ( { model | particleSystem = Particle.System.burst particles model.particleSystem }
+            , generateRandomWindowShake
             )
 
         ParticleMsg particleMsg ->
@@ -197,7 +195,7 @@ update msg model =
             ( { model | showFps = showFpsValue }, Cmd.none )
 
         PlayerClickedWindow ->
-            ( model, Cmd.batch [ generateRandomWindowShake, Process.sleep 0 |> Task.perform (\_ -> Particles) ] )
+            ( model, Process.sleep 0 |> Task.perform (\_ -> Particles) )
 
         PlayerPressedKeyDown key ->
             case key of
@@ -228,7 +226,7 @@ update msg model =
         PlayerReleasedKey _ ->
             ( { model | playerKeyPress = Set.empty }, Cmd.none )
 
-        ShakeCompleted ->
+        WindowShakeCompleted ->
             ( { model | window = Breakout.Window.initialWindow }, Cmd.none )
 
 
@@ -442,9 +440,25 @@ updatePaddle maybeDirection maybeBrick maybeWindowEdge window deltaTime paddle =
 -- COMMANDS
 
 
+commands : Maybe Brick -> Cmd Msg
+commands brickHitByBall =
+    case brickHitByBall of
+        Just _ ->
+            Process.sleep 0 |> Task.perform (\_ -> Particles)
+
+        Nothing ->
+            Cmd.none
+
+
 randomWindowShakeGenerator : Generator ( Float, Float )
 randomWindowShakeGenerator =
-    Random.pair (Random.float -16 16) (Random.float -16 16)
+    let
+        values =
+            (List.range -12 -6 ++ List.range 6 12)
+                |> List.map toFloat
+                |> Random.uniform 6.0
+    in
+    Random.pair values values
 
 
 generateRandomWindowShake : Cmd Msg
@@ -455,7 +469,7 @@ generateRandomWindowShake =
 sleepShake : Cmd Msg
 sleepShake =
     Process.sleep 10
-        |> Task.perform (\_ -> ShakeCompleted)
+        |> Task.perform (\_ -> WindowShakeCompleted)
 
 
 dotGenerator : Generator Confetti
