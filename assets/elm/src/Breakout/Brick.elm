@@ -1,10 +1,10 @@
 module Breakout.Brick exposing
     ( Brick
     , Bricks
-    , State(..)
     , ballHitBrick
+    , filterDestroyedBricks
     , getBrickHitByBall
-    , hideBrickHitByBall
+    , incrementBrickHitCount
     , initialBricks
     , viewBricks
     )
@@ -22,19 +22,13 @@ import Util.Vector exposing (Vector)
 -- MODEL
 
 
-type State
-    = On
-    | Off
-
-
 type alias Brick =
     { color : String
     , height : Float
     , hitCount : Int
     , hitThreshold : Int
-    , id : Int
     , position : Vector
-    , state : State
+    , strokeColor : String
     , width : Float
     }
 
@@ -53,28 +47,28 @@ defaultBrick =
     , height = 16
     , hitCount = 0
     , hitThreshold = 1
-    , id = 0
     , position = ( 0, 0 )
-    , state = On
+    , strokeColor = "black"
     , width = 80
     }
 
 
 initialBricks : Bricks
 initialBricks =
-    buildRow 1 "#f56565"
-        |> Dict.union (buildRow 2 "#ed8936")
-        |> Dict.union (buildRow 3 "#ecc94b")
-        |> Dict.union (buildRow 4 "#48bb78")
-        |> Dict.union (buildRow 5 "#4299e1")
-        |> Dict.union (buildRow 6 "#667eea")
+    buildRow 1 "#f56565" "white"
+        |> Dict.union (buildRow 2 "#ed8936" "black")
+        |> Dict.union (buildRow 3 "#ecc94b" "black")
+        |> Dict.union (buildRow 4 "#48bb78" "black")
+        |> Dict.union (buildRow 5 "#4299e1" "black")
+        |> Dict.union (buildRow 6 "#667eea" "black")
+        |> setHardRow 1
 
 
-buildRow : Int -> String -> Bricks
-buildRow rowNumber color =
+buildRow : Int -> String -> String -> Bricks
+buildRow rowNumber color strokeColor =
     List.range 1 10
         |> List.foldr (insertBrick rowNumber) Dict.empty
-        |> setRowColors color
+        |> setRowColors color strokeColor
         |> setRowPosition
 
 
@@ -83,14 +77,9 @@ insertBrick rowNumber columnNumber =
     Dict.insert ( rowNumber, columnNumber ) defaultBrick
 
 
-setRowColors : String -> Bricks -> Bricks
-setRowColors color row =
-    Dict.map (\_ brick -> { brick | color = color }) row
-
-
-offsetFromTopOfScreen : Float
-offsetFromTopOfScreen =
-    80
+setRowColors : String -> String -> Bricks -> Bricks
+setRowColors color strokeColor row =
+    Dict.map (\_ brick -> { brick | color = color, strokeColor = strokeColor }) row
 
 
 setRowPosition : Bricks -> Bricks
@@ -100,12 +89,44 @@ setRowPosition row =
 
 setBrickPosition : ( Int, Int ) -> Brick -> Brick
 setBrickPosition ( rowNumber, columnNumber ) brick =
+    let
+        rowHeight =
+            toFloat rowNumber * brick.height
+
+        paddingForStroke =
+            case rowNumber of
+                1 ->
+                    0
+
+                _ ->
+                    2
+
+        offsetHorizontalColumn =
+            toFloat (columnNumber - 1)
+
+        paddingFromTopOfWindow =
+            toFloat 80
+    in
     { brick
         | position =
-            ( toFloat (columnNumber - 1) * brick.width
-            , offsetFromTopOfScreen + toFloat rowNumber * brick.height
+            ( offsetHorizontalColumn * brick.width
+            , paddingFromTopOfWindow + rowHeight + paddingForStroke
             )
     }
+
+
+setHardRow : Int -> Bricks -> Bricks
+setHardRow rowNumber bricks =
+    Dict.map (setHardBrick rowNumber) bricks
+
+
+setHardBrick : Int -> ( Int, Int ) -> Brick -> Brick
+setHardBrick targetRowNumber ( rowNumber, _ ) brick =
+    if targetRowNumber == rowNumber then
+        { brick | hitThreshold = 2 }
+
+    else
+        brick
 
 
 
@@ -125,22 +146,31 @@ ballHitBrick ball brick =
         && (brickY <= ballY && ballY <= brickY + brick.height)
 
 
-getBrickHitByBall : Ball -> Brick -> Maybe Brick
-getBrickHitByBall ball brick =
+getBrickHitByBall : Ball -> Bricks -> Maybe Brick
+getBrickHitByBall ball bricks =
+    bricks
+        |> Dict.filter (\_ brick -> ballHitBrick ball brick)
+        |> Dict.values
+        |> List.head
+
+
+brickHitCountPassedThreshold : ( Int, Int ) -> Brick -> Bool
+brickHitCountPassedThreshold _ brick =
+    brick.hitCount < brick.hitThreshold
+
+
+incrementBrickHitCount : Ball -> ( Int, Int ) -> Brick -> Brick
+incrementBrickHitCount ball _ brick =
     if ballHitBrick ball brick then
-        Just brick
-
-    else
-        Nothing
-
-
-hideBrickHitByBall : List Brick -> Brick -> Brick
-hideBrickHitByBall bricksHitByBall brick =
-    if List.member brick bricksHitByBall then
-        { brick | state = Off }
+        { brick | hitCount = brick.hitCount + 1 }
 
     else
         brick
+
+
+filterDestroyedBricks : Bricks -> Bricks
+filterDestroyedBricks bricks =
+    Dict.filter brickHitCountPassedThreshold bricks
 
 
 
@@ -150,14 +180,13 @@ hideBrickHitByBall bricksHitByBall brick =
 viewBricks : Bricks -> Svg a
 viewBricks bricks =
     bricks
-        |> Dict.filter (\( _, _ ) brick -> brick.hitCount < brick.hitThreshold)
         |> Dict.map viewBrick
         |> Dict.values
         |> Svg.g []
 
 
 viewBrick : ( Int, Int ) -> Brick -> Svg a
-viewBrick ( _, _ ) brick =
+viewBrick _ brick =
     Svg.rect
         [ Svg.Attributes.class "bounce-in-down"
         , Svg.Attributes.fill <| brick.color
@@ -166,8 +195,13 @@ viewBrick ( _, _ ) brick =
         , Svg.Attributes.y <| String.fromFloat <| Util.Vector.getY brick.position
         , Svg.Attributes.width <| String.fromFloat brick.width
         , Svg.Attributes.height <| String.fromFloat brick.height
-        , Svg.Attributes.stroke "black"
-        , Svg.Attributes.strokeWidth "1"
-        , Svg.Attributes.strokeOpacity "1"
+        , Svg.Attributes.stroke <| brick.strokeColor
+        , Svg.Attributes.strokeWidth "2"
+        , Svg.Attributes.strokeOpacity <| String.fromFloat <| brickStrokeOpacity brick
         ]
         []
+
+
+brickStrokeOpacity : Brick -> Float
+brickStrokeOpacity brick =
+    toFloat (brick.hitThreshold - brick.hitCount) / toFloat brick.hitThreshold

@@ -34,6 +34,7 @@ import Task
 import Util.Fps exposing (ShowFps, Time)
 import Util.Keyboard exposing (Controls)
 import Util.Ports
+import Util.Sound exposing (PlayMusic)
 import Util.Vector
 import Util.View
 
@@ -45,6 +46,7 @@ import Util.View
 type GameState
     = StartingScreen
     | PlayingScreen
+    | PauseScreen
     | EndingScreen
 
 
@@ -71,10 +73,10 @@ type alias Model =
     , currentBrick : Maybe Brick
     , deltaTimes : List Time
     , gameState : GameState
-    , lives : Int
     , paddle : Paddle
     , particleSystem : System Confetti
     , playerKeyPress : Controls
+    , playMusic : PlayMusic
     , showBallPath : ShowBallPath
     , showFps : ShowFps
     , window : Window
@@ -93,10 +95,10 @@ initialModel =
     , currentBrick = Nothing
     , deltaTimes = Util.Fps.initialDeltaTimes
     , gameState = StartingScreen
-    , lives = 3
     , paddle = Breakout.Paddle.initialPaddle
-    , particleSystem = Particle.System.init (Random.initialSeed 0)
+    , particleSystem = Particle.System.init <| Random.initialSeed 0
     , playerKeyPress = Util.Keyboard.initialKeys
+    , playMusic = Util.Sound.initialPlayMusic
     , showBallPath = Breakout.Ball.initialShowBallPath
     , showFps = Util.Fps.initialShowFps
     , window = Breakout.Window.initialWindow
@@ -105,7 +107,7 @@ initialModel =
 
 initialCommand : Cmd Msg
 initialCommand =
-    playMusicCommand "music.wav"
+    playMusicCommand Util.Sound.initialPlayMusic "music.wav"
 
 
 init : () -> ( Model, Cmd Msg )
@@ -122,12 +124,13 @@ type Msg
     | CollisionGeneratedRandomWindowShakePositions ( Float, Float )
     | Particles
     | ParticleMsg (Particle.System.Msg Confetti)
+    | PlayerClickedPlayMusicRadioButton PlayMusic
     | PlayerClickedShowBallPathRadioButton ShowBallPath
     | PlayerClickedShowFpsRadioButton ShowFps
     | PlayerClickedWindow
     | PlayerPressedKeyDown String
     | PlayerReleasedKey String
-    | ShakeCompleted
+    | WindowShakeCompleted
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -135,9 +138,8 @@ update msg model =
     case msg of
         BrowserAdvancedAnimationFrame deltaTime ->
             let
-                currentBrick =
-                    model.bricks
-                        |> Dict.get ( 1, 1 )
+                brickHitByBall =
+                    Breakout.Brick.getBrickHitByBall model.ball model.bricks
 
                 paddleDirection =
                     Breakout.Paddle.playerKeyPressToDirection model.playerKeyPress
@@ -149,37 +151,29 @@ update msg model =
                     Breakout.Window.getWindowEdgeHitByBall model.ball model.window
             in
             ( { model
-                | ball = updateBall model.ball paddleHitByBall windowEdgeHitByBall deltaTime
-                , ballPath = updateBallPath model.ball model.ballPath windowEdgeHitByBall model
+                | ball = updateBall deltaTime brickHitByBall paddleHitByBall windowEdgeHitByBall model.ball
+                , ballPath = updateBallPath model.showBallPath windowEdgeHitByBall model.ball model.ballPath
                 , bricks = updateBricks model.ball model.bricks
                 , deltaTimes = updateDeltaTimes model.showFps deltaTime model.deltaTimes
                 , gameState = updateGameState model.gameState model
-                , lives = updateLives model.lives windowEdgeHitByBall
-                , paddle = updatePaddle model.paddle paddleDirection model.window deltaTime
+                , paddle = updatePaddle paddleDirection brickHitByBall windowEdgeHitByBall model.window deltaTime model.paddle
               }
-            , Cmd.none
+            , commands brickHitByBall
             )
 
         CollisionGeneratedRandomWindowShakePositions ( randomX, randomY ) ->
-            let
-                shakeyness =
-                    1.5
-            in
-            ( { model | window = shakeWindow randomX randomY shakeyness model.window }, sleepShake )
+            ( { model | window = Breakout.Window.shake randomX randomY 1.0 model.window }, completeWindowShake )
 
         Particles ->
-            let
-                ( x, y ) =
-                    model.ball.position
-            in
-            ( { model | particleSystem = Particle.System.burst (Random.list 25 (particleAt x y)) model.particleSystem }
-            , Cmd.none
+            ( { model | particleSystem = Particle.System.burst (particlesGenerator 10 model.ball.position) model.particleSystem }
+            , generateRandomWindowShake
             )
 
         ParticleMsg particleMsg ->
-            ( { model | particleSystem = Particle.System.update particleMsg model.particleSystem }
-            , Cmd.none
-            )
+            ( { model | particleSystem = Particle.System.update particleMsg model.particleSystem }, Cmd.none )
+
+        PlayerClickedPlayMusicRadioButton playMusicValue ->
+            ( { model | playMusic = playMusicValue }, playMusicCommand playMusicValue "music.wav" )
 
         PlayerClickedShowBallPathRadioButton showBallPathValue ->
             ( { model | showBallPath = showBallPathValue }, Cmd.none )
@@ -188,49 +182,113 @@ update msg model =
             ( { model | showFps = showFpsValue }, Cmd.none )
 
         PlayerClickedWindow ->
-            ( model, Cmd.batch [ generateRandomWindowShake, Process.sleep 0 |> Task.perform (\_ -> Particles) ] )
+            ( model, Process.sleep 10 |> Task.perform (\_ -> Particles) )
 
         PlayerPressedKeyDown key ->
-            case key of
-                " " ->
-                    case model.gameState of
-                        StartingScreen ->
-                            ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
-
-                        PlayingScreen ->
-                            let
-                                setBallInMotion ball =
-                                    { ball | velocity = initialModel.ball.velocity }
-                            in
-                            ( { model | ball = setBallInMotion model.ball }, Cmd.none )
-
-                        EndingScreen ->
-                            ( initialModel, Cmd.none )
-
-                _ ->
-                    ( updateKeyPress key model, Cmd.none )
+            handlePlayerKeyPress key model
 
         PlayerReleasedKey _ ->
             ( { model | playerKeyPress = Set.empty }, Cmd.none )
 
-        ShakeCompleted ->
+        WindowShakeCompleted ->
             ( { model | window = Breakout.Window.initialWindow }, Cmd.none )
+
+
+
+-- HANDLE KEYBOARD INPUT
+
+
+handlePlayerKeyPress : String -> Model -> ( Model, Cmd Msg )
+handlePlayerKeyPress key model =
+    case key of
+        " " ->
+            case model.gameState of
+                StartingScreen ->
+                    ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
+
+                PlayingScreen ->
+                    ( { model | ball = resetBallVelocity model.ball }, Cmd.none )
+
+                PauseScreen ->
+                    ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
+
+                EndingScreen ->
+                    ( initialModel, Cmd.none )
+
+        "Escape" ->
+            ( { model | gameState = updateGameState PauseScreen model }, Cmd.none )
+
+        _ ->
+            ( updateKeyPress key model, Cmd.none )
+
+
+updateKeyPress : String -> Model -> Model
+updateKeyPress key model =
+    if Set.member key Util.Keyboard.validKeys then
+        { model | playerKeyPress = Set.insert key model.playerKeyPress }
+
+    else
+        model
 
 
 
 -- UPDATES
 
 
-shakeWindow : Float -> Float -> Float -> Window -> Window
-shakeWindow x y scale window =
-    { window
-        | x = x * scale
-        , y = y * scale
-    }
+resetBallVelocity : Ball -> Ball
+resetBallVelocity ball =
+    { ball | velocity = initialModel.ball.velocity }
 
 
-updateBall : Ball -> Bool -> Maybe WindowEdge -> Time -> Ball
-updateBall ball paddleHit maybeWindowEdge deltaTime =
+updateBall : Time -> Maybe Brick -> Maybe Paddle -> Maybe WindowEdge -> Ball -> Ball
+updateBall deltaTime maybeBrick maybePaddle maybeWindowEdge ball =
+    ball
+        |> updateBallWithBrickCollision maybeBrick
+        |> updateBallWithPaddleCollision maybePaddle
+        |> updateBallWithWindowCollision maybeWindowEdge
+        |> updateBallPosition deltaTime
+
+
+updateBallWithBrickCollision : Maybe Brick -> Ball -> Ball
+updateBallWithBrickCollision maybeBrick ball =
+    case maybeBrick of
+        Just _ ->
+            -- NAIVE VELOCITY CHANGE
+            { ball
+                | velocity =
+                    ( Util.Vector.getX ball.velocity
+                    , negate <| Util.Vector.getY ball.velocity
+                    )
+            }
+
+        Nothing ->
+            ball
+
+
+updateBallWithPaddleCollision : Maybe Paddle -> Ball -> Ball
+updateBallWithPaddleCollision maybePaddle ball =
+    let
+        amountToChangeBallAngle =
+            18.0
+
+        amountToChangeBallSpeed =
+            5.0
+    in
+    case maybePaddle of
+        Just paddle ->
+            { ball
+                | velocity =
+                    ( Breakout.Paddle.getPaddleHitByBallDistanceFromCenter amountToChangeBallAngle ball paddle
+                    , negate <| Util.Vector.getY ball.velocity + amountToChangeBallSpeed
+                    )
+            }
+
+        Nothing ->
+            ball
+
+
+updateBallWithWindowCollision : Maybe WindowEdge -> Ball -> Ball
+updateBallWithWindowCollision maybeWindowEdge ball =
     let
         ( x, y ) =
             ball.position
@@ -238,80 +296,47 @@ updateBall ball paddleHit maybeWindowEdge deltaTime =
         ( vx, vy ) =
             ball.velocity
     in
-    case ( paddleHit, maybeWindowEdge ) of
-        ( True, _ ) ->
-            { ball | velocity = ( vx, negate vy ) }
-
-        ( False, Just edge ) ->
-            case edge of
-                Breakout.Window.Bottom ->
-                    { ball
-                        | position = initialModel.ball.position
-                        , velocity = ( 0, 0 )
-                    }
-
-                Breakout.Window.Left ->
-                    case compare 0 vy of
-                        LT ->
-                            { ball
-                                | position = ( x + ball.width / 2, y + ball.height / 2 )
-                                , velocity = ( negate vx, vy )
-                            }
-
-                        GT ->
-                            { ball
-                                | position = ( x + ball.width / 2, y - ball.height / 2 )
-                                , velocity = ( negate vx, vy )
-                            }
-
-                        EQ ->
-                            ball
-
-                Breakout.Window.Right ->
-                    case compare 0 vy of
-                        LT ->
-                            { ball
-                                | position = ( x - ball.width / 2, y )
-                                , velocity = ( negate vx, vy )
-                            }
-
-                        GT ->
-                            { ball
-                                | position = ( x - ball.width / 2, y )
-                                , velocity = ( negate vx, vy )
-                            }
-
-                        EQ ->
-                            ball
-
-                Breakout.Window.Top ->
-                    case compare 0 vx of
-                        LT ->
-                            { ball
-                                | position = ( x + ball.width / 2, y + ball.height / 2 )
-                                , velocity = ( vx, negate vy )
-                            }
-
-                        GT ->
-                            { ball
-                                | position = ( x - ball.width / 2, y + ball.height / 2 )
-                                , velocity = ( vx, negate vy )
-                            }
-
-                        EQ ->
-                            ball
-
-        ( _, Nothing ) ->
+    case maybeWindowEdge of
+        Just Breakout.Window.Bottom ->
             { ball
-                | position =
-                    ball.velocity
-                        |> Util.Vector.scale deltaTime
-                        |> Util.Vector.add ball.position
+                | position = initialModel.ball.position
+                , velocity = ( 0, 0 )
             }
 
+        Just Breakout.Window.Left ->
+            { ball
+                | position = ( x + ball.width / 2, y )
+                , velocity = ( negate vx, vy )
+            }
 
-updateBallPath : Ball -> BallPath -> Maybe WindowEdge -> Model -> BallPath
-updateBallPath ball ballPath maybeWindowEdge { showBallPath } =
+        Just Breakout.Window.Right ->
+            { ball
+                | position = ( x - ball.width / 2, y )
+                , velocity = ( negate vx, vy )
+            }
+
+        Just Breakout.Window.Top ->
+            { ball
+                | position = ( x, y + ball.height / 2 )
+                , velocity = ( vx, negate vy )
+            }
+
+        Nothing ->
+            ball
+
+
+updateBallPosition : Time -> Ball -> Ball
+updateBallPosition deltaTime ball =
+    { ball
+        | position =
+            ball.velocity
+                |> Util.Vector.scale deltaTime
+                |> Util.Vector.add ball.position
+    }
+
+
+updateBallPath : ShowBallPath -> Maybe WindowEdge -> Ball -> BallPath -> BallPath
+updateBallPath showBallPath maybeWindowEdge ball ballPath =
     case showBallPath of
         Breakout.Ball.Off ->
             []
@@ -335,14 +360,8 @@ updateBallPath ball ballPath maybeWindowEdge { showBallPath } =
 updateBricks : Ball -> Bricks -> Bricks
 updateBricks ball bricks =
     bricks
-        |> Dict.map
-            (\( _, _ ) brick ->
-                if Breakout.Brick.ballHitBrick ball brick then
-                    { brick | hitCount = brick.hitCount + 1 }
-
-                else
-                    brick
-            )
+        |> Breakout.Brick.filterDestroyedBricks
+        |> Dict.map (Breakout.Brick.incrementBrickHitCount ball)
 
 
 updateDeltaTimes : ShowFps -> Time -> List Time -> List Time
@@ -357,49 +376,40 @@ updateDeltaTimes showFps deltaTime deltaTimes =
 
 updateGameState : GameState -> Model -> GameState
 updateGameState gameState model =
-    if gameState == PlayingScreen && model.lives == 0 then
+    if (gameState == PlayingScreen && model.paddle.lives == 0) || Dict.isEmpty model.bricks then
         EndingScreen
 
     else
         gameState
 
 
-updateKeyPress : String -> Model -> Model
-updateKeyPress key model =
-    if Set.member key Util.Keyboard.validKeys then
-        { model | playerKeyPress = Set.insert key model.playerKeyPress }
-
-    else
-        model
-
-
-updateLives : Int -> Maybe WindowEdge -> Int
-updateLives lives maybeWindowEdge =
-    case maybeWindowEdge of
-        Just Breakout.Window.Bottom ->
-            clamp 0 lives <| lives - 1
-
-        Just _ ->
-            lives
-
-        Nothing ->
-            lives
-
-
-updatePaddle : Paddle -> Maybe Direction -> Window -> Time -> Paddle
-updatePaddle paddle maybeDirection window deltaTime =
+updatePaddle : Maybe Direction -> Maybe Brick -> Maybe WindowEdge -> Window -> Time -> Paddle -> Paddle
+updatePaddle maybeDirection maybeBrick maybeWindowEdge window deltaTime paddle =
     paddle
         |> Breakout.Paddle.updatePaddle maybeDirection deltaTime
         |> Breakout.Paddle.keepPaddleWithinWindow window
+        |> Breakout.Paddle.updateScore maybeBrick
+        |> Breakout.Paddle.updateLives maybeWindowEdge
 
 
 
 -- COMMANDS
 
 
-randomWindowShakeGenerator : Generator ( Float, Float )
-randomWindowShakeGenerator =
-    Random.pair (Random.float -16 16) (Random.float -16 16)
+commands : Maybe Brick -> Cmd Msg
+commands brickHitByBall =
+    case brickHitByBall of
+        Just _ ->
+            Process.sleep 10 |> Task.perform (\_ -> Particles)
+
+        Nothing ->
+            Cmd.none
+
+
+completeWindowShake : Cmd Msg
+completeWindowShake =
+    Process.sleep 10
+        |> Task.perform (\_ -> WindowShakeCompleted)
 
 
 generateRandomWindowShake : Cmd Msg
@@ -407,10 +417,22 @@ generateRandomWindowShake =
     Random.generate CollisionGeneratedRandomWindowShakePositions randomWindowShakeGenerator
 
 
-sleepShake : Cmd Msg
-sleepShake =
-    Process.sleep 10
-        |> Task.perform (\_ -> ShakeCompleted)
+playMusicCommand : PlayMusic -> String -> Cmd Msg
+playMusicCommand playMusic soundFile =
+    Util.Ports.playMusic <|
+        Json.Encode.object
+            [ ( "play", Json.Encode.bool <| Util.Sound.playMusicToBool playMusic )
+            , ( "soundFile", Json.Encode.string soundFile )
+            ]
+
+
+
+-- GENERATORS
+
+
+confettiGenerator : Generator Confetti
+confettiGenerator =
+    Random.Extra.frequency ( 5 / 8, dotGenerator ) []
 
 
 dotGenerator : Generator Confetti
@@ -435,11 +457,6 @@ dotGenerator =
         (Random.float 0 1)
 
 
-confettiGenerator : Generator Confetti
-confettiGenerator =
-    Random.Extra.frequency ( 5 / 8, dotGenerator ) []
-
-
 particleAt : Float -> Float -> Generator (Particle Confetti)
 particleAt x y =
     Particle.init confettiGenerator
@@ -457,9 +474,21 @@ particleAt x y =
             )
 
 
-playMusicCommand : String -> Cmd Msg
-playMusicCommand soundFile =
-    Util.Ports.playMusic <| Json.Encode.string soundFile
+particlesGenerator : Int -> ( Float, Float ) -> Generator (List (Particle Confetti))
+particlesGenerator numberOfParticles ( x, y ) =
+    Random.list numberOfParticles <|
+        particleAt x y
+
+
+randomWindowShakeGenerator : Generator ( Float, Float )
+randomWindowShakeGenerator =
+    let
+        values =
+            (List.range -12 -6 ++ List.range 6 12)
+                |> List.map toFloat
+                |> Random.uniform 6.0
+    in
+    Random.pair values values
 
 
 
@@ -479,11 +508,14 @@ subscriptions model =
 browserAnimationSubscription : GameState -> Sub Msg
 browserAnimationSubscription gameState =
     case gameState of
+        PlayingScreen ->
+            Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
+
         StartingScreen ->
             Sub.none
 
-        PlayingScreen ->
-            Browser.Events.onAnimationFrameDelta <| handleAnimationFrames
+        PauseScreen ->
+            Sub.none
 
         EndingScreen ->
             Sub.none
@@ -516,7 +548,7 @@ particleSystemSubscription particleSystem =
 view : (Msg -> msg) -> Model -> Document msg
 view msg model =
     { title = "\u{1F6F8} Breakout"
-    , body = List.map (Html.map msg) [ viewMain model ]
+    , body = List.map (Html.map msg) [ viewMain model, Util.View.footer ]
     }
 
 
@@ -598,31 +630,6 @@ viewGame model =
         ]
 
 
-viewLives : Int -> Svg msg
-viewLives lives =
-    let
-        ( width, height ) =
-            ( 60, 10 )
-
-        offset =
-            44
-    in
-    (lives - 1)
-        |> List.range 0
-        |> List.map
-            (\index ->
-                Svg.image
-                    [ Svg.Attributes.xlinkHref "/images/pixel-paddle.png"
-                    , Svg.Attributes.x <| String.fromInt <| index * offset
-                    , Svg.Attributes.y <| String.fromFloat <| Breakout.Window.initialWindow.height - 20
-                    , Svg.Attributes.width <| String.fromInt width
-                    , Svg.Attributes.height <| String.fromInt height
-                    ]
-                    []
-            )
-        |> Svg.g []
-
-
 viewSvg : Window -> Model -> Svg Msg
 viewSvg window model =
     let
@@ -645,7 +652,7 @@ viewSvg window model =
         , Breakout.Brick.viewBricks model.bricks
         , Breakout.Paddle.viewPaddle model.paddle
         , Breakout.Paddle.viewPaddleScore model.paddle.score
-        , viewLives model.lives
+        , Breakout.Paddle.viewLives model.paddle.lives
         , Breakout.Ball.viewBall model.ball
         , Breakout.Ball.viewBallPath model.ballPath |> Svg.g []
         , Particle.System.view viewParticles [] model.particleSystem
@@ -661,18 +668,27 @@ viewInformation : Model -> Html Msg
 viewInformation model =
     Html.section []
         [ viewEndingScreen model.gameState model.bricks
+        , viewPauseScreen model.gameState
         , viewInstructions
-        , viewOptions model.showBallPath model.showFps
+        , viewOptions model.showBallPath model.showFps model.playMusic
         ]
 
 
 
--- WINNER
+-- PAUSE SCREEN
 
 
-viewEndingScreen : GameState -> Bricks -> Html msg
-viewEndingScreen gameState bricks =
+viewPauseScreen : GameState -> Html msg
+viewPauseScreen gameState =
     case gameState of
+        PauseScreen ->
+            Html.div [ Html.Attributes.class "pt-4 text-center" ]
+                [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
+                    [ Html.text "Game Paused" ]
+                , Html.p []
+                    [ Html.text "⏯ Press the SPACEBAR key to continue the game." ]
+                ]
+
         StartingScreen ->
             Html.span [] []
 
@@ -680,17 +696,37 @@ viewEndingScreen gameState bricks =
             Html.span [] []
 
         EndingScreen ->
+            Html.span [] []
+
+
+
+-- ENDING SCREEN
+
+
+viewEndingScreen : GameState -> Bricks -> Html msg
+viewEndingScreen gameState bricks =
+    case gameState of
+        EndingScreen ->
             Html.div [ Html.Attributes.class "pt-4 text-center" ]
                 [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
                     [ if Dict.isEmpty bricks then
-                        Html.text "Alas, you've won!"
+                        Html.text "🎉 Congrats ! You beat the game!"
 
                       else
                         Html.text "Game Over!"
                     ]
                 , Html.p []
-                    [ Html.text "🆕 Press the SPACEBAR key to reset the game." ]
+                    [ Html.text "🔁 Press the SPACEBAR key to reset the game." ]
                 ]
+
+        StartingScreen ->
+            Html.span [] []
+
+        PlayingScreen ->
+            Html.span [] []
+
+        PauseScreen ->
+            Html.span [] []
 
 
 
@@ -705,7 +741,8 @@ viewInstructions =
         , Html.div [ Html.Attributes.class "flex justify-center" ]
             [ Html.ul [ Html.Attributes.class "leading-relaxed list-disc list-inside mx-3" ]
                 [ Html.li [] [ Html.text "\u{1F6F8} Press the SPACEBAR key to serve the ball." ]
-                , Html.li [] [ Html.text "⌨️ Use the arrow keys to move the left paddle." ]
+                , Html.li [] [ Html.text "⌨️ Use the arrow keys to move the paddle." ]
+                , Html.li [] [ Html.text "⏸ Press the ESCAPE key if you need to pause the game." ]
                 , Html.li [] [ Html.text "🏆 Break all the bricks to win!" ]
                 ]
             ]
@@ -716,35 +753,46 @@ viewInstructions =
 -- OPTIONS
 
 
-viewOptions : ShowBallPath -> ShowFps -> Html Msg
-viewOptions showBallPath_ showFps =
+viewOptions : ShowBallPath -> ShowFps -> PlayMusic -> Html Msg
+viewOptions showBallPath showFps playMusic =
     Html.div [ Html.Attributes.class "pt-4" ]
         [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-center text-xl" ]
             [ Html.text "Options" ]
         , Html.form [ Html.Attributes.class "flex justify-center" ]
             [ Html.ul [ Html.Attributes.class "leading-relaxed list-disc list-inside mx-3" ]
-                [ Html.li [] [ viewShowBallPathOptions showBallPath_ ]
+                [ Html.li [] [ viewShowBallPathOptions showBallPath ]
                 , Html.li [] [ viewShowFpsOptions showFps ]
+                , Html.li [] [ viewPlayMusicOptions playMusic ]
                 ]
             ]
         ]
 
 
 viewShowBallPathOptions : ShowBallPath -> Html Msg
-viewShowBallPathOptions showBallPath_ =
+viewShowBallPathOptions showBallPath =
     Html.fieldset [ Html.Attributes.class "inline" ]
         [ Html.span [ Html.Attributes.class "mr-3" ]
             [ Html.text "Show ball path history:" ]
-        , Util.View.radioButton Breakout.Ball.Off showBallPath_ Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
-        , Util.View.radioButton Breakout.Ball.On showBallPath_ Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
+        , Util.View.radioButton Breakout.Ball.Off showBallPath Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
+        , Util.View.radioButton Breakout.Ball.On showBallPath Breakout.Ball.showBallPathToString PlayerClickedShowBallPathRadioButton
         ]
 
 
 viewShowFpsOptions : ShowFps -> Html Msg
-viewShowFpsOptions showFps_ =
+viewShowFpsOptions showFps =
     Html.fieldset [ Html.Attributes.class "inline" ]
         [ Html.span [ Html.Attributes.class "mr-3" ]
             [ Html.text "Show FPS meter:" ]
-        , Util.View.radioButton Util.Fps.Off showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
-        , Util.View.radioButton Util.Fps.On showFps_ Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        , Util.View.radioButton Util.Fps.Off showFps Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        , Util.View.radioButton Util.Fps.On showFps Util.Fps.showFpsToString PlayerClickedShowFpsRadioButton
+        ]
+
+
+viewPlayMusicOptions : PlayMusic -> Html Msg
+viewPlayMusicOptions playMusic =
+    Html.fieldset [ Html.Attributes.class "inline" ]
+        [ Html.span [ Html.Attributes.class "mr-3" ]
+            [ Html.text "Play Music:" ]
+        , Util.View.radioButton Util.Sound.Off playMusic Util.Sound.playMusicToString PlayerClickedPlayMusicRadioButton
+        , Util.View.radioButton Util.Sound.On playMusic Util.Sound.playMusicToString PlayerClickedPlayMusicRadioButton
         ]

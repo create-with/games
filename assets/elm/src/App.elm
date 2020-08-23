@@ -19,6 +19,7 @@ import Pong
 import Route
 import Url
 import Url.Parser
+import Util.Sound
 
 
 
@@ -182,4 +183,4 @@ changeToPage model pageRoute pageMsg ( pageModel, pageCommand ) =
 
 changeToLandingPage : Model -> ( Model, Cmd Msg )
 changeToLandingPage model =
-    ( { model | route = Route.Landing }, Cmd.none )
+    ( { model | route = Route.Landing }, Util.Sound.stopMusic )

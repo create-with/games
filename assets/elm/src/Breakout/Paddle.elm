@@ -2,11 +2,14 @@ module Breakout.Paddle exposing
     ( Direction(..)
     , Paddle
     , ballHitPaddle
+    , getPaddleHitByBallDistanceFromCenter
     , initialPaddle
     , keepPaddleWithinWindow
     , playerKeyPressToDirection
+    , updateLives
     , updatePaddle
     , updateScore
+    , viewLives
     , viewPaddle
     , viewPaddleScore
     )
@@ -14,7 +17,8 @@ module Breakout.Paddle exposing
 -- IMPORTS
 
 import Breakout.Ball exposing (Ball)
-import Breakout.Window exposing (Window)
+import Breakout.Brick exposing (Brick)
+import Breakout.Window exposing (Window, WindowEdge)
 import Set exposing (Set)
 import Svg exposing (Svg)
 import Svg.Attributes
@@ -32,11 +36,12 @@ type Direction
 
 
 type alias Paddle =
-    { score : Int
+    { height : Float
+    , lives : Int
     , position : Vector
+    , score : Int
     , vx : Float
     , width : Float
-    , height : Float
     }
 
 
@@ -46,11 +51,12 @@ type alias Paddle =
 
 initialPaddle : Paddle
 initialPaddle =
-    { score = 0
+    { height = 20.0
+    , lives = 3
     , position = ( 380.0, 550.0 )
-    , vx = 600.0
+    , score = 0
+    , vx = 700.0
     , width = 80.0
-    , height = 20.0
     }
 
 
@@ -58,13 +64,32 @@ initialPaddle =
 -- UPDATE
 
 
-updateScore : Paddle -> Paddle
-updateScore paddle =
-    { paddle | score = paddle.score + 1 }
+keepPaddleWithinWindow : Window -> Paddle -> Paddle
+keepPaddleWithinWindow window paddle =
+    let
+        ( x, y ) =
+            paddle.position
+
+        leftEdge =
+            0
+
+        rightEdge =
+            window.width - paddle.width
+    in
+    { paddle | position = ( clamp leftEdge rightEdge x, y ) }
 
 
+updateLives : Maybe WindowEdge -> Paddle -> Paddle
+updateLives maybeWindowEdge paddle =
+    case maybeWindowEdge of
+        Just Breakout.Window.Bottom ->
+            { paddle | lives = clamp 0 paddle.lives <| paddle.lives - 1 }
 
--- updatePaddle : Paddle -> Paddle
+        Just _ ->
+            paddle
+
+        Nothing ->
+            paddle
 
 
 updatePaddle : Maybe Direction -> Float -> Paddle -> Paddle
@@ -84,26 +109,21 @@ updatePaddle maybeDirection deltaTime paddle =
             paddle
 
 
-keepPaddleWithinWindow : Window -> Paddle -> Paddle
-keepPaddleWithinWindow window paddle =
-    let
-        ( x, y ) =
-            paddle.position
+updateScore : Maybe Brick -> Paddle -> Paddle
+updateScore maybeBrick paddle =
+    case maybeBrick of
+        Just _ ->
+            { paddle | score = paddle.score + 100 }
 
-        leftEdge =
-            0
-
-        rightEdge =
-            window.width - paddle.width
-    in
-    { paddle | position = ( clamp leftEdge rightEdge x, y ) }
+        Nothing ->
+            paddle
 
 
 
 -- COLLISIONS
 
 
-ballHitPaddle : Ball -> Paddle -> Bool
+ballHitPaddle : Ball -> Paddle -> Maybe Paddle
 ballHitPaddle ball paddle =
     let
         ( ballX, ballY ) =
@@ -114,10 +134,34 @@ ballHitPaddle ball paddle =
 
         ( paddleX, paddleY ) =
             paddle.position
+
+        ballCollidedWithPaddle =
+            (paddleY <= ballY + ball.height)
+                && (paddleX <= ballX && ballX <= paddleX + paddle.width)
+                && (ballVy > 0)
     in
-    (paddleY <= ballY + ball.height)
-        && (paddleX <= ballX && ballX <= paddleX + paddle.width)
-        && (ballVy > 0)
+    if ballCollidedWithPaddle then
+        Just paddle
+
+    else
+        Nothing
+
+
+getPaddleHitByBallDistanceFromCenter : Float -> Ball -> Paddle -> Float
+getPaddleHitByBallDistanceFromCenter scale ball paddle =
+    case ballHitPaddle ball paddle of
+        Just paddle_ ->
+            let
+                ballCenter =
+                    Util.Vector.getX ball.position + ball.width / 2
+
+                paddleCenter =
+                    Util.Vector.getX paddle.position + paddle_.width / 2
+            in
+            (ballCenter - paddleCenter) * scale
+
+        Nothing ->
+            0
 
 
 
@@ -164,3 +208,27 @@ viewPaddleScore score =
         , Svg.Attributes.y "22"
         ]
         [ Svg.text <| String.toUpper <| "Points " ++ String.fromInt score ]
+
+
+viewLives : Int -> Svg msg
+viewLives lives =
+    let
+        ( width, height ) =
+            ( 60, 10 )
+
+        offset =
+            44
+    in
+    List.range 0 (lives - 1)
+        |> List.map
+            (\index ->
+                Svg.image
+                    [ Svg.Attributes.xlinkHref "/images/pixel-paddle.png"
+                    , Svg.Attributes.x <| String.fromInt <| index * offset
+                    , Svg.Attributes.y <| String.fromFloat <| Breakout.Window.initialWindow.height - 20
+                    , Svg.Attributes.width <| String.fromInt width
+                    , Svg.Attributes.height <| String.fromInt height
+                    ]
+                    []
+            )
+        |> Svg.g []
