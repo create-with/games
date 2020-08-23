@@ -304,55 +304,22 @@ updateBallWithWindowCollision maybeWindowEdge ball =
             }
 
         Just Breakout.Window.Left ->
-            case compare 0 vy of
-                LT ->
-                    { ball
-                        | position = ( x + ball.width / 2, y + ball.height / 2 )
-                        , velocity = ( negate vx, vy )
-                    }
-
-                GT ->
-                    { ball
-                        | position = ( x + ball.width / 2, y - ball.height / 2 )
-                        , velocity = ( negate vx, vy )
-                    }
-
-                EQ ->
-                    ball
+            { ball
+                | position = ( x + ball.width / 2, y )
+                , velocity = ( negate vx, vy )
+            }
 
         Just Breakout.Window.Right ->
-            case compare 0 vy of
-                LT ->
-                    { ball
-                        | position = ( x - ball.width / 2, y )
-                        , velocity = ( negate vx, vy )
-                    }
-
-                GT ->
-                    { ball
-                        | position = ( x - ball.width / 2, y )
-                        , velocity = ( negate vx, vy )
-                    }
-
-                EQ ->
-                    ball
+            { ball
+                | position = ( x - ball.width / 2, y )
+                , velocity = ( negate vx, vy )
+            }
 
         Just Breakout.Window.Top ->
-            case compare 0 vx of
-                LT ->
-                    { ball
-                        | position = ( x + ball.width / 2, y + ball.height / 2 )
-                        , velocity = ( vx, negate vy )
-                    }
-
-                GT ->
-                    { ball
-                        | position = ( x - ball.width / 2, y + ball.height / 2 )
-                        , velocity = ( vx, negate vy )
-                    }
-
-                EQ ->
-                    ball
+            { ball
+                | position = ( x, y + ball.height / 2 )
+                , velocity = ( vx, negate vy )
+            }
 
         Nothing ->
             ball
