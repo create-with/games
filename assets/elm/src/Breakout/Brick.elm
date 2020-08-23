@@ -148,7 +148,6 @@ ballHitBrick ball brick =
 
 getBrickHitByBall : Ball -> Bricks -> Maybe Brick
 getBrickHitByBall ball bricks =
-    -- REFACTOR
     bricks
         |> Dict.filter (\_ brick -> ballHitBrick ball brick)
         |> Dict.values

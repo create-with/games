@@ -219,8 +219,7 @@ viewLives lives =
         offset =
             44
     in
-    (lives - 1)
-        |> List.range 0
+    List.range 0 (lives - 1)
         |> List.map
             (\index ->
                 Svg.image
