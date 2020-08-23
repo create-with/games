@@ -162,28 +162,15 @@ update msg model =
             )
 
         CollisionGeneratedRandomWindowShakePositions ( randomX, randomY ) ->
-            let
-                shakeyness =
-                    1.5
-            in
-            ( { model | window = shakeWindow randomX randomY shakeyness model.window }, sleepShake )
+            ( { model | window = shakeWindow randomX randomY 1.0 model.window }, sleepShake )
 
         Particles ->
-            let
-                particleSpawnPosition =
-                    particleAt (Util.Vector.getX model.ball.position) (Util.Vector.getY model.ball.position)
-
-                particles =
-                    Random.list 12 particleSpawnPosition
-            in
-            ( { model | particleSystem = Particle.System.burst particles model.particleSystem }
+            ( { model | particleSystem = Particle.System.burst (particlesGenerator 10 model.ball.position) model.particleSystem }
             , generateRandomWindowShake
             )
 
         ParticleMsg particleMsg ->
-            ( { model | particleSystem = Particle.System.update particleMsg model.particleSystem }
-            , Cmd.none
-            )
+            ( { model | particleSystem = Particle.System.update particleMsg model.particleSystem }, Cmd.none )
 
         PlayerClickedPlayMusicRadioButton playMusicValue ->
             ( { model | playMusic = playMusicValue }, playMusicCommand playMusicValue "music.wav" )
@@ -195,33 +182,10 @@ update msg model =
             ( { model | showFps = showFpsValue }, Cmd.none )
 
         PlayerClickedWindow ->
-            ( model, Process.sleep 0 |> Task.perform (\_ -> Particles) )
+            ( model, Process.sleep 10 |> Task.perform (\_ -> Particles) )
 
         PlayerPressedKeyDown key ->
-            case key of
-                " " ->
-                    case model.gameState of
-                        StartingScreen ->
-                            ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
-
-                        PlayingScreen ->
-                            let
-                                setBallInMotion ball =
-                                    { ball | velocity = initialModel.ball.velocity }
-                            in
-                            ( { model | ball = setBallInMotion model.ball }, Cmd.none )
-
-                        PauseScreen ->
-                            ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
-
-                        EndingScreen ->
-                            ( initialModel, Cmd.none )
-
-                "Escape" ->
-                    ( { model | gameState = updateGameState PauseScreen model }, Cmd.none )
-
-                _ ->
-                    ( updateKeyPress key model, Cmd.none )
+            handlePlayerKeyPress key model
 
         PlayerReleasedKey _ ->
             ( { model | playerKeyPress = Set.empty }, Cmd.none )
@@ -232,6 +196,41 @@ update msg model =
 
 
 -- UPDATES
+
+
+handlePlayerKeyPress : String -> Model -> ( Model, Cmd Msg )
+handlePlayerKeyPress key model =
+    case key of
+        " " ->
+            case model.gameState of
+                StartingScreen ->
+                    ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
+
+                PlayingScreen ->
+                    ( { model | ball = setInitialBallVelocity model.ball }, Cmd.none )
+
+                PauseScreen ->
+                    ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
+
+                EndingScreen ->
+                    ( initialModel, Cmd.none )
+
+        "Escape" ->
+            ( { model | gameState = updateGameState PauseScreen model }, Cmd.none )
+
+        _ ->
+            ( updateKeyPress key model, Cmd.none )
+
+
+setInitialBallVelocity : Ball -> Ball
+setInitialBallVelocity ball =
+    { ball | velocity = initialModel.ball.velocity }
+
+
+particlesGenerator : Int -> ( Float, Float ) -> Generator (List (Particle Confetti))
+particlesGenerator numberOfParticles ( x, y ) =
+    Random.list numberOfParticles <|
+        particleAt x y
 
 
 shakeWindow : Float -> Float -> Float -> Window -> Window
@@ -444,7 +443,7 @@ commands : Maybe Brick -> Cmd Msg
 commands brickHitByBall =
     case brickHitByBall of
         Just _ ->
-            Process.sleep 0 |> Task.perform (\_ -> Particles)
+            Process.sleep 10 |> Task.perform (\_ -> Particles)
 
         Nothing ->
             Cmd.none
