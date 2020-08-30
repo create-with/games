@@ -710,7 +710,7 @@ viewEndingScreen gameState bricks =
             Html.div [ Html.Attributes.class "pt-4 text-center" ]
                 [ Html.h2 [ Html.Attributes.class "font-extrabold font-gray-800 pb-1 text-xl" ]
                     [ if Dict.isEmpty bricks then
-                        Html.text "🎉 Congrats ! You beat the game!"
+                        Html.text "🎉 Congrats! You beat the game!"
 
                       else
                         Html.text "Game Over!"

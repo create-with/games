@@ -18,8 +18,8 @@ import Util.Icon
 
 footer : Html a
 footer =
-    Html.footer [ Html.Attributes.class "bg-black bottom-0 font-semibold px-24 py-12 relative text-sm text-white w-full" ]
-        [ Html.ul [ Html.Attributes.class "flex justify-evenly" ]
+    Html.footer [ Html.Attributes.class "bg-black bottom-0 font-semibold px-16 py-8 relative sm:px-6 text-md text-white w-full" ]
+        [ Html.ul [ Html.Attributes.class "flex flex-col sm:justify-evenly sm:flex-row" ]
             [ footerItem "Home" "/" Util.Icon.home "pink"
             , footerItem "GitHub" "https://github.com/create-with/games" Util.Icon.github "purple"
             , footerItem "Twitter" "https://twitter.com/bijanbwb" Util.Icon.twitter "blue"
@@ -39,8 +39,8 @@ footerItem title url icon color =
           else
             Html.Attributes.target "_self"
         ]
-        [ Html.li [ Html.Attributes.class <| "flex hover:text-" ++ color ++ "-300 self-center" ]
-            [ Html.span [ Html.Attributes.class "self-center" ] [ icon ]
+        [ Html.li [ Html.Attributes.class <| "flex hover:text-" ++ color ++ "-300 justify-center self-center py-4" ]
+            [ Html.span [ Html.Attributes.class "mr-1 self-center" ] [ icon ]
             , Html.span [ Html.Attributes.class "self-center" ] [ Html.text title ]
             ]
         ]
