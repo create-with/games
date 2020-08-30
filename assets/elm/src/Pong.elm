@@ -477,9 +477,7 @@ logo =
 viewGame : Model -> Html Msg
 viewGame model =
     Html.section [ Html.Attributes.class "flex justify-center my-4" ]
-        [ Html.div [ Html.Attributes.class "flex-shrink-0" ]
-            [ viewSvg Pong.Window.globalWindow model ]
-        ]
+        [ viewSvg Pong.Window.globalWindow model ]
 
 
 viewSvg : Window -> Model -> Svg msg
