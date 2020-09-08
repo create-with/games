@@ -14,10 +14,13 @@ import Browser.Events
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode
+import Math.Matrix4 exposing (Mat4)
+import Math.Vector3 exposing (Vec3)
 import Set
 import Util.Fps exposing (Time)
 import Util.Keyboard exposing (Controls)
 import Util.View
+import WebGL exposing (Mesh, Shader)
 
 
 
@@ -25,7 +28,8 @@ import Util.View
 
 
 type alias Model =
-    { playerKeyPress : Controls
+    { deltaTime : Time
+    , playerKeyPress : Controls
     }
 
 
@@ -35,7 +39,8 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { playerKeyPress = Util.Keyboard.initialKeys
+    { deltaTime = 0.0
+    , playerKeyPress = Util.Keyboard.initialKeys
     }
 
 
@@ -62,8 +67,8 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        BrowserAdvancedAnimationFrame deltaTime ->
-            ( model, Cmd.none )
+        BrowserAdvancedAnimationFrame _ ->
+            ( { model | deltaTime = model.deltaTime + 10.0 }, Cmd.none )
 
         PlayerPressedKeyDown key ->
             ( updateKeyPress key model, Cmd.none )
@@ -127,7 +132,8 @@ view msg model =
 
 viewMain : Model -> Html Msg
 viewMain model =
-    Html.main_ [ Html.Attributes.class "bg-yellow-200 h-full p-8" ]
+    Html.main_
+        [ Html.Attributes.class "bg-yellow-200 h-full p-8" ]
         [ viewHeader
         , viewGame model
         ]
@@ -136,10 +142,83 @@ viewMain model =
 viewHeader : Html msg
 viewHeader =
     Html.header [ Html.Attributes.class "flex justify-center" ]
-        [ Html.h1 [] [ Html.text "Adventure" ] ]
+        [ Html.h1 [ Html.Attributes.class "font-black text-5xl" ]
+            [ Html.text "Adventure" ]
+        ]
 
 
 viewGame : Model -> Html Msg
 viewGame model =
     Html.section [ Html.Attributes.class "flex justify-center my-4" ]
-        [ Html.text "Game goes here..." ]
+        [ WebGL.toHtml
+            [ Html.Attributes.height 400
+            , Html.Attributes.width 600
+            , Html.Attributes.style "display" "block"
+            ]
+            [ WebGL.entity
+                vertexShader
+                fragmentShader
+                mesh
+                { perspective = perspective (model.deltaTime / 1000) }
+            ]
+        ]
+
+
+perspective : Float -> Mat4
+perspective t =
+    Math.Matrix4.mul
+        (Math.Matrix4.makePerspective 45 1 0.01 100)
+        (Math.Matrix4.makeLookAt (Math.Vector3.vec3 (4 * cos t) 0 (4 * sin t)) (Math.Vector3.vec3 0 0 0) (Math.Vector3.vec3 0 1 0))
+
+
+
+-- Mesh
+
+
+type alias Vertex =
+    { position : Vec3
+    , color : Vec3
+    }
+
+
+mesh : Mesh Vertex
+mesh =
+    WebGL.triangles
+        [ ( Vertex (Math.Vector3.vec3 0 0 0) (Math.Vector3.vec3 1 0 0)
+          , Vertex (Math.Vector3.vec3 1 1 0) (Math.Vector3.vec3 0 1 0)
+          , Vertex (Math.Vector3.vec3 1 -1 0) (Math.Vector3.vec3 0 0 1)
+          )
+        ]
+
+
+
+-- Shaders
+
+
+type alias Uniforms =
+    { perspective : Mat4 }
+
+
+vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }
+vertexShader =
+    [glsl|
+        attribute vec3 position;
+        attribute vec3 color;
+        uniform mat4 perspective;
+        varying vec3 vcolor;
+        void main () {
+            gl_Position = perspective * vec4(position, 1.0);
+            vcolor = color;
+        }
+    |]
+
+
+fragmentShader : Shader {} Uniforms { vcolor : Vec3 }
+fragmentShader =
+    [glsl|
+        precision mediump float;
+        varying vec3 vcolor;
+        void main () {
+            gl_FragColor = vec4(vcolor, 1.0);
+        }
+    |]
