@@ -10,6 +10,7 @@ module App exposing
 
 -- IMPORTS
 
+import Adventure
 import Breakout
 import Browser
 import Browser.Navigation
@@ -55,6 +56,7 @@ init flags url key =
 type Msg
     = ChangedUrl Url.Url
     | ClickedUrl Browser.UrlRequest
+    | ReceivedAdventureMsg Adventure.Msg
     | ReceivedBreakoutMsg Breakout.Msg
     | ReceivedPongMsg Pong.Msg
 
@@ -67,6 +69,14 @@ update msg model =
 
         ClickedUrl urlRequest ->
             clickedUrl urlRequest model
+
+        ReceivedAdventureMsg pageMsg ->
+            case model.route of
+                Route.Adventure pageModel ->
+                    changeToPage model Route.Adventure ReceivedAdventureMsg <| Adventure.update pageMsg pageModel
+
+                _ ->
+                    ( model, Cmd.none )
 
         ReceivedBreakoutMsg pageMsg ->
             case model.route of
@@ -112,11 +122,14 @@ clickedUrl urlRequest model =
 subscriptions : Model -> Sub Msg
 subscriptions { route } =
     case route of
-        Route.Breakout breakoutModel ->
-            Sub.map ReceivedBreakoutMsg <| Breakout.subscriptions breakoutModel
+        Route.Adventure pageModel ->
+            Sub.map ReceivedAdventureMsg <| Adventure.subscriptions pageModel
 
-        Route.Pong pongModel ->
-            Sub.map ReceivedPongMsg <| Pong.subscriptions pongModel
+        Route.Breakout pageModel ->
+            Sub.map ReceivedBreakoutMsg <| Breakout.subscriptions pageModel
+
+        Route.Pong pageModel ->
+            Sub.map ReceivedPongMsg <| Pong.subscriptions pageModel
 
         _ ->
             Sub.none
@@ -129,8 +142,11 @@ subscriptions { route } =
 view : Model -> Browser.Document Msg
 view { route } =
     case route of
-        Route.Breakout breakoutModel ->
-            Breakout.view ReceivedBreakoutMsg breakoutModel
+        Route.Adventure pageModel ->
+            Adventure.view ReceivedAdventureMsg pageModel
+
+        Route.Breakout pageModel ->
+            Breakout.view ReceivedBreakoutMsg pageModel
 
         Route.Landing ->
             Landing.view
@@ -138,8 +154,8 @@ view { route } =
         Route.NotFound ->
             NotFound.view
 
-        Route.Pong pongModel ->
-            Pong.view ReceivedPongMsg pongModel
+        Route.Pong pageModel ->
+            Pong.view ReceivedPongMsg pageModel
 
 
 
@@ -150,6 +166,7 @@ urlParser : Model -> Url.Parser.Parser (( Model, Cmd Msg ) -> b) b
 urlParser model =
     Url.Parser.oneOf
         [ landingPageParser model
+        , pageParser model "adventure" Route.Adventure ReceivedAdventureMsg <| Adventure.init model.flags
         , pageParser model "breakout" Route.Breakout ReceivedBreakoutMsg <| Breakout.init model.flags
         , pageParser model "pong" Route.Pong ReceivedPongMsg <| Pong.init model.flags
         ]
