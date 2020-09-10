@@ -26,6 +26,7 @@ defmodule GamesWeb.Router do
   scope "/", GamesWeb do
     pipe_through :browser
 
+    live "/beta", BetaLive, :index
     live "/*path", PageLive, :index
   end
 end

@@ -1,4 +1,4 @@
-defmodule GamesWeb.PageLive do
+defmodule GamesWeb.BetaLive do
   use GamesWeb, :live_view
 
   alias Phoenix.LiveView
@@ -6,7 +6,7 @@ defmodule GamesWeb.PageLive do
   @impl LiveView
   def render(assigns) do
     ~L"""
-    <div id="elm" phx-hook="ElmHook"></div>
+    <div id="beta" phx-hook="BetaHook"></div>
     """
   end
 
