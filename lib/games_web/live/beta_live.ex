@@ -6,7 +6,9 @@ defmodule GamesWeb.BetaLive do
   @impl LiveView
   def render(assigns) do
     ~L"""
-    <div id="beta" phx-hook="BetaHook"></div>
+    <div class="flex justify-center py-10" id="beta" phx-hook="BetaHook">
+      <canvas id="webgl-canvas" width="800" height="600"></canvas>
+    </div>
     """
   end
 
