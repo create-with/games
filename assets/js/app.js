@@ -42,25 +42,24 @@ hooks.elm = {
     app.ports.playMusic.subscribe(data => {
       // data example: { play: true, soundFile: "music.wav" }
 
-      const soundPath = "/sounds/" + data.soundFile;
-      const sound = new Howl({
-        src: [soundPath],
-        loop: true,
-        volume: 0.15
-      });
+      if (data.play) {
+        const soundPath = "/sounds/" + data.soundFile;
+        const sound = new Howl({
+          src: [soundPath],
+          loop: true,
+          volume: 0.15
+        });
 
-      const startPlaying = () => {
-        const soundId = sound.play();
-        sound.rate(0.95, soundId);
-        sound.fade(0, 1, 2000, soundId);
+        const startPlaying = () => {
+          const soundId = sound.play();
+          sound.rate(0.95, soundId);
+          sound.fade(0, 1, 2000, soundId);
+        }
+
+        startPlaying();
       }
 
-      const stopPlaying = () => {
-        Howler.stop()
-      }
-
-      if (data.play) { startPlaying() }
-      if (!data.play) { stopPlaying() }
+      if (!data.play) { Howler.stop(); }
     });
 
     // Prevent Default Keyboard Behavior
