@@ -210,13 +210,23 @@ handlePlayerKeyPress key model =
                     ( { model | ball = resetBallVelocity model.ball }, Cmd.none )
 
                 PauseScreen ->
-                    ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
+                    ( { model
+                        | gameState = updateGameState PlayingScreen model
+                        , playMusic = Util.Sound.On
+                      }
+                    , playMusicCommand Util.Sound.On "music.wav"
+                    )
 
                 EndingScreen ->
                     ( initialModel, Cmd.none )
 
         "Escape" ->
-            ( { model | gameState = updateGameState PauseScreen model }, Cmd.none )
+            ( { model
+                | gameState = updateGameState PauseScreen model
+                , playMusic = Util.Sound.Off
+              }
+            , playMusicCommand Util.Sound.Off "music.wav"
+            )
 
         _ ->
             ( updateKeyPress key model, Cmd.none )
