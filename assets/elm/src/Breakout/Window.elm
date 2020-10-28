@@ -52,11 +52,11 @@ initialWindow =
 -- UPDATE
 
 
-shake : Float -> Float -> Float -> Window -> Window
-shake x y scale window =
+shake : Float -> Float -> Window -> Window
+shake x y window =
     { window
-        | x = x * scale
-        , y = y * scale
+        | x = x
+        , y = y
     }
 
 

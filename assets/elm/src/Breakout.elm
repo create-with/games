@@ -162,7 +162,7 @@ update msg model =
             )
 
         CollisionGeneratedRandomWindowShakePositions ( randomX, randomY ) ->
-            ( { model | window = Breakout.Window.shake randomX randomY 1.0 model.window }, completeWindowShake )
+            ( { model | window = Breakout.Window.shake randomX randomY model.window }, completeWindowShake )
 
         Particles ->
             ( { model | particleSystem = Particle.System.burst (particlesGenerator 10 model.ball.position) model.particleSystem }
@@ -210,13 +210,23 @@ handlePlayerKeyPress key model =
                     ( { model | ball = resetBallVelocity model.ball }, Cmd.none )
 
                 PauseScreen ->
-                    ( { model | gameState = updateGameState PlayingScreen model }, Cmd.none )
+                    ( { model
+                        | gameState = updateGameState PlayingScreen model
+                        , playMusic = Util.Sound.On
+                      }
+                    , playMusicCommand Util.Sound.On "music.wav"
+                    )
 
                 EndingScreen ->
                     ( initialModel, Cmd.none )
 
         "Escape" ->
-            ( { model | gameState = updateGameState PauseScreen model }, Cmd.none )
+            ( { model
+                | gameState = updateGameState PauseScreen model
+                , playMusic = Util.Sound.Off
+              }
+            , playMusicCommand Util.Sound.Off "music.wav"
+            )
 
         _ ->
             ( updateKeyPress key model, Cmd.none )
@@ -414,7 +424,7 @@ completeWindowShake =
 
 generateRandomWindowShake : Cmd Msg
 generateRandomWindowShake =
-    Random.generate CollisionGeneratedRandomWindowShakePositions randomWindowShakeGenerator
+    Random.generate CollisionGeneratedRandomWindowShakePositions randomWindowShakePairGenerator
 
 
 playMusicCommand : PlayMusic -> String -> Cmd Msg
@@ -480,15 +490,15 @@ particlesGenerator numberOfParticles ( x, y ) =
         particleAt x y
 
 
-randomWindowShakeGenerator : Generator ( Float, Float )
+randomWindowShakePairGenerator : Generator ( Float, Float )
+randomWindowShakePairGenerator =
+    Random.pair randomWindowShakeGenerator randomWindowShakeGenerator
+
+
+randomWindowShakeGenerator : Generator Float
 randomWindowShakeGenerator =
-    let
-        values =
-            (List.range -12 -6 ++ List.range 6 12)
-                |> List.map toFloat
-                |> Random.uniform 6.0
-    in
-    Random.pair values values
+    Random.pair (Random.uniform 1 [ -1 ]) (Random.float 5 16)
+        |> Random.map (\( sign, value ) -> sign * value)
 
 
 
