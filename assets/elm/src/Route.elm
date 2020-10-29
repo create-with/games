@@ -2,6 +2,7 @@ module Route exposing (Route(..))
 
 -- IMPORTS
 
+import Adventure
 import Breakout
 import Pong
 
@@ -11,7 +12,8 @@ import Pong
 
 
 type Route
-    = Breakout Breakout.Model
+    = Adventure Adventure.Model
+    | Breakout Breakout.Model
     | Landing
     | Pong Pong.Model
     | NotFound

@@ -1,4 +1,4 @@
-defmodule GamesWeb.PageLive do
+defmodule GamesWeb.BetaLive do
   use GamesWeb, :live_view
 
   alias Phoenix.LiveView
@@ -6,7 +6,9 @@ defmodule GamesWeb.PageLive do
   @impl LiveView
   def render(assigns) do
     ~L"""
-    <div id="elm" phx-hook="ElmHook"></div>
+    <div class="flex justify-center py-10" id="beta" phx-hook="BetaHook">
+      <canvas id="webgl-canvas" width="800" height="600"></canvas>
+    </div>
     """
   end
 
