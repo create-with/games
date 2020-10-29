@@ -3,7 +3,7 @@ import "phoenix_html"
 import { Socket } from "phoenix"
 import NProgress from "nprogress"
 import { LiveSocket } from "phoenix_live_view"
-import BetaHook from "./beta"
+import BetaHook from "./beta/Index"
 import ElmHook from "./elm"
 import HelloTypeScript from "./src/HelloTypeScript";
 
