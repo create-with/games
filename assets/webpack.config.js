@@ -69,8 +69,23 @@ module.exports = (env, options) => {
               verbose: devMode
             }
           }
+        },
+        {
+          test: /\.(j|t)s$/,
+          exclude: /node_modules/,
+          use: [
+            {
+              loader: "babel-loader"
+            },
+            {
+              loader: "ts-loader"
+            }
+          ]
         }
       ]
+    },
+    resolve: {
+      extensions: [".ts", ".js"]
     },
     plugins: [
       new MiniCssExtractPlugin({ filename: '../css/app.css' }),
