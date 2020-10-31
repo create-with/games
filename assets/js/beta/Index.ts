@@ -11,9 +11,164 @@ const BetaHook = {
       return;
     }
 
-    // Black Background
     webglContext.clearColor(0.0, 0.0, 0.0, 1.0);
     webglContext.clear(webglContext.COLOR_BUFFER_BIT);
+
+    const shaderProgram: WebGLProgram | null = initializeShaderProgram(webglContext, vertexShaderSource, fragmentShaderSource);
+
+    if (shaderProgram) {
+      const programInfo = {
+        program: shaderProgram,
+        attribLocations: {
+          vertexPosition: webglContext.getAttribLocation(shaderProgram, 'aVertexPosition'),
+        },
+        uniformLocations: {
+          projectionMatrix: webglContext.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+          modelViewMatrix: webglContext.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+        },
+      };
+
+      const buffers = initializeBuffers(webglContext);
+
+      drawScene(webglContext, programInfo, buffers);
+    }
+  }
+}
+
+const vertexShaderSource: string = `
+attribute vec4 aVertexPosition;
+
+uniform mat4 uModelViewMatrix;
+uniform mat4 uProjectionMatrix;
+
+void main() {
+  gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+}
+`;
+
+const fragmentShaderSource: string = `
+void main() {
+  gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+}
+`;
+
+const loadShader = (webglContext: WebGLRenderingContext, type: number, source: string) => {
+  const shader: WebGLShader | null = webglContext.createShader(type);
+
+  if (shader) {
+    webglContext.shaderSource(shader, source);
+    webglContext.compileShader(shader);
+
+    if (!webglContext.getShaderParameter(shader, webglContext.COMPILE_STATUS)) {
+      alert("An error occurred compiling the shaders: " + webglContext.getShaderInfoLog(shader));
+      webglContext.deleteShader(shader);
+      return null;
+    }
+  }
+
+  return shader;
+};
+
+
+const initializeShaderProgram = (webglContext: WebGLRenderingContext, vertexShaderSource: string, fragmentShaderSource: string) => {
+  const vertexShader: WebGLShader | null = loadShader(webglContext, webglContext.VERTEX_SHADER, vertexShaderSource);
+  const fragmentShader: WebGLShader | null = loadShader(webglContext, webglContext.FRAGMENT_SHADER, fragmentShaderSource);
+
+  const shaderProgram: WebGLProgram | null = webglContext.createProgram();
+
+  if (shaderProgram) {
+    if (vertexShader) webglContext.attachShader(shaderProgram, vertexShader);
+    if (fragmentShader) webglContext.attachShader(shaderProgram, fragmentShader);
+    webglContext.linkProgram(shaderProgram);
+
+    if (!webglContext.getProgramParameter(shaderProgram, webglContext.LINK_STATUS)) {
+      alert('Unable to initialize the shader program: ' + webglContext.getProgramInfoLog(shaderProgram));
+      return null;
+    }
+  }
+
+  return shaderProgram;
+}
+
+const initializeBuffers = (webglContext: WebGLRenderingContext) => {
+  const positionBuffer: WebGLBuffer | null = webglContext.createBuffer();
+
+  webglContext.bindBuffer(webglContext.ARRAY_BUFFER, positionBuffer);
+
+  const positions = [
+    -1.0, 1.0,
+    1.0, 1.0,
+    -1.0, -1.0,
+    1.0, -1.0,
+  ];
+
+  webglContext.bufferData(webglContext.ARRAY_BUFFER,
+    new Float32Array(positions),
+    webglContext.STATIC_DRAW);
+
+  return { position: positionBuffer };
+}
+
+const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffers: any) => {
+  webglContext.clearColor(0.0, 0.0, 0.0, 1.0);
+  webglContext.clearDepth(1.0);
+  webglContext.enable(webglContext.DEPTH_TEST);
+  webglContext.depthFunc(webglContext.LEQUAL);
+
+  webglContext.clear(webglContext.COLOR_BUFFER_BIT | webglContext.DEPTH_BUFFER_BIT);
+
+  const fieldOfView = 45 * Math.PI / 180;   // in radians
+  const zNear = 0.1;
+  const zFar = 100.0;
+  const projectionMatrix = mat4.create();
+
+  const aspect = webglContext.canvas.clientWidth / webglContext.canvas.clientHeight;
+
+  mat4.perspective(projectionMatrix,
+    fieldOfView,
+    aspect,
+    zNear,
+    zFar);
+
+  const modelViewMatrix = mat4.create();
+
+  mat4.translate(modelViewMatrix,
+    modelViewMatrix,
+    [-0.0, 0.0, -6.0]);
+
+  {
+    const numComponents = 2;
+    const type = webglContext.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    webglContext.bindBuffer(webglContext.ARRAY_BUFFER, buffers.position);
+    webglContext.vertexAttribPointer(
+      programInfo.attribLocations.vertexPosition,
+      numComponents,
+      type,
+      normalize,
+      stride,
+      offset);
+    webglContext.enableVertexAttribArray(
+      programInfo.attribLocations.vertexPosition);
+  }
+
+  webglContext.useProgram(programInfo.program);
+
+  webglContext.uniformMatrix4fv(
+    programInfo.uniformLocations.projectionMatrix,
+    false,
+    projectionMatrix);
+  webglContext.uniformMatrix4fv(
+    programInfo.uniformLocations.modelViewMatrix,
+    false,
+    modelViewMatrix);
+
+  {
+    const offset = 0;
+    const vertexCount = 4;
+    webglContext.drawArrays(webglContext.TRIANGLE_STRIP, offset, vertexCount);
   }
 }
 
