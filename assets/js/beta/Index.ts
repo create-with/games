@@ -1,3 +1,5 @@
+let squareRotation: number = 0.0;
+
 const BetaHook = {
   mounted() {
     const betaNode: HTMLElement | null = document.getElementById("beta");
@@ -31,7 +33,18 @@ const BetaHook = {
 
       const buffers = initializeBuffers(webglContext);
 
-      drawScene(webglContext, programInfo, buffers);
+      let then: number = 0;
+
+      const render = (now: number): void => {
+        now *= 0.001;
+        const deltaTime = now - then;
+        then = now;
+
+        drawScene(webglContext, programInfo, buffers, deltaTime);
+
+        requestAnimationFrame(render);
+      }
+      requestAnimationFrame(render);
     }
   }
 }
@@ -129,7 +142,7 @@ const initializeBuffers = (webglContext: WebGLRenderingContext) => {
   };
 }
 
-const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffers: any) => {
+const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffers: any, deltaTime: number) => {
   webglContext.clearColor(0.0, 0.0, 0.0, 1.0);
   webglContext.clearDepth(1.0);
   webglContext.enable(webglContext.DEPTH_TEST);
@@ -152,9 +165,9 @@ const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffer
 
   const modelViewMatrix = mat4.create();
 
-  mat4.translate(modelViewMatrix,
-    modelViewMatrix,
-    [-0.0, 0.0, -6.0]);
+  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+
+  mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 0, 1]);
 
   {
     const numComponents = 2;
@@ -208,6 +221,8 @@ const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffer
     const vertexCount = 4;
     webglContext.drawArrays(webglContext.TRIANGLE_STRIP, offset, vertexCount);
   }
+
+  squareRotation += deltaTime;
 }
 
 export default BetaHook;
