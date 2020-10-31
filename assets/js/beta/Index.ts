@@ -1,3 +1,5 @@
+import { mat4 } from "gl-matrix";
+
 let cubeRotation: number = 0.0;
 
 const BetaHook = {
@@ -211,7 +213,8 @@ const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffer
   const zFar = 100.0;
   const projectionMatrix = mat4.create();
 
-  const aspect = webglContext.canvas.clientWidth / webglContext.canvas.clientHeight;
+  const webglCanvas = webglContext.canvas as HTMLCanvasElement;
+  const aspect = webglCanvas.clientWidth / webglCanvas.clientHeight;
 
   mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
