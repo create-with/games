@@ -1,4 +1,4 @@
-let squareRotation: number = 0.0;
+let cubeRotation: number = 0.0;
 
 const BetaHook = {
   mounted() {
@@ -116,29 +116,85 @@ const initializeBuffers = (webglContext: WebGLRenderingContext) => {
   webglContext.bindBuffer(webglContext.ARRAY_BUFFER, positionBuffer);
 
   const positions: number[] = [
-    -1.0, 1.0,
-    1.0, 1.0,
-    -1.0, -1.0,
-    1.0, -1.0,
+    // Front face
+    -1.0, -1.0, 1.0,
+    1.0, -1.0, 1.0,
+    1.0, 1.0, 1.0,
+    -1.0, 1.0, 1.0,
+
+    // Back face
+    -1.0, -1.0, -1.0,
+    -1.0, 1.0, -1.0,
+    1.0, 1.0, -1.0,
+    1.0, -1.0, -1.0,
+
+    // Top face
+    -1.0, 1.0, -1.0,
+    -1.0, 1.0, 1.0,
+    1.0, 1.0, 1.0,
+    1.0, 1.0, -1.0,
+
+    // Bottom face
+    -1.0, -1.0, -1.0,
+    1.0, -1.0, -1.0,
+    1.0, -1.0, 1.0,
+    -1.0, -1.0, 1.0,
+
+    // Right face
+    1.0, -1.0, -1.0,
+    1.0, 1.0, -1.0,
+    1.0, 1.0, 1.0,
+    1.0, -1.0, 1.0,
+
+    // Left face
+    -1.0, -1.0, -1.0,
+    -1.0, -1.0, 1.0,
+    -1.0, 1.0, 1.0,
+    -1.0, 1.0, -1.0,
   ];
 
   webglContext.bufferData(webglContext.ARRAY_BUFFER,
     new Float32Array(positions),
     webglContext.STATIC_DRAW);
 
-  const colors: number[] = [
-    1.0, 1.0, 1.0, 1.0,    // white
-    1.0, 0.0, 0.0, 1.0,    // red
-    0.0, 1.0, 0.0, 1.0,    // green
-    0.0, 0.0, 1.0, 1.0,    // blue
+  const faceColors = [
+    [1.0, 1.0, 1.0, 1.0],    // Front face: white
+    [1.0, 0.0, 0.0, 1.0],    // Back face: red
+    [0.0, 1.0, 0.0, 1.0],    // Top face: green
+    [0.0, 0.0, 1.0, 1.0],    // Bottom face: blue
+    [1.0, 1.0, 0.0, 1.0],    // Right face: yellow
+    [1.0, 0.0, 1.0, 1.0],    // Left face: purple
   ];
+
+  let colors: number[] = [];
+
+  for (var j = 0; j < faceColors.length; ++j) {
+    const c = faceColors[j];
+    colors = colors.concat(c, c, c, c);
+  }
 
   const colorBuffer: WebGLBuffer | null = webglContext.createBuffer();
   webglContext.bindBuffer(webglContext.ARRAY_BUFFER, colorBuffer);
   webglContext.bufferData(webglContext.ARRAY_BUFFER, new Float32Array(colors), webglContext.STATIC_DRAW);
 
+  const indexBuffer: WebGLBuffer | null = webglContext.createBuffer();
+  webglContext.bindBuffer(webglContext.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+  const indices: number[] = [
+    0, 1, 2, 0, 2, 3,    // front
+    4, 5, 6, 4, 6, 7,    // back
+    8, 9, 10, 8, 10, 11,   // top
+    12, 13, 14, 12, 14, 15,   // bottom
+    16, 17, 18, 16, 18, 19,   // right
+    20, 21, 22, 20, 22, 23,   // left
+  ];
+
+  webglContext.bufferData(webglContext.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), webglContext.STATIC_DRAW);
+
   return {
-    position: positionBuffer, color: colorBuffer
+    position: positionBuffer,
+    color: colorBuffer,
+    indices: indexBuffer
   };
 }
 
@@ -157,20 +213,17 @@ const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffer
 
   const aspect = webglContext.canvas.clientWidth / webglContext.canvas.clientHeight;
 
-  mat4.perspective(projectionMatrix,
-    fieldOfView,
-    aspect,
-    zNear,
-    zFar);
+  mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
   const modelViewMatrix = mat4.create();
 
   mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
 
-  mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 0, 1]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 0, 1]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation * .7, [0, 1, 0]);
 
   {
-    const numComponents = 2;
+    const numComponents = 3;
     const type = webglContext.FLOAT;
     const normalize = false;
     const stride = 0;
@@ -222,7 +275,16 @@ const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffer
     webglContext.drawArrays(webglContext.TRIANGLE_STRIP, offset, vertexCount);
   }
 
-  squareRotation += deltaTime;
+  webglContext.bindBuffer(webglContext.ELEMENT_ARRAY_BUFFER, buffers.indices);
+
+  {
+    const vertexCount = 36;
+    const type = webglContext.UNSIGNED_SHORT;
+    const offset = 0;
+    webglContext.drawElements(webglContext.TRIANGLES, vertexCount, type, offset);
+  }
+
+  cubeRotation += deltaTime;
 }
 
 export default BetaHook;
