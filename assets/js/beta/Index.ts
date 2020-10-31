@@ -21,6 +21,7 @@ const BetaHook = {
         program: shaderProgram,
         attribLocations: {
           vertexPosition: webglContext.getAttribLocation(shaderProgram, 'aVertexPosition'),
+          vertexColor: webglContext.getAttribLocation(shaderProgram, 'aVertexColor'),
         },
         uniformLocations: {
           projectionMatrix: webglContext.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
@@ -37,18 +38,24 @@ const BetaHook = {
 
 const vertexShaderSource: string = `
 attribute vec4 aVertexPosition;
+attribute vec4 aVertexColor;
 
 uniform mat4 uModelViewMatrix;
 uniform mat4 uProjectionMatrix;
 
+varying lowp vec4 vColor;
+
 void main() {
   gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+  vColor = aVertexColor;
 }
 `;
 
 const fragmentShaderSource: string = `
-void main() {
-  gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+varying lowp vec4 vColor;
+
+void main(void) {
+  gl_FragColor = vColor;
 }
 `;
 
@@ -95,7 +102,7 @@ const initializeBuffers = (webglContext: WebGLRenderingContext) => {
 
   webglContext.bindBuffer(webglContext.ARRAY_BUFFER, positionBuffer);
 
-  const positions = [
+  const positions: number[] = [
     -1.0, 1.0,
     1.0, 1.0,
     -1.0, -1.0,
@@ -106,7 +113,20 @@ const initializeBuffers = (webglContext: WebGLRenderingContext) => {
     new Float32Array(positions),
     webglContext.STATIC_DRAW);
 
-  return { position: positionBuffer };
+  const colors: number[] = [
+    1.0, 1.0, 1.0, 1.0,    // white
+    1.0, 0.0, 0.0, 1.0,    // red
+    0.0, 1.0, 0.0, 1.0,    // green
+    0.0, 0.0, 1.0, 1.0,    // blue
+  ];
+
+  const colorBuffer: WebGLBuffer | null = webglContext.createBuffer();
+  webglContext.bindBuffer(webglContext.ARRAY_BUFFER, colorBuffer);
+  webglContext.bufferData(webglContext.ARRAY_BUFFER, new Float32Array(colors), webglContext.STATIC_DRAW);
+
+  return {
+    position: positionBuffer, color: colorBuffer
+  };
 }
 
 const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffers: any) => {
@@ -152,6 +172,24 @@ const drawScene = (webglContext: WebGLRenderingContext, programInfo: any, buffer
       offset);
     webglContext.enableVertexAttribArray(
       programInfo.attribLocations.vertexPosition);
+  }
+
+  {
+    const numComponents = 4;
+    const type = webglContext.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    webglContext.bindBuffer(webglContext.ARRAY_BUFFER, buffers.color);
+    webglContext.vertexAttribPointer(
+      programInfo.attribLocations.vertexColor,
+      numComponents,
+      type,
+      normalize,
+      stride,
+      offset);
+    webglContext.enableVertexAttribArray(
+      programInfo.attribLocations.vertexColor);
   }
 
   webglContext.useProgram(programInfo.program);
