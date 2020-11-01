@@ -36,7 +36,6 @@ const ElmHook = {
       }
 
       const stopPlaying = () => {
-        // @ts-ignore
         Howler.stop()
       }
 
