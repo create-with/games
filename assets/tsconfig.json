@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    /* https://www.typescriptlang.org/tsconfig */
+    "target": "es5",
+    "module": "ESNext",
+    "allowJs": true,
+    "outDir": "./dist/",
+    "isolatedModules": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "exclude": [
+    "/node_modules/**/*"
+  ]
+}

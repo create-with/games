@@ -1,4 +1,4 @@
-import { Elm } from "../../elm/src/Main.elm";
+import { Elm } from "../elm/src/Main.elm";
 import { Howl, Howler } from "howler";
 
 const ElmHook = {

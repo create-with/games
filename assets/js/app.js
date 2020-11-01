@@ -3,8 +3,8 @@ import "phoenix_html"
 import { Socket } from "phoenix"
 import NProgress from "nprogress"
 import { LiveSocket } from "phoenix_live_view"
-import BetaHook from "./beta"
-import ElmHook from "./elm"
+import BetaHook from "./beta-hook"
+import ElmHook from "./elm-hook"
 
 let hooks = { BetaHook, ElmHook }
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
