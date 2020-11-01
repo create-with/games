@@ -3,13 +3,8 @@ import "phoenix_html"
 import { Socket } from "phoenix"
 import NProgress from "nprogress"
 import { LiveSocket } from "phoenix_live_view"
-import BetaHook from "./beta/Index"
+import BetaHook from "./Beta"
 import ElmHook from "./elm"
-import HelloTypeScript from "./src/HelloTypeScript";
-
-let hello = new HelloTypeScript();
-let result = hello.isWorking(true);
-console.log(`⚡️ TypeScript enabled: ${result}`);
 
 let hooks = { BetaHook, ElmHook }
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
