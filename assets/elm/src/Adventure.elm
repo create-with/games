@@ -9,6 +9,8 @@ module Adventure exposing
 
 -- IMPORTS
 
+import Adventure.SvgView
+import Adventure.WebGLView
 import Browser exposing (Document)
 import Browser.Events
 import Html exposing (Html)
@@ -193,18 +195,21 @@ viewGame model =
             model.window.width / model.window.height
     in
     Html.section [ Html.Attributes.class "flex justify-center my-4" ]
-        [ WebGL.toHtmlWith
-            [ WebGL.alpha True
-            , WebGL.antialias
-            , WebGL.depth 1
-            , WebGL.stencil 0
-            ]
-            [ Html.Attributes.height <| round model.window.height
-            , Html.Attributes.width <| round model.window.width
-            , Html.Attributes.style "display" "block"
-            , Html.Attributes.style "position" "absolute"
-            ]
-            [ wallsView ratio ]
+        [ Adventure.SvgView.view
+        , Adventure.WebGLView.view
+
+        -- , WebGL.toHtmlWith
+        --     [ WebGL.alpha True
+        --     , WebGL.antialias
+        --     , WebGL.depth 1
+        --     , WebGL.stencil 0
+        --     ]
+        --     [ Html.Attributes.height <| round model.window.height
+        --     , Html.Attributes.width <| round model.window.width
+        --     , Html.Attributes.style "display" "block"
+        --     , Html.Attributes.style "position" "absolute"
+        --     ]
+        --     [ wallsView ratio ]
         ]
 
 
