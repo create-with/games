@@ -32,6 +32,11 @@ allGames =
       , slug = "breakout"
       , title = "Breakout"
       }
+    , { color = "gray"
+      , emoji = "⚔️"
+      , slug = "adventure"
+      , title = "Adventure"
+      }
     ]
 
 
