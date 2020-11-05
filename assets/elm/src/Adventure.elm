@@ -10,6 +10,7 @@ module Adventure exposing
 -- IMPORTS
 
 import Adventure.Character exposing (Character)
+import Adventure.Screen exposing (Screen)
 import Adventure.SvgView
 import Adventure.WebGLView
 import Adventure.Window exposing (Window)
@@ -36,6 +37,7 @@ type alias Model =
     { character : Character
     , deltaTime : Time
     , playerKeyPress : Controls
+    , screen : Screen
     , window : Window
     }
 
@@ -49,6 +51,7 @@ initialModel =
     { character = Adventure.Character.initialCharacter
     , deltaTime = 0.0
     , playerKeyPress = Util.Keyboard.initialKeys
+    , screen = Adventure.Screen.initialScreen
     , window = Adventure.Window.initialWindow
     }
 
@@ -180,7 +183,7 @@ viewGame model =
             model.window.width / model.window.height
     in
     Html.section [ Html.Attributes.class "flex flex-row my-4" ]
-        [ Adventure.SvgView.view model.window model.character
+        [ Adventure.SvgView.view model.window model.screen model.character
 
         -- , Adventure.WebGLView.view
         , Html.div []

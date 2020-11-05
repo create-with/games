@@ -3,6 +3,7 @@ module Adventure.SvgView exposing (view)
 -- IMPORTS
 
 import Adventure.Character exposing (Character)
+import Adventure.Screen exposing (Screen)
 import Adventure.Window exposing (Window)
 import Svg exposing (Svg)
 import Svg.Attributes
@@ -12,8 +13,8 @@ import Svg.Attributes
 -- 2D VIEW
 
 
-view : Window -> Character -> Svg a
-view window character =
+view : Window -> Screen -> Character -> Svg a
+view window screen character =
     let
         viewBoxString =
             [ window.x
@@ -30,5 +31,6 @@ view window character =
         , Svg.Attributes.height <| String.fromFloat window.height
         ]
         [ Adventure.Window.viewWindow window
+        , Adventure.Screen.viewScreen screen
         , Adventure.Character.viewCharacter character
         ]
