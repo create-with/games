@@ -1,4 +1,4 @@
-module Adventure.WebGLView exposing (..)
+module Adventure.WebGLView exposing (view)
 
 -- IMPORTS
 

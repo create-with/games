@@ -9,8 +9,10 @@ module Adventure exposing
 
 -- IMPORTS
 
+import Adventure.Character exposing (Character)
 import Adventure.SvgView
 import Adventure.WebGLView
+import Adventure.Window exposing (Window)
 import Browser exposing (Document)
 import Browser.Events
 import Html exposing (Html)
@@ -30,17 +32,9 @@ import WebGL.Settings.StencilTest
 -- MODEL
 
 
-type alias Window =
-    { backgroundColor : String
-    , x : Float
-    , y : Float
-    , width : Float
-    , height : Float
-    }
-
-
 type alias Model =
-    { deltaTime : Time
+    { character : Character
+    , deltaTime : Time
     , playerKeyPress : Controls
     , window : Window
     }
@@ -52,19 +46,10 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { deltaTime = 0.0
+    { character = Adventure.Character.initialCharacter
+    , deltaTime = 0.0
     , playerKeyPress = Util.Keyboard.initialKeys
-    , window = initialWindow
-    }
-
-
-initialWindow : Window
-initialWindow =
-    { backgroundColor = "black"
-    , x = 0.0
-    , y = 0.0
-    , width = 800.0
-    , height = 600.0
+    , window = Adventure.Window.initialWindow
     }
 
 
@@ -194,22 +179,22 @@ viewGame model =
         ratio =
             model.window.width / model.window.height
     in
-    Html.section [ Html.Attributes.class "flex justify-center my-4" ]
-        [ Adventure.SvgView.view
-        , Adventure.WebGLView.view
+    Html.section [ Html.Attributes.class "flex flex-row my-4" ]
+        [ Adventure.SvgView.view model.window model.character
 
-        -- , WebGL.toHtmlWith
-        --     [ WebGL.alpha True
-        --     , WebGL.antialias
-        --     , WebGL.depth 1
-        --     , WebGL.stencil 0
-        --     ]
-        --     [ Html.Attributes.height <| round model.window.height
-        --     , Html.Attributes.width <| round model.window.width
-        --     , Html.Attributes.style "display" "block"
-        --     , Html.Attributes.style "position" "absolute"
-        --     ]
-        --     [ wallsView ratio ]
+        -- , Adventure.WebGLView.view
+        , Html.div []
+            [ WebGL.toHtmlWith
+                [ WebGL.alpha True
+                , WebGL.antialias
+                , WebGL.depth 1
+                , WebGL.stencil 0
+                ]
+                [ Html.Attributes.height <| round model.window.height
+                , Html.Attributes.width <| round model.window.width
+                ]
+                [ wallsView ratio ]
+            ]
         ]
 
 
