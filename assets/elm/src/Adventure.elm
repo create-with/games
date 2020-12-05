@@ -75,11 +75,8 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        BrowserAdvancedAnimationFrame _ ->
-            ( { model
-                | character = updateCharacter model.playerKeyPress model.character
-                , deltaTime = model.deltaTime + 10.0
-              }
+        BrowserAdvancedAnimationFrame deltaTime ->
+            ( { model | character = updateCharacter model.playerKeyPress deltaTime model.character }
             , Cmd.none
             )
 
@@ -90,19 +87,19 @@ update msg model =
             ( { model | playerKeyPress = Set.empty }, Cmd.none )
 
 
-updateCharacter : Controls -> Character -> Character
-updateCharacter playerKeyPress character =
+updateCharacter : Controls -> Time -> Character -> Character
+updateCharacter playerKeyPress deltaTime character =
     if Util.Keyboard.playerPressedArrowUpKey playerKeyPress then
-        { character | y = character.y - 5 }
+        { character | y = character.y - character.vy * deltaTime }
 
     else if Util.Keyboard.playerPressedArrowDownKey playerKeyPress then
-        { character | y = character.y + 5 }
+        { character | y = character.y + character.vy * deltaTime }
 
     else if Util.Keyboard.playerPressedArrowLeftKey playerKeyPress then
-        { character | x = character.x - 5 }
+        { character | x = character.x - character.vx * deltaTime }
 
     else if Util.Keyboard.playerPressedArrowRightKey playerKeyPress then
-        { character | x = character.x + 5 }
+        { character | x = character.x + character.vx * deltaTime }
 
     else
         character
