@@ -76,13 +76,36 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         BrowserAdvancedAnimationFrame _ ->
-            ( { model | deltaTime = model.deltaTime + 10.0 }, Cmd.none )
+            ( { model
+                | character = updateCharacter model.playerKeyPress model.character
+                , deltaTime = model.deltaTime + 10.0
+              }
+            , Cmd.none
+            )
 
         PlayerPressedKeyDown key ->
             ( updateKeyPress key model, Cmd.none )
 
         PlayerReleasedKey _ ->
             ( { model | playerKeyPress = Set.empty }, Cmd.none )
+
+
+updateCharacter : Controls -> Character -> Character
+updateCharacter playerKeyPress character =
+    if Util.Keyboard.playerPressedArrowUpKey playerKeyPress then
+        { character | y = character.y - 5 }
+
+    else if Util.Keyboard.playerPressedArrowDownKey playerKeyPress then
+        { character | y = character.y + 5 }
+
+    else if Util.Keyboard.playerPressedArrowLeftKey playerKeyPress then
+        { character | x = character.x - 5 }
+
+    else if Util.Keyboard.playerPressedArrowRightKey playerKeyPress then
+        { character | x = character.x + 5 }
+
+    else
+        character
 
 
 updateKeyPress : String -> Model -> Model
