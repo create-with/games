@@ -47,7 +47,7 @@ initialModel =
     { character = Adventure.Character.initialCharacter
     , deltaTime = 0.0
     , playerKeyPress = Util.Keyboard.initialKeys
-    , screen = Adventure.Screen.initialScreen
+    , screen = Adventure.Screen.screen01
     , window = Adventure.Window.initialWindow
     }
 
