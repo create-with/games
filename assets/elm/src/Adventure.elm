@@ -161,7 +161,9 @@ view msg model =
 viewMain : Model -> Html Msg
 viewMain model =
     Html.main_
-        [ Html.Attributes.class "bg-orange-400 h-full p-8" ]
+        [ Html.Attributes.class "h-full p-8"
+        , Html.Attributes.style "background-color" "lightgray"
+        ]
         [ viewHeader
         , viewGame model
         ]
