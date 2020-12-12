@@ -1,7 +1,7 @@
 module Adventure.Character exposing
     ( Character
     , initialCharacter
-    , viewCharacter
+    , view
     )
 
 -- IMPORTS
@@ -29,7 +29,7 @@ initialCharacter : Character
 initialCharacter =
     { color = "yellow"
     , x = 395.0
-    , y = 310.0
+    , y = 500.0
     , vx = 350.0
     , vy = 350.0
     , width = 10.0
@@ -41,8 +41,8 @@ initialCharacter =
 -- VIEW
 
 
-viewCharacter : Character -> Svg a
-viewCharacter character =
+view : Character -> Svg a
+view character =
     Svg.rect
         [ Svg.Attributes.fill <| character.color
         , Svg.Attributes.x <| String.fromFloat character.x

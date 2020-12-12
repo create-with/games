@@ -30,7 +30,7 @@ view window screen character =
         , Svg.Attributes.width <| String.fromFloat window.width
         , Svg.Attributes.height <| String.fromFloat window.height
         ]
-        [ Adventure.Window.viewWindow window
-        , Adventure.Screen.viewScreen screen
-        , Adventure.Character.viewCharacter character
+        [ Adventure.Window.view window
+        , Adventure.Screen.view screen
+        , Adventure.Character.view character
         ]

@@ -1,7 +1,7 @@
 module Adventure.Window exposing
     ( Window
     , initialWindow
-    , viewWindow
+    , view
     )
 
 -- IMPORTS
@@ -37,8 +37,8 @@ initialWindow =
 -- VIEW
 
 
-viewWindow : Window -> Svg msg
-viewWindow window =
+view : Window -> Svg msg
+view window =
     Svg.rect
         [ Svg.Attributes.fill <| window.backgroundColor
         , Svg.Attributes.x <| String.fromFloat window.x
