@@ -14,8 +14,11 @@ import Browser.Events
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode
+import RandomWalk.Window exposing (Window)
 import Set
-import Util.Fps exposing (Time)
+import Svg exposing (Svg)
+import Svg.Attributes
+import Util.Fps exposing (ShowFps, Time)
 import Util.Keyboard exposing (Controls)
 import Util.View
 
@@ -26,7 +29,16 @@ import Util.View
 
 type alias Model =
     { deltaTime : Time
+    , deltaTimes : List Time
     , playerKeyPress : Controls
+    , showFps : ShowFps
+    , walker : Walker
+    }
+
+
+type alias Walker =
+    { x : Int
+    , y : Int
     }
 
 
@@ -37,7 +49,17 @@ type alias Model =
 initialModel : Model
 initialModel =
     { deltaTime = 0.0
+    , deltaTimes = []
     , playerKeyPress = Util.Keyboard.initialKeys
+    , showFps = Util.Fps.On
+    , walker = initialWalker
+    }
+
+
+initialWalker : Walker
+initialWalker =
+    { x = 0
+    , y = 0
     }
 
 
@@ -147,6 +169,28 @@ viewHeader =
 
 
 viewGame : Model -> Html Msg
-viewGame _ =
+viewGame model =
     Html.section [ Html.Attributes.class "flex flex-row my-4" ]
-        []
+        [ viewSvg RandomWalk.Window.globalWindow model ]
+
+
+viewSvg : Window -> Model -> Svg msg
+viewSvg window model =
+    let
+        viewBoxString =
+            [ window.x
+            , window.y
+            , window.width
+            , window.height
+            ]
+                |> List.map String.fromFloat
+                |> String.join " "
+    in
+    Svg.svg
+        [ Svg.Attributes.viewBox viewBoxString
+        , Svg.Attributes.width <| String.fromFloat window.width
+        , Svg.Attributes.height <| String.fromFloat window.height
+        ]
+        [ RandomWalk.Window.viewGameWindow window
+        , Util.Fps.viewFps model.showFps model.deltaTimes
+        ]
