@@ -17,6 +17,7 @@ import Browser.Navigation
 import Landing
 import NotFound
 import Pong
+import RandomWalk
 import Route
 import Url
 import Url.Parser
@@ -59,6 +60,7 @@ type Msg
     | ReceivedAdventureMsg Adventure.Msg
     | ReceivedBreakoutMsg Breakout.Msg
     | ReceivedPongMsg Pong.Msg
+    | ReceivedRandomWalkMsg RandomWalk.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -90,6 +92,14 @@ update msg model =
             case model.route of
                 Route.Pong pageModel ->
                     changeToPage model Route.Pong ReceivedPongMsg <| Pong.update pageMsg pageModel
+
+                _ ->
+                    ( model, Cmd.none )
+
+        ReceivedRandomWalkMsg pageMsg ->
+            case model.route of
+                Route.RandomWalk pageModel ->
+                    changeToPage model Route.RandomWalk ReceivedRandomWalkMsg <| RandomWalk.update pageMsg pageModel
 
                 _ ->
                     ( model, Cmd.none )
@@ -131,6 +141,9 @@ subscriptions { route } =
         Route.Pong pageModel ->
             Sub.map ReceivedPongMsg <| Pong.subscriptions pageModel
 
+        Route.RandomWalk pageModel ->
+            Sub.map ReceivedRandomWalkMsg <| RandomWalk.subscriptions pageModel
+
         _ ->
             Sub.none
 
@@ -157,6 +170,9 @@ view { route } =
         Route.Pong pageModel ->
             Pong.view ReceivedPongMsg pageModel
 
+        Route.RandomWalk pageModel ->
+            RandomWalk.view ReceivedRandomWalkMsg pageModel
+
 
 
 -- ROUTING
@@ -169,6 +185,7 @@ urlParser model =
         , pageParser model "adventure" Route.Adventure ReceivedAdventureMsg <| Adventure.init model.flags
         , pageParser model "breakout" Route.Breakout ReceivedBreakoutMsg <| Breakout.init model.flags
         , pageParser model "pong" Route.Pong ReceivedPongMsg <| Pong.init model.flags
+        , pageParser model "random-walk" Route.RandomWalk ReceivedRandomWalkMsg <| RandomWalk.init model.flags
         ]
 
 

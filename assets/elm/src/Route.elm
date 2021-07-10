@@ -5,6 +5,7 @@ module Route exposing (Route(..))
 import Adventure
 import Breakout
 import Pong
+import RandomWalk
 
 
 
@@ -16,4 +17,5 @@ type Route
     | Breakout Breakout.Model
     | Landing
     | Pong Pong.Model
+    | RandomWalk RandomWalk.Model
     | NotFound
