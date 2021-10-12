@@ -14,12 +14,25 @@ main =
     game view update 0
 
 
+
+-- VIEW
+
+
 view computer offset =
-    [ rectangle lightBlue 256 240
-    , square lightRed 16
-        |> moveRight offset
+    [ rectangle skyColor 256 240
+    , viewMario offset
     , viewBricks brickLocations
     ]
+
+
+viewMario offset =
+    let
+        ( startingX, startingY ) =
+            ( -80, -80 )
+    in
+    square lightRed 16
+        |> move startingX startingY
+        |> moveRight offset
 
 
 viewBricks : List ( Float, Float ) -> Shape
@@ -34,8 +47,16 @@ viewBrick x y =
         |> move x y
 
 
+
+-- UPDATE
+
+
 update computer offset =
     offset + 0.05
+
+
+
+-- TILES
 
 
 brickLocations : List ( Float, Float )
@@ -73,3 +94,12 @@ brickLocations =
     , ( 104, -112 )
     , ( 120, -112 )
     ]
+
+
+
+-- COLORS
+
+
+skyColor : Color
+skyColor =
+    rgb 92 148 252
