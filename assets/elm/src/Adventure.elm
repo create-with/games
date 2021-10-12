@@ -119,7 +119,7 @@ updateKeyPress key model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ browserAnimationSubscription
         , keyDownSubscription

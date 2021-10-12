@@ -104,13 +104,6 @@ light =
         |> Math.Vector3.normalize
 
 
-perspective : Float -> Mat4
-perspective t =
-    Math.Matrix4.mul
-        (Math.Matrix4.makePerspective 45 1 0.01 100)
-        (Math.Matrix4.makeLookAt (Math.Vector3.vec3 (4 * cos t) 0 (4 * sin t)) (Math.Vector3.vec3 0 0 0) (Math.Vector3.vec3 0 1 0))
-
-
 
 -- SHADERS
 
