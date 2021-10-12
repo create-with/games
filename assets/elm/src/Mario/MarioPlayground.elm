@@ -20,10 +20,10 @@ type alias Model =
 
 init : Model
 init =
-    { x = 0
-    , y = 0
-    , vx = 0.12
-    , vy = 0.12
+    { x = -80
+    , y = -80
+    , vx = 0
+    , vy = 0
     }
 
 
@@ -41,22 +41,17 @@ main =
 
 
 view : Computer -> Model -> List Shape
-view _ { x, y } =
+view _ model =
     [ rectangle skyColor 256 240
-    , viewMario x
+    , viewMario model
     , viewBricks brickLocations
     ]
 
 
-viewMario : Float -> Shape
-viewMario offset =
-    let
-        ( startingX, startingY ) =
-            ( -80, -80 )
-    in
+viewMario : Model -> Shape
+viewMario { x, y } =
     marioRightSprite
-        |> move startingX startingY
-        |> moveRight offset
+        |> move x y
 
 
 viewBricks : List ( Float, Float ) -> Shape
@@ -78,21 +73,47 @@ viewBrick x y =
 update : Computer -> Model -> Model
 update computer model =
     let
-        runningSpeed =
-            0.05
+        _ =
+            Debug.log "model" model
     in
     -- NOTE: Pressing multiple keys must come before single key presses.
     if runRightKeysPressed computer.keyboard then
-        { model | x = model.x + (model.vx + runningSpeed) * toFloat computer.time.delta }
+        { model
+            | x = model.x + model.vx * toFloat computer.time.delta
+            , vx = 0.15
+        }
 
     else if runLeftKeysPressed computer.keyboard then
-        { model | x = model.x - (model.vx + runningSpeed) * toFloat computer.time.delta }
+        { model
+            | x = model.x - model.vx * toFloat computer.time.delta
+            , vx = 0.15
+        }
 
     else if rightKeyPressed computer.keyboard then
-        { model | x = model.x + model.vx * toFloat computer.time.delta }
+        { model
+            | x = model.x + model.vx * toFloat computer.time.delta
+            , vx = 0.12
+        }
 
     else if leftKeyPressed computer.keyboard then
-        { model | x = model.x - model.vx * toFloat computer.time.delta }
+        { model
+            | x = model.x - model.vx * toFloat computer.time.delta
+            , vx = 0.12
+        }
+
+    else if upKeyPressed computer.keyboard then
+        -- JUMP
+        { model
+            | y = model.y + model.vy * toFloat computer.time.delta
+            , vy = 0.15
+        }
+
+    else if model.vy > 0 && model.y > init.y then
+        -- GRAVITY
+        { model
+            | y = model.y - model.vy * toFloat computer.time.delta
+            , vy = 0.15
+        }
 
     else
         model
@@ -116,6 +137,11 @@ leftKeyPressed keyboard =
 runLeftKeysPressed : Keyboard -> Bool
 runLeftKeysPressed keyboard =
     keyboard.left && keyboard.shift
+
+
+upKeyPressed : Keyboard -> Bool
+upKeyPressed keyboard =
+    keyboard.up
 
 
 
