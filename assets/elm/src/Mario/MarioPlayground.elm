@@ -13,6 +13,8 @@ import Playground.Extra exposing (..)
 type alias Model =
     { x : Float
     , y : Float
+    , vx : Float
+    , vy : Float
     }
 
 
@@ -20,6 +22,8 @@ init : Model
 init =
     { x = 0
     , y = 0
+    , vx = 0.12
+    , vy = 0.12
     }
 
 
@@ -73,18 +77,22 @@ viewBrick x y =
 
 update : Computer -> Model -> Model
 update computer model =
+    let
+        runningSpeed =
+            0.05
+    in
     -- NOTE: Pressing multiple keys must come before single key presses.
     if runRightKeysPressed computer.keyboard then
-        { model | x = model.x + 2.5 }
+        { model | x = model.x + (model.vx + runningSpeed) * toFloat computer.time.delta }
 
     else if runLeftKeysPressed computer.keyboard then
-        { model | x = model.x - 2.5 }
+        { model | x = model.x - (model.vx + runningSpeed) * toFloat computer.time.delta }
 
     else if rightKeyPressed computer.keyboard then
-        { model | x = model.x + 1.5 }
+        { model | x = model.x + model.vx * toFloat computer.time.delta }
 
     else if leftKeyPressed computer.keyboard then
-        { model | x = model.x - 1.5 }
+        { model | x = model.x - model.vx * toFloat computer.time.delta }
 
     else
         model
