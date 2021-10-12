@@ -30,7 +30,7 @@ viewMario offset =
         ( startingX, startingY ) =
             ( -80, -80 )
     in
-    square lightRed 16
+    marioRightSprite
         |> move startingX startingY
         |> moveRight offset
 
@@ -94,6 +94,20 @@ brickLocations =
     , ( 104, -112 )
     , ( 120, -112 )
     ]
+
+
+
+-- SPRITES
+
+
+marioRightSprite : Shape
+marioRightSprite =
+    sprite "sprites.gif"
+        { xmin = 274
+        , xmax = 290
+        , ymin = 44
+        , ymax = 60
+        }
 
 
 
