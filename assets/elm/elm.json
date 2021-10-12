@@ -22,7 +22,8 @@
             "ianmackenzie/elm-3d-scene": "1.0.1",
             "ianmackenzie/elm-geometry": "3.7.0",
             "ianmackenzie/elm-triangular-mesh": "1.1.0",
-            "ianmackenzie/elm-units": "2.7.0"
+            "ianmackenzie/elm-units": "2.7.0",
+            "justgook/webgl-playground": "5.0.0"
         },
         "indirect": {
             "elm/time": "1.0.0",
@@ -32,6 +33,7 @@
             "ianmackenzie/elm-geometry-linear-algebra-interop": "2.0.2",
             "ianmackenzie/elm-interval": "2.0.0",
             "ianmackenzie/elm-units-interval": "2.1.0",
+            "justgook/webgl-shape": "3.0.0",
             "owanturist/elm-union-find": "1.0.0"
         }
     },
