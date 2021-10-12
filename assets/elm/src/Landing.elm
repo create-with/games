@@ -16,8 +16,13 @@ type alias Game =
     { color : String
     , emoji : String
     , slug : String
+    , state : State
     , title : String
     }
+
+type State
+    = Available
+    | Unavailable
 
 
 allGames : List Game
@@ -25,16 +30,19 @@ allGames =
     [ { color = "yellow"
       , emoji = "\u{1F3D3}"
       , slug = "pong"
+      , state = Available
       , title = "Pong"
       }
     , { color = "blue"
       , emoji = "\u{1F6F8}"
       , slug = "breakout"
+      , state = Available
       , title = "Breakout"
       }
     , { color = "gray"
       , emoji = "⚔️"
       , slug = "adventure"
+      , state = Unavailable
       , title = "Adventure"
       }
     ]
@@ -60,6 +68,7 @@ viewGames : List Game -> Html msg
 viewGames games =
     Html.section [ Html.Attributes.class "flex-grow" ]
         [ games
+            |> List.filter isAvailable
             |> List.map viewGame
             |> Html.ul [ Html.Attributes.class "px-16 py-8" ]
         ]
@@ -89,3 +98,7 @@ colorToBorderClass color =
 colorToColorClass : String -> String
 colorToColorClass color =
     "bg-" ++ color ++ "-200"
+
+isAvailable : Game -> Bool
+isAvailable { state } =
+    state == Available
