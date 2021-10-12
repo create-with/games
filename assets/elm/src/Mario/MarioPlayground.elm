@@ -7,20 +7,37 @@ import Playground.Extra exposing (..)
 
 
 
+-- MODEL
+
+
+type alias Model =
+    { x : Float
+    , y : Float
+    }
+
+
+init : Model
+init =
+    { x = 0
+    , y = 0
+    }
+
+
+
 -- MAIN
 
 
-main : Program () (Playground ( Float, Float )) Msg
+main : Program () (Playground Model) Msg
 main =
-    game view update ( 0, 0 )
+    game view update init
 
 
 
 -- VIEW
 
 
-view : Computer -> ( Float, Float ) -> List Shape
-view _ ( x, y ) =
+view : Computer -> Model -> List Shape
+view _ { x, y } =
     [ rectangle skyColor 256 240
     , viewMario x
     , viewBricks brickLocations
@@ -54,23 +71,23 @@ viewBrick x y =
 -- UPDATE
 
 
-update : Computer -> ( Float, Float ) -> ( Float, Float )
-update computer ( x, y ) =
+update : Computer -> Model -> Model
+update computer model =
     -- NOTE: Pressing multiple keys must come before single key presses.
     if runRightKeysPressed computer.keyboard then
-        ( x + 2.5, 0 )
+        { model | x = model.x + 2.5 }
 
     else if runLeftKeysPressed computer.keyboard then
-        ( x - 2.5, 0 )
+        { model | x = model.x - 2.5 }
 
     else if rightKeyPressed computer.keyboard then
-        ( x + 1.5, 0 )
+        { model | x = model.x + 1.5 }
 
     else if leftKeyPressed computer.keyboard then
-        ( x - 1.5, 0 )
+        { model | x = model.x - 1.5 }
 
     else
-        ( x, y )
+        model
 
 
 rightKeyPressed : Keyboard -> Bool
