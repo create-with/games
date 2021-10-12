@@ -10,19 +10,19 @@ import Playground.Extra exposing (..)
 -- MAIN
 
 
-main : Program () (Playground Float) Msg
+main : Program () (Playground ( Float, Float )) Msg
 main =
-    game view update 0
+    game view update ( 0, 0 )
 
 
 
 -- VIEW
 
 
-view : Computer -> Float -> List Shape
-view _ offset =
+view : Computer -> ( Float, Float ) -> List Shape
+view _ ( x, y ) =
     [ rectangle skyColor 256 240
-    , viewMario offset
+    , viewMario x
     , viewBricks brickLocations
     ]
 
@@ -54,23 +54,23 @@ viewBrick x y =
 -- UPDATE
 
 
-update : Computer -> Float -> Float
-update computer offset =
+update : Computer -> ( Float, Float ) -> ( Float, Float )
+update computer ( x, y ) =
     -- NOTE: Pressing multiple keys must come before single key presses.
     if runRightKeysPressed computer.keyboard then
-        offset + 2.5
+        ( x + 2.5, 0 )
 
     else if runLeftKeysPressed computer.keyboard then
-        offset - 2.5
+        ( x - 2.5, 0 )
 
     else if rightKeyPressed computer.keyboard then
-        offset + 1.5
+        ( x + 1.5, 0 )
 
     else if leftKeyPressed computer.keyboard then
-        offset - 1.5
+        ( x - 1.5, 0 )
 
     else
-        offset
+        ( x, y )
 
 
 rightKeyPressed : Keyboard -> Bool
