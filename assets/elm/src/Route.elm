@@ -4,6 +4,7 @@ module Route exposing (Route(..))
 
 import Adventure
 import Breakout
+import Mario
 import Pong
 
 
@@ -15,5 +16,6 @@ type Route
     = Adventure Adventure.Model
     | Breakout Breakout.Model
     | Landing
+    | Mario Mario.Model
     | Pong Pong.Model
     | NotFound

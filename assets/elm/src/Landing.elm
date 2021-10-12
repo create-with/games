@@ -20,6 +20,7 @@ type alias Game =
     , title : String
     }
 
+
 type State
     = Available
     | Unavailable
@@ -28,13 +29,13 @@ type State
 allGames : List Game
 allGames =
     [ { color = "yellow"
-      , emoji = "\u{1F3D3}"
+      , emoji = "🏓"
       , slug = "pong"
       , state = Available
       , title = "Pong"
       }
     , { color = "blue"
-      , emoji = "\u{1F6F8}"
+      , emoji = "🛸"
       , slug = "breakout"
       , state = Available
       , title = "Breakout"
@@ -44,6 +45,12 @@ allGames =
       , slug = "adventure"
       , state = Unavailable
       , title = "Adventure"
+      }
+    , { color = "red"
+      , emoji = "🍄"
+      , slug = "mario"
+      , state = Unavailable
+      , title = "Mario"
       }
     ]
 
@@ -98,6 +105,7 @@ colorToBorderClass color =
 colorToColorClass : String -> String
 colorToColorClass color =
     "bg-" ++ color ++ "-200"
+
 
 isAvailable : Game -> Bool
 isAvailable { state } =

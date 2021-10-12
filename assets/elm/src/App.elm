@@ -15,6 +15,7 @@ import Breakout
 import Browser
 import Browser.Navigation
 import Landing
+import Mario
 import NotFound
 import Pong
 import Route
@@ -58,6 +59,7 @@ type Msg
     | ClickedUrl Browser.UrlRequest
     | ReceivedAdventureMsg Adventure.Msg
     | ReceivedBreakoutMsg Breakout.Msg
+    | ReceivedMarioMsg Mario.Msg
     | ReceivedPongMsg Pong.Msg
 
 
@@ -82,6 +84,14 @@ update msg model =
             case model.route of
                 Route.Breakout pageModel ->
                     changeToPage model Route.Breakout ReceivedBreakoutMsg <| Breakout.update pageMsg pageModel
+
+                _ ->
+                    ( model, Cmd.none )
+
+        ReceivedMarioMsg pageMsg ->
+            case model.route of
+                Route.Mario pageModel ->
+                    changeToPage model Route.Mario ReceivedMarioMsg <| Mario.update pageMsg pageModel
 
                 _ ->
                     ( model, Cmd.none )
@@ -128,6 +138,9 @@ subscriptions { route } =
         Route.Breakout pageModel ->
             Sub.map ReceivedBreakoutMsg <| Breakout.subscriptions pageModel
 
+        Route.Mario pageModel ->
+            Sub.map ReceivedMarioMsg <| Mario.subscriptions pageModel
+
         Route.Pong pageModel ->
             Sub.map ReceivedPongMsg <| Pong.subscriptions pageModel
 
@@ -151,6 +164,9 @@ view { route } =
         Route.Landing ->
             Landing.view
 
+        Route.Mario pageModel ->
+            Mario.view ReceivedMarioMsg pageModel
+
         Route.NotFound ->
             NotFound.view
 
@@ -168,6 +184,7 @@ urlParser model =
         [ landingPageParser model
         , pageParser model "adventure" Route.Adventure ReceivedAdventureMsg <| Adventure.init model.flags
         , pageParser model "breakout" Route.Breakout ReceivedBreakoutMsg <| Breakout.init model.flags
+        , pageParser model "mario" Route.Mario ReceivedMarioMsg <| Mario.init model.flags
         , pageParser model "pong" Route.Pong ReceivedPongMsg <| Pong.init model.flags
         ]
 
