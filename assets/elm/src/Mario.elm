@@ -12,6 +12,8 @@ module Mario exposing
 import Browser exposing (Document)
 import Html exposing (Html)
 import Html.Attributes
+import Svg exposing (Svg)
+import Svg.Attributes
 import Util.View
 
 
@@ -20,7 +22,18 @@ import Util.View
 
 
 type alias Model =
-    { mario : ( Int, Int ) }
+    { mario : ( Int, Int )
+    , window : Window
+    }
+
+
+type alias Window =
+    { backgroundColor : String
+    , x : Float
+    , y : Float
+    , width : Float
+    , height : Float
+    }
 
 
 
@@ -29,7 +42,21 @@ type alias Model =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { mario = ( 0, 0 ) }, Cmd.none )
+    ( { mario = ( 0, 0 )
+      , window = initialWindow
+      }
+    , Cmd.none
+    )
+
+
+initialWindow : Window
+initialWindow =
+    { backgroundColor = "black"
+    , x = 0.0
+    , y = 0.0
+    , width = 256.0
+    , height = 240.0
+    }
 
 
 
@@ -68,9 +95,57 @@ view msg model =
 
 
 viewMain : Model -> Html Msg
-viewMain _ =
+viewMain model =
     Html.main_ [ Html.Attributes.class "bg-red-400 h-full p-8" ]
-        [-- viewHeader
-         -- , viewGame model
-         -- , viewInformation model
+        [ viewHeader
+        , viewGame model
+
+        -- , viewInformation model
         ]
+
+
+viewHeader : Html msg
+viewHeader =
+    Html.header [ Html.Attributes.class "flex justify-center" ]
+        [ Html.h1 [ Html.Attributes.class "font-black text-5xl" ]
+            [ Html.text "Mario" ]
+        ]
+
+
+viewGame : Model -> Html Msg
+viewGame model =
+    Html.section [ Html.Attributes.class "flex justify-center my-4" ]
+        [ viewSvg model ]
+
+
+viewSvg : Model -> Svg Msg
+viewSvg { window } =
+    let
+        viewBoxString =
+            [ window.x
+            , window.y
+            , window.width
+            , window.height
+            ]
+                |> List.map String.fromFloat
+                |> String.join " "
+    in
+    Svg.svg
+        [ Svg.Attributes.viewBox viewBoxString
+        , Svg.Attributes.width <| String.fromFloat <| window.width * 3
+        , Svg.Attributes.height <| String.fromFloat <| window.height * 3
+        ]
+        [ viewGameWindow window
+        ]
+
+
+viewGameWindow : Window -> Svg msg
+viewGameWindow window =
+    Svg.rect
+        [ Svg.Attributes.fill <| window.backgroundColor
+        , Svg.Attributes.x <| String.fromFloat window.x
+        , Svg.Attributes.y <| String.fromFloat window.y
+        , Svg.Attributes.width <| String.fromFloat window.width
+        , Svg.Attributes.height <| String.fromFloat window.height
+        ]
+        []
