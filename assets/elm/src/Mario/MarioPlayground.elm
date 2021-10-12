@@ -72,12 +72,24 @@ viewBrick x y =
 
 update : Computer -> Model -> Model
 update computer model =
-    let
-        _ =
-            Debug.log "model" model
-    in
     -- NOTE: Pressing multiple keys must come before single key presses.
-    if runRightKeysPressed computer.keyboard then
+    if jumpRightKeysPressed computer.keyboard then
+        { model
+            | x = model.x + model.vx * toFloat computer.time.delta
+            , y = model.y + model.vy * toFloat computer.time.delta
+            , vx = 0.11
+            , vy = 0.2
+        }
+
+    else if jumpLeftKeysPressed computer.keyboard then
+        { model
+            | x = model.x - model.vx * toFloat computer.time.delta
+            , y = model.y + model.vy * toFloat computer.time.delta
+            , vx = 0.11
+            , vy = 0.2
+        }
+
+    else if runRightKeysPressed computer.keyboard then
         { model
             | x = model.x + model.vx * toFloat computer.time.delta
             , vx = 0.15
@@ -89,38 +101,41 @@ update computer model =
             , vx = 0.15
         }
 
-    else if rightKeyPressed computer.keyboard then
+    else if walkRightKeyPressed computer.keyboard then
         { model
             | x = model.x + model.vx * toFloat computer.time.delta
-            , vx = 0.12
+            , vx = 0.11
         }
 
-    else if leftKeyPressed computer.keyboard then
+    else if walkLeftKeyPressed computer.keyboard then
         { model
             | x = model.x - model.vx * toFloat computer.time.delta
-            , vx = 0.12
+            , vx = 0.11
         }
 
-    else if upKeyPressed computer.keyboard then
-        -- JUMP
+    else if jumpKeyPressed computer.keyboard then
         { model
             | y = model.y + model.vy * toFloat computer.time.delta
-            , vy = 0.15
+            , vy = 0.2
         }
 
-    else if model.vy > 0 && model.y > init.y then
-        -- GRAVITY
+    else if gravityShouldBeApplied model then
         { model
             | y = model.y - model.vy * toFloat computer.time.delta
-            , vy = 0.15
+            , vy = 0.2
         }
 
     else
         model
 
 
-rightKeyPressed : Keyboard -> Bool
-rightKeyPressed keyboard =
+gravityShouldBeApplied : Model -> Bool
+gravityShouldBeApplied { y, vy } =
+    vy > 0 && y > init.y
+
+
+walkRightKeyPressed : Keyboard -> Bool
+walkRightKeyPressed keyboard =
     keyboard.right
 
 
@@ -129,8 +144,8 @@ runRightKeysPressed keyboard =
     keyboard.right && keyboard.shift
 
 
-leftKeyPressed : Keyboard -> Bool
-leftKeyPressed keyboard =
+walkLeftKeyPressed : Keyboard -> Bool
+walkLeftKeyPressed keyboard =
     keyboard.left
 
 
@@ -139,9 +154,19 @@ runLeftKeysPressed keyboard =
     keyboard.left && keyboard.shift
 
 
-upKeyPressed : Keyboard -> Bool
-upKeyPressed keyboard =
+jumpKeyPressed : Keyboard -> Bool
+jumpKeyPressed keyboard =
     keyboard.up
+
+
+jumpRightKeysPressed : Keyboard -> Bool
+jumpRightKeysPressed keyboard =
+    keyboard.up && keyboard.right
+
+
+jumpLeftKeysPressed : Keyboard -> Bool
+jumpLeftKeysPressed keyboard =
+    keyboard.up && keyboard.left
 
 
 
