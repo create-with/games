@@ -7,6 +7,15 @@ import Playground.Extra exposing (..)
 
 
 
+-- MAIN
+
+
+main : Program () (Playground Model) Msg
+main =
+    game view update init
+
+
+
 -- MODEL
 
 
@@ -15,7 +24,13 @@ type alias Model =
     , y : Float
     , vx : Float
     , vy : Float
+    , direction : Direction
     }
+
+
+type Direction
+    = Right
+    | Left
 
 
 init : Model
@@ -24,16 +39,8 @@ init =
     , y = -80
     , vx = 0
     , vy = 0
+    , direction = Right
     }
-
-
-
--- MAIN
-
-
-main : Program () (Playground Model) Msg
-main =
-    game view update init
 
 
 
@@ -49,8 +56,8 @@ view _ model =
 
 
 viewMario : Model -> Shape
-viewMario { x, y } =
-    marioRightSprite
+viewMario ({ x, y } as model) =
+    marioSprite model
         |> move x y
 
 
@@ -72,61 +79,95 @@ viewBrick x y =
 
 update : Computer -> Model -> Model
 update computer model =
-    -- NOTE: Pressing multiple keys must come before single key presses.
-    if jumpRightKeysPressed computer.keyboard then
-        { model
-            | x = model.x + model.vx * toFloat computer.time.delta
-            , y = model.y + model.vy * toFloat computer.time.delta
-            , vx = 0.11
-            , vy = 0.2
-        }
+    let
+        _ =
+            Debug.log "model" model
 
-    else if jumpLeftKeysPressed computer.keyboard then
-        { model
-            | x = model.x - model.vx * toFloat computer.time.delta
-            , y = model.y + model.vy * toFloat computer.time.delta
-            , vx = 0.11
-            , vy = 0.2
-        }
+        fallVelocity : Float
+        fallVelocity =
+            0.2
+
+        jumpVelocity : Float
+        jumpVelocity =
+            0.15
+
+        runVelocity : Float
+        runVelocity =
+            0.15
+
+        walkVelocity : Float
+        walkVelocity =
+            0.11
+    in
+    if jumpKeyPressed computer.keyboard then
+        model
+            |> updateYVelocity jumpVelocity
+            |> updateMario computer
 
     else if runRightKeysPressed computer.keyboard then
-        { model
-            | x = model.x + model.vx * toFloat computer.time.delta
-            , vx = 0.15
-        }
+        model
+            |> updateDirection Right
+            |> updateXVelocity runVelocity
+            |> updateMario computer
 
     else if runLeftKeysPressed computer.keyboard then
-        { model
-            | x = model.x - model.vx * toFloat computer.time.delta
-            , vx = 0.15
-        }
+        model
+            |> updateDirection Left
+            |> updateXVelocity -runVelocity
+            |> updateMario computer
 
     else if walkRightKeyPressed computer.keyboard then
-        { model
-            | x = model.x + model.vx * toFloat computer.time.delta
-            , vx = 0.11
-        }
+        model
+            |> updateDirection Right
+            |> updateXVelocity walkVelocity
+            |> updateMario computer
 
     else if walkLeftKeyPressed computer.keyboard then
-        { model
-            | x = model.x - model.vx * toFloat computer.time.delta
-            , vx = 0.11
-        }
+        model
+            |> updateDirection Left
+            |> updateXVelocity -walkVelocity
+            |> updateMario computer
 
-    else if jumpKeyPressed computer.keyboard then
-        { model
-            | y = model.y + model.vy * toFloat computer.time.delta
-            , vy = 0.2
-        }
-
-    else if gravityShouldBeApplied model then
-        { model
-            | y = model.y - model.vy * toFloat computer.time.delta
-            , vy = 0.2
-        }
+    else if model.vy > 0 then
+        model
+            |> updateYVelocity -fallVelocity
+            |> updateMario computer
 
     else
         model
+            |> updateXVelocity 0
+            |> updateYVelocity 0
+
+
+
+-- UPDATES
+
+
+updateDirection : Direction -> Model -> Model
+updateDirection direction model =
+    { model | direction = direction }
+
+
+updateMario : Computer -> Model -> Model
+updateMario computer model =
+    { model
+        | x = model.x + model.vx * toFloat computer.time.delta
+        , y = model.y + model.vy * toFloat computer.time.delta
+    }
+
+
+updateXVelocity : Float -> Model -> Model
+updateXVelocity velocity model =
+    { model | vx = velocity }
+
+
+updateYVelocity : Float -> Model -> Model
+updateYVelocity velocity model =
+    { model | vy = velocity }
+
+
+
+-- PREDICATES
 
 
 gravityShouldBeApplied : Model -> Bool
@@ -156,20 +197,16 @@ runLeftKeysPressed keyboard =
 
 jumpKeyPressed : Keyboard -> Bool
 jumpKeyPressed keyboard =
-    keyboard.up
-
-
-jumpRightKeysPressed : Keyboard -> Bool
-jumpRightKeysPressed keyboard =
-    keyboard.up && keyboard.right
-
-
-jumpLeftKeysPressed : Keyboard -> Bool
-jumpLeftKeysPressed keyboard =
-    keyboard.up && keyboard.left
+    keyboard.space || keyboard.up
 
 
 
+-- jumpRightKeysPressed : Keyboard -> Bool
+-- jumpRightKeysPressed keyboard =
+--     keyboard.space && keyboard.right
+-- jumpLeftKeysPressed : Keyboard -> Bool
+-- jumpLeftKeysPressed keyboard =
+--     keyboard.space && keyboard.left
 -- TILES
 
 
@@ -214,14 +251,66 @@ brickLocations =
 -- SPRITES
 
 
-marioRightSprite : Shape
-marioRightSprite =
-    sprite "sprites.gif"
-        { xmin = 274
-        , xmax = 290
-        , ymin = 44
-        , ymax = 60
-        }
+type alias SpriteLocation =
+    { xmin : Float
+    , xmax : Float
+    , ymin : Float
+    , ymax : Float
+    }
+
+
+marioSprite : Model -> Shape
+marioSprite model =
+    case ( model.direction, model.y ) of
+        ( Right, y ) ->
+            if y > init.y then
+                sprite "sprites.gif" marioJumpRight
+
+            else
+                sprite "sprites.gif" marioRight
+
+        ( Left, y ) ->
+            if y > init.y then
+                sprite "sprites.gif" marioJumpLeft
+
+            else
+                sprite "sprites.gif" marioLeft
+
+
+marioRight : SpriteLocation
+marioRight =
+    { xmin = 274
+    , xmax = 290
+    , ymin = 44
+    , ymax = 60
+    }
+
+
+marioJumpRight : SpriteLocation
+marioJumpRight =
+    { xmin = 354
+    , xmax = 370
+    , ymin = 44
+    , ymax = 60
+    }
+
+
+marioLeft : SpriteLocation
+marioLeft =
+    { xmin = 222
+    , xmax = 238
+    , ymin = 44
+    , ymax = 60
+    }
+
+
+marioJumpLeft : SpriteLocation
+marioJumpLeft =
+    { xmin = 142
+    , xmax = 158
+    , ymin = 44
+    , ymax = 60
+    }
 
 
 
