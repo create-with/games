@@ -85,11 +85,11 @@ update computer model =
 
         fallVelocity : Float
         fallVelocity =
-            0.2
+            -0.24
 
         jumpVelocity : Float
         jumpVelocity =
-            0.15
+            0.2
 
         runVelocity : Float
         runVelocity =
@@ -99,7 +99,7 @@ update computer model =
         walkVelocity =
             0.11
     in
-    if jumpKeyPressed computer.keyboard then
+    if jumpKeyPressed computer.keyboard && model.y == init.y then
         model
             |> updateYVelocity jumpVelocity
             |> updateMario computer
@@ -128,9 +128,9 @@ update computer model =
             |> updateXVelocity -walkVelocity
             |> updateMario computer
 
-    else if model.vy > 0 then
+    else if marioIsJumping model then
         model
-            |> updateYVelocity -fallVelocity
+            |> updateYVelocity fallVelocity
             |> updateMario computer
 
     else
@@ -152,7 +152,7 @@ updateMario : Computer -> Model -> Model
 updateMario computer model =
     { model
         | x = model.x + model.vx * toFloat computer.time.delta
-        , y = model.y + model.vy * toFloat computer.time.delta
+        , y = max init.y (model.y + model.vy * toFloat computer.time.delta)
     }
 
 
@@ -170,9 +170,9 @@ updateYVelocity velocity model =
 -- PREDICATES
 
 
-gravityShouldBeApplied : Model -> Bool
-gravityShouldBeApplied { y, vy } =
-    vy > 0 && y > init.y
+marioIsJumping : Model -> Bool
+marioIsJumping { y } =
+    y > init.y
 
 
 walkRightKeyPressed : Keyboard -> Bool
@@ -197,16 +197,10 @@ runLeftKeysPressed keyboard =
 
 jumpKeyPressed : Keyboard -> Bool
 jumpKeyPressed keyboard =
-    keyboard.space || keyboard.up
+    keyboard.up || keyboard.space
 
 
 
--- jumpRightKeysPressed : Keyboard -> Bool
--- jumpRightKeysPressed keyboard =
---     keyboard.space && keyboard.right
--- jumpLeftKeysPressed : Keyboard -> Bool
--- jumpLeftKeysPressed keyboard =
---     keyboard.space && keyboard.left
 -- TILES
 
 
